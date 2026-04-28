@@ -80,11 +80,95 @@ Device 0 | MI300X | 36°C | 154W | VRAM 0% | GPU 0%
 - CLAUDE.md: ✅ created
 - MEMORY.md: ✅ this file
 
-### Next tasks (in priority order)
-1. Create `.gitignore` (if not complete)
-2. Create `server/main.py` — FastAPI WebSocket server on AMD cloud
-3. Create `bot/index.js` — Discord bot with voice capture
-4. Configure `tauri.conf.json` — always-on-top, transparent, no decorations
+---
+
+## SESSION 3 — May 5, 2026 (Day 2 Build Guide Delivered)
+
+### AMD Cloud — Droplet destroyed (correct decision)
+- Used $16.09 of $100 credits overnight (MI300X x1 @ $1.99/hr)
+- Destroying is only way to stop billing on DigitalOcean-based AMD cloud
+- Turn Off does NOT stop billing — only Destroy does
+- Remaining credit: ~$83.91 (~42 hrs GPU time)
+- Plan: Recreate droplet Day 5 (May 8) when cloud features needed
+- Re-download Llama 3.3 70B takes 1-2 hrs when recreated
+
+### Day 2 Tasks — Implementation Guide Delivered
+User will implement the following files:
+
+**New files to create:**
+- `.gitignore` — covers node_modules, .env, target/, *.sqlite, .venv
+- `.env.example` — safe template for GitHub
+- `bot/index.js` — Discord bot + VoiceReceiver + WS bridge
+- `bot/db.js` — SQLite helper (avatars + phrasebook)
+- `server/main.py` — FastAPI WS server, GT translation, pykakasi romaji
+- `server/requirements.txt` — Python deps
+- `src/store/atoms.js` — Jotai atoms (speakers, settings, suggestions, stats)
+- `src/components/SpeakerCard.jsx` — avatar + JP + romaji + EN card
+- `src/components/KaraokeText.jsx` — word-by-word Framer Motion highlight
+- `src/components/RomajiLine.jsx` — Geist Mono romaji display
+- `src/components/Header.jsx` — drag handle, style modes, opacity slider
+
+**Files to modify:**
+- `src-tauri/tauri.conf.json` — alwaysOnTop, transparent, decorations: false, 420x700, CSP
+- `src-tauri/src/lib.rs` — set_opacity, set_click_through, set_always_on_top commands
+- `src/App.jsx` — WS connection manager, Jotai state updates, speaker orchestration
+- `src/App.css` — full design system (OLED dark, CSS variables, Geist font)
+- `src/main.jsx` — add App.css import
+- `vite.config.js` — add @tailwindcss/vite plugin
+
+### WebSocket Architecture (finalized)
+- Port **8765**: Bot ↔ AMD cloud server (bot/index.js ↔ server/main.py)
+- Port **8766**: Bot → Tauri UI (bot broadcasts JSON, React listens)
+- Both bound to 127.0.0.1 only — never exposed to network
+- CSP in tauri.conf.json restricts connect-src to ws://localhost:8765 and ws://localhost:8766
+
+### Design System (applied)
+- Vibe: Ethereal Glass — OLED black #050505 base
+- Font: Geist Variable + Geist Mono Variable (npm: @fontsource-variable/geist)
+- Accent: #3b9eff (Electric Blue — NO purple/blue AI gradients)
+- Cards: rgba(255,255,255,0.04) + border-white/8 + backdrop-blur-xl + inner shadow
+- Speaking indicator: green pulse dot (#22c55e) with CSS keyframe animation
+- Karaoke: Framer Motion color animate per word (no useState for animation)
+- Translation source badge: GT (Google) vs AI (LLM) with color coding
+
+### npm packages needed for Day 2
+```powershell
+npm install @fontsource-variable/geist @fontsource-variable/geist-mono
+```
+
+### Python venv setup
+```powershell
+cd server
+python -m venv .venv
+.venv\Scripts\activate
+pip install fastapi==0.115.0 uvicorn[standard]==0.30.0 websockets==12.0 requests==2.32.0 pykakasi==2.2.1 python-dotenv==1.0.0
+pip freeze > requirements.txt
+```
+
+### Security measures applied
+- WS servers bound to 127.0.0.1 only
+- Tauri CSP restricts WebSocket origins
+- Max audio payload: 2MB (OOM prevention)
+- Max text length: 500 chars
+- All SQLite queries parameterized
+- Env vars validated on bot startup (fail fast)
+- Text sanitized before forwarding to UI
+- Audio stream capped at 10s to prevent memory growth
+
+### Test procedure (Day 2)
+1. Terminal 1: `cd server && .venv\Scripts\activate && python main.py`
+2. Terminal 2: `node bot/index.js`
+3. Terminal 3: `npm run tauri dev`
+4. Test WS directly via browser DevTools (no Discord needed for UI testing)
+
+### Pending (Day 3 tasks)
+- Local Whisper STT (CPU, small model) stub replacement
+- SuggestionCard.jsx
+- RomajiPopup.jsx (fullscreen I'll Speak)
+- QuickReplyBox.jsx
+- QuickReactions.jsx
+- Bot Sends delivery wired up
+- Phrasebook with Ctrl+1-9 hotkeys
 5. Install Tailwind properly in `src/main.jsx`
 6. Create `src/components/SpeakerCard.jsx`
 7. Create `src/store/atoms.js` — Jotai atoms

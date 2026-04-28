@@ -196,15 +196,15 @@ miwa/
 | SSH key configured | ✅ miwa_amd |
 | Git repo connected | ✅ github.com/Mizunandayo/miwa |
 | Tailwind v4 installed | ✅ @tailwindcss/vite |
-| Discord bot code | ❌ NOT STARTED |
-| FastAPI server code | ❌ NOT STARTED |
-| React UI components | ❌ NOT STARTED |
-| Tauri window config | ❌ NOT STARTED |
-| WhisperX installed | ❌ NOT STARTED |
-| Qdrant container | ❌ NOT STARTED |
-| CrewAI agents | ❌ NOT STARTED |
-| XTTS v2 | ❌ NOT STARTED |
-| SSH tunnel for WebSocket | ❌ NOT STARTED |
+| Discord bot code | 🔨 IN PROGRESS — bot/index.js guide complete |
+| FastAPI server code | 🔨 IN PROGRESS — server/main.py guide complete |
+| React UI components | 🔨 IN PROGRESS — SpeakerCard/Karaoke/Romaji/Header |
+| Tauri window config | 🔨 IN PROGRESS — overlay config guide complete |
+| WhisperX installed | ❌ NOT STARTED (Day 5 — needs cloud) |
+| Qdrant container | ❌ NOT STARTED (Day 5) |
+| CrewAI agents | ❌ NOT STARTED (Day 5) |
+| XTTS v2 | ❌ NOT STARTED (Day 5) |
+| SSH tunnel for WebSocket | ❌ NOT STARTED (Day 5) |
 
 ---
 
@@ -271,12 +271,24 @@ df -h /
 
 ### Local
 ```powershell
-# Dev server
+# Dev server (Tauri overlay)
 npm run tauri dev
 
 # Build .exe
 npm run tauri build
 
-# SSH tunnel for WebSocket (run this when coding locally)
-ssh -i "$HOME\.ssh\miwa_amd" -N -L 8000:localhost:8000 root@165.245.134.220
+# Run Python server (local, activate venv first)
+cd server ; .venv\Scripts\activate ; python main.py
+# Runs on ws://127.0.0.1:8765
+
+# Run Discord bot
+node bot/index.js
+# Bot WS server on ws://127.0.0.1:8766 (bot → Tauri UI)
+
+# SSH tunnel for WebSocket (Day 5 — point to AMD cloud)
+ssh -i "$HOME\.ssh\miwa_amd" -N -L 8765:localhost:8765 root@<new-ip>
 ```
+
+### WebSocket Ports
+- **8765**: Bot ↔ AMD cloud server (FastAPI) — tunneled via SSH in production
+- **8766**: Bot → Tauri React UI (localhost only, never exposed)
