@@ -79,6 +79,7 @@ Primary users: Gamers with international friends, language learners, content str
 | English Translation | Auto-translates to English using the selected style mode | Core |
 | Translation Style Toggle | Switch between Formal, Neutral, Casual, Gaming modes globally | Core |
 | JP / EN / Both Toggle | Choose whether to see Japanese, English, or both | Core |
+| Voice Channel Text Chat | Typed messages in the VC sidechat are captured and translated automatically — shown with 💬 icon vs 🎙️ mic icon | Core |
 | Emotion Tone Indicator | Detects if speaker sounds excited, frustrated, confused, happy | Enhanced |
 | Multi-speaker Support | Up to 5 simultaneous speakers, each with their own card | Core |
 | Speaker Focus Mode | Lock overlay to one speaker, collapse others | Enhanced |

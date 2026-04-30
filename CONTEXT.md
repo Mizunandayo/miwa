@@ -27,9 +27,10 @@ When you're in a Discord voice call with Japanese-speaking friends:
 3. Transcribes what they said in Japanese (with word-level karaoke highlighting)
 4. Shows romaji pronunciation below the Japanese text
 5. Shows an English translation (in your chosen style: Formal / Neutral / Casual / Gaming)
-6. Generates 3 context-aware Japanese reply suggestions
-7. Lets you deliver replies via: Bot Speaks (voice), Bot Sends (text chat), or I'll Speak (romaji popup)
-8. All of this in under 800ms end-to-end
+6. Also captures typed messages in the voice channel's text sidechat — same card, 💬 icon instead of 🎙️
+7. Generates 3 context-aware Japanese reply suggestions
+8. Lets you deliver replies via: Bot Speaks (voice), Bot Sends (text chat), or I'll Speak (romaji popup)
+9. All of this in under 800ms end-to-end
 
 ---
 
@@ -203,6 +204,7 @@ Tauri v2 Overlay (React 19 UI)
 - English translation with style mode applied
 - Translation style toggle: Formal / Neutral / Casual / Gaming
 - JP / EN / Both toggle
+- Voice channel text sidechat capture (💬 icon) — same card as voice, no karaoke animation
 - Emotion tone indicator (excited, frustrated, confused, happy)
 - Multi-speaker support (up to 5 simultaneous speakers)
 - Speaker focus mode

@@ -177,6 +177,70 @@ pip freeze > requirements.txt
 
 ---
 
+---
+
+## SESSION 4 — May 5, 2026 (Day 2 Active Implementation)
+
+### Completed this session
+- ✅ `.gitignore` — rewritten with proper exclusions (server/.venv/, *.sqlite, .env.*, etc.)
+- ✅ `.env.example` — safe template pushed to GitHub
+- ✅ `server/main.py` — FastAPI WebSocket server written and running on ws://127.0.0.1:8765
+- ✅ `server/requirements.txt` — locked with pip freeze
+- ✅ `tsconfig.json` — created with strict mode
+- ✅ `src/main.jsx` → `src/main.tsx` — renamed
+- ✅ `src/App.jsx` → `src/App.tsx` — renamed
+- ✅ TypeScript packages installed: typescript, @types/react, @types/react-dom, @types/node
+- ✅ `src/main.tsx` — added non-null assertion `getElementById("root")!`
+
+### Key fix: pykakasi / setuptools issue
+- **Error:** `ModuleNotFoundError: No module named 'pkg_resources'`
+- **Cause:** setuptools 82 removed `pkg_resources` from top-level namespace
+- **Fix:** `pip install "setuptools<71"` inside `server/.venv`
+- **Server run command:** `cd server ; .venv\Scripts\python.exe main.py`
+- **Why not `python main.py`:** PowerShell loses venv activation across chained commands; use venv's python.exe directly
+
+### TypeScript decision (made this session)
+- **React frontend (`src/`):** TypeScript — strict mode, catches bugs before runtime
+- **Discord bot (`bot/`):** JavaScript — stays JS for hackathon simplicity
+- **Python server (`server/`):** Python — different runtime, no TS possible
+- **Migration cost was ~0:** made before any components were written
+- **Post-hackathon:** can migrate bot to TS after deadline
+
+### Language decision rationale
+- User asked about TypeScript mid-session
+- Agreed: JS = "delayed error", TS prevents issues at compile time
+- Switched immediately since no component code existed yet
+- All future `src/` files will be `.tsx` / `.ts`
+
+### New feature added this session: Voice channel text sidechat capture
+- `messageCreate` event in bot/index.js listens for typed messages in the VC's text chat
+- Same two-pass translation pipeline (GT fast → LLM refined)
+- Overlay card identical to voice card — no karaoke animation (no word timestamps from text)
+- `source` field in WS packet: `"voice"` vs `"text_chat"`
+- UI shows 💬 icon instead of 🎙️ mic icon to distinguish source
+- Cards auto-dismiss after same timeout as voice cards (~8s)
+- Zero extra dependencies — uses existing discord.js messageCreate event
+
+### In progress (bot/index.js, UI components)
+- `bot/db.js` — being coded by user
+- `bot/index.js` — next after db.js (must include messageCreate listener)
+- Tauri window config — pending
+- React components — pending (all .tsx going forward)
+
+### Run commands (confirmed working)
+```powershell
+# Server (use venv python directly)
+cd server ; .venv\Scripts\python.exe main.py
+
+# Bot (after bot/index.js is written)
+node bot/index.js
+
+# Tauri overlay
+npm run tauri dev
+```
+
+---
+
 ## ARCHITECTURE DECISIONS (rationale)
 
 | Decision | Choice | Why |

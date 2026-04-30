@@ -26,19 +26,21 @@ Real-time Discord voice translation overlay. When Japanese-speaking friends talk
 5. Generates romaji pronunciation
 6. Shows 3 contextual AI reply suggestions
 7. Delivers replies 3 ways: Bot speaks in VC, Bot sends in chat, I'll speak (romaji popup)
+8. Also captures typed messages in the voice channel's text sidechat — same card layout, 💬 icon vs 🎙️ mic icon
 
 Target latency: **<800ms** end-to-end.
 
 ---
 
-## CLOUD INFRASTRUCTURE (LIVE)
+## CLOUD INFRASTRUCTURE (DESTROYED — recreate Day 5)
 
 - **Provider:** AMD Developer Cloud (DigitalOcean-based)
 - **Instance:** MI300X x1 — 192GB VRAM, 20 vCPU, 240GB RAM
-- **IP:** 165.245.134.220
-- **Cost:** $1.99/hr, $100 credit balance
-- **SSH Key:** `$HOME\.ssh\miwa_amd` (private), `miwa_amd.pub` (public)
-- **SSH Command:** `ssh -i "$HOME\.ssh\miwa_amd" -o StrictHostKeyChecking=no root@165.245.134.220`
+- **IP:** ❌ DESTROYED (was 165.245.134.220) — new IP will differ when recreated
+- **Cost:** $1.99/hr, ~$83 credit balance remaining
+- **SSH Key:** `$HOME\.ssh\miwa_amd` (private), `miwa_amd.pub` (public) — still exists locally
+- **SSH Command:** `ssh -i "$HOME\.ssh\miwa_amd" -o StrictHostKeyChecking=no root@<new-ip>`
+- **Recreate on:** Day 5 (May 8) — only pay for GPU when cloud features needed
 
 ### Docker Container (vLLM)
 - Container name: `rocm`
@@ -81,6 +83,17 @@ Target latency: **<800ms** end-to-end.
 - `@tauri-apps/api` v2
 - `@tauri-apps/plugin-opener`
 - `@tauri-apps/plugin-shell`
+- `@fontsource-variable/geist`
+- `@fontsource-variable/geist-mono`
+- `typescript` (devDep)
+- `@types/react` (devDep)
+- `@types/react-dom` (devDep)
+- `@types/node` (devDep)
+
+### Language decisions
+- **React frontend (`src/`):** TypeScript (`.tsx`/`.ts`) — strict mode enabled
+- **Discord bot (`bot/`):** JavaScript (`.js`) — plain Node.js ESM
+- **Python server (`server/`):** Python — different runtime, TypeScript N/A
 
 ### .env file
 Located at `C:\Users\trist\Desktop\Programming\miwa\.env`
@@ -90,8 +103,10 @@ DISCORD_TOKEN=
 DISCORD_CLIENT_ID=
 GOOGLE_TRANSLATE_API_KEY=
 HF_TOKEN=
-AMD_SERVER_HOST=165.245.134.220
-AMD_SERVER_PORT=8000
+AMD_SERVER_WS_URL=ws://localhost:8765
+UI_WS_PORT=8766
+SERVER_WS_PORT=8765
+DEFAULT_STYLE=casual
 ```
 
 ---
@@ -139,21 +154,21 @@ miwa/
 │   ├── memory.py         # Qdrant vector store per speaker
 │   └── tts.py            # XTTS v2 synthesis
 ├── src/
-│   ├── App.jsx           # Root component
-│   ├── main.jsx          # Entry point
+│   ├── App.tsx           # Root component (TypeScript)
+│   ├── main.tsx          # Entry point (TypeScript)
 │   ├── store/
-│   │   └── atoms.js      # Jotai atoms: speakers, settings, suggestions
+│   │   └── atoms.ts      # Jotai atoms: speakers, settings, suggestions
 │   └── components/
-│       ├── SpeakerCard.jsx       # Avatar + name + JP text + romaji + EN
-│       ├── KaraokeText.jsx       # Word-by-word highlight animation
-│       ├── RomajiLine.jsx        # Romaji display below JP text
-│       ├── SuggestionCard.jsx    # 3 suggestion cards with delivery buttons
-│       ├── RomajiPopup.jsx       # Fullscreen romaji for "I'll Speak"
-│       ├── QuickReplyBox.jsx     # Type EN → live JP translation
-│       ├── QuickReactions.jsx    # 草 えー マジ? gg もう一回 待って
-│       ├── Header.jsx            # Drag handle, mode buttons, opacity
-│       ├── Phrasebook.jsx        # Saved phrases, Ctrl+1-9 hotkeys
-│       └── StatsPanel.jsx        # Latency, tokens/sec, GPU memory
+│       ├── SpeakerCard.tsx       # Avatar + name + JP text + romaji + EN
+│       ├── KaraokeText.tsx       # Word-by-word highlight animation
+│       ├── RomajiLine.tsx        # Romaji display below JP text
+│       ├── SuggestionCard.tsx    # 3 suggestion cards with delivery buttons
+│       ├── RomajiPopup.tsx       # Fullscreen romaji for "I'll Speak"
+│       ├── QuickReplyBox.tsx     # Type EN → live JP translation
+│       ├── QuickReactions.tsx    # 草 えー マジ? gg もう一回 待って
+│       ├── Header.tsx            # Drag handle, mode buttons, opacity
+│       ├── Phrasebook.tsx        # Saved phrases, Ctrl+1-9 hotkeys
+│       └── StatsPanel.tsx        # Latency, tokens/sec, GPU memory
 ├── src-tauri/
 │   ├── src/
 │   │   ├── lib.rs        # Tauri commands: WebSocket bridge, window control
@@ -187,19 +202,24 @@ miwa/
 
 | Component | Status |
 |---|---|
-| AMD MI300X instance | ✅ LIVE — 165.245.134.220 |
-| Llama 3.3 70B downloaded | ✅ 263GB at /app/models/llama3.3-70b |
-| vLLM serving (background) | ✅ PID 1695, port 8000 |
-| PyTorch + ROCm GPU access | ✅ Confirmed |
-| Japanese output confirmed | ✅ こんにちは |
+| AMD MI300X instance | ❌ DESTROYED — recreate Day 5 (May 8) |
+| Llama 3.3 70B downloaded | ❌ Was 263GB — must re-download when new droplet created |
+| vLLM serving (background) | ❌ Destroyed with droplet |
+| PyTorch + ROCm GPU access | ✅ Confirmed (prev session) |
+| Japanese output confirmed | ✅ こんにちは (prev session) |
 | Payment method added | ✅ |
-| SSH key configured | ✅ miwa_amd |
+| SSH key configured | ✅ miwa_amd (still exists locally) |
 | Git repo connected | ✅ github.com/Mizunandayo/miwa |
 | Tailwind v4 installed | ✅ @tailwindcss/vite |
-| Discord bot code | 🔨 IN PROGRESS — bot/index.js guide complete |
-| FastAPI server code | 🔨 IN PROGRESS — server/main.py guide complete |
-| React UI components | 🔨 IN PROGRESS — SpeakerCard/Karaoke/Romaji/Header |
-| Tauri window config | 🔨 IN PROGRESS — overlay config guide complete |
+| TypeScript configured | ✅ strict mode, tsconfig.json, @types/react |
+| .gitignore | ✅ updated |
+| .env.example | ✅ created |
+| server/main.py (FastAPI) | ✅ DONE — running on ws://127.0.0.1:8765 |
+| server/requirements.txt | ✅ locked (setuptools<71 fix applied) |
+| bot/db.js | 🔨 IN PROGRESS |
+| bot/index.js | 🔨 IN PROGRESS |
+| React UI components | 🔨 IN PROGRESS — App.tsx/Header.tsx/SpeakerCard.tsx etc |
+| Tauri window config | 🔨 IN PROGRESS |
 | WhisperX installed | ❌ NOT STARTED (Day 5 — needs cloud) |
 | Qdrant container | ❌ NOT STARTED (Day 5) |
 | CrewAI agents | ❌ NOT STARTED (Day 5) |
