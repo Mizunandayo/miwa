@@ -227,6 +227,79 @@ pip freeze > requirements.txt
 - Tauri window config — pending
 - React components — pending (all .tsx going forward)
 
+---
+
+## SESSION 5 — May 5, 2026 (Day 2 Full Implementation Guide Delivered)
+
+### Scope of guide delivered
+Complete step-by-step guide for ALL Day 2 tasks. User codes it themselves.
+
+### Files covered in guide (15 steps)
+1. `bot/db.js` — completed (WAL SQLite, avatars + phrasebook tables, UPSERT, TTL cache)
+2. `bot/index.js` — created (Discord VoiceReceiver, text chat listener, dual WS, speakerCache)
+3. `vite.config.js` — Tailwind plugin added before react()
+4. `src/App.css` — full design system (OLED #050505, glass cards, Geist fonts, speaking-pulse keyframe)
+5. `src/main.tsx` — added App.css import
+6. `src/App.tsx` — WS manager, Jotai atoms, AnimatePresence, 8s speaker auto-removal
+7. `src/store/atoms.ts` — all Jotai atoms with TypeScript types
+8. `src/components/Header.tsx` — drag-region, style buttons, opacity slider, mini/click-through
+9. `src/components/SpeakerCard.tsx` — avatar, JP/romaji/EN, 💬 vs 🎙️, speaking dot, suggestions
+10. `src/components/KaraokeText.tsx` — Framer Motion word highlight (last word while speaking)
+11. `src/components/RomajiLine.tsx` — Geist Mono romaji display, returns null if empty
+12. `src-tauri/tauri.conf.json` — 420×700, alwaysOnTop, transparent, decorations:false, CSP
+13. `src-tauri/src/lib.rs` — set_opacity, set_click_through, set_always_on_top, get_window_position
+14. `src-tauri/capabilities/default.json` — window permissions added
+15. `src/components/index.ts` — barrel export (optional)
+
+### Key architectural decisions made in guide
+
+#### speakerCache pattern
+- Server returns `userId` but NOT `username`/`avatarB64`/`source`
+- Bot maintains a local `Map<userId, {username, avatarB64, source}>` called `speakerCache`
+- When server response arrives, bot merges cached info before broadcasting to UI
+- This keeps server stateless and bot responsible for Discord-specific data
+
+#### data-tauri-drag-region vs JS startDragging()
+- Used `data-tauri-drag-region` HTML attribute on `.drag-handle` div
+- Zero JS needed, no capability permission required
+- More reliable than `invoke("startDragging")`
+
+#### WS architecture confirmed
+- Port 8765: bot ↔ server/main.py (translation pipeline)
+- Port 8766: bot → Tauri React UI (enriched packets with avatar/username)
+- Both 127.0.0.1 only — never exposed to network
+
+#### Speaker card lifecycle
+- `fast` packet → card appears with GT translation, isSpeaking=true, speaking dot visible
+- `refined` packet → card updates with LLM translation + suggestions, isSpeaking=false
+- 8s timeout → card animates out via AnimatePresence
+- Any new packet from same userId resets the 8s timer
+
+#### Voice channel text chat (💬)
+- `messageCreate` event filters by `channelId === currentVoiceChannelId`
+- Japanese detection regex: `/[\u3000-\u9fff\uff00-\uffef]/`
+- Sanitizes mentions/channel refs before sending to server
+- `source: "text_chat"` in packet — UI shows 💬 icon, no karaoke animation
+
+### Important Tauri v2 notes
+- `window.set_opacity()` may need `features = ["unstable"]` in Cargo.toml tauri dependency
+- `transparent: true` in tauri.conf.json MUST pair with `background: transparent` in CSS
+- `selfDeaf: false` in joinVoiceChannel() is REQUIRED to receive audio (selfDeaf=true mutes input)
+- Capabilities/default.json must explicitly list: allow-set-always-on-top, allow-set-ignore-cursor-events, allow-set-opacity, allow-start-dragging
+
+### Test procedure (3 terminals)
+```powershell
+# Terminal 1 — server
+cd server ; .venv\Scripts\python.exe main.py
+
+# Terminal 2 — bot
+node bot/index.js
+
+# Terminal 3 — overlay
+npm run tauri dev
+```
+Expected: Overlay opens → status green → `!join` in Discord → status shows VC name in blue → speak Japanese → card appears
+
 ### Run commands (confirmed working)
 ```powershell
 # Server (use venv python directly)

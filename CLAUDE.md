@@ -216,10 +216,11 @@ miwa/
 | .env.example | ✅ created |
 | server/main.py (FastAPI) | ✅ DONE — running on ws://127.0.0.1:8765 |
 | server/requirements.txt | ✅ locked (setuptools<71 fix applied) |
-| bot/db.js | 🔨 IN PROGRESS |
-| bot/index.js | 🔨 IN PROGRESS |
-| React UI components | 🔨 IN PROGRESS — App.tsx/Header.tsx/SpeakerCard.tsx etc |
-| Tauri window config | 🔨 IN PROGRESS |
+| bot/db.js | 🔨 Guide delivered — user coding |
+| bot/index.js | 🔨 Guide delivered — user coding |
+| React UI components | 🔨 Guide delivered — App.tsx/Header.tsx/SpeakerCard.tsx/KaraokeText.tsx/RomajiLine.tsx |
+| src/store/atoms.ts | 🔨 Guide delivered — user coding |
+| Tauri window config | 🔨 Guide delivered — user coding |
 | WhisperX installed | ❌ NOT STARTED (Day 5 — needs cloud) |
 | Qdrant container | ❌ NOT STARTED (Day 5) |
 | CrewAI agents | ❌ NOT STARTED (Day 5) |
