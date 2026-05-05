@@ -56,11 +56,11 @@ active_connections: dict[str, WebSocket] = {}
 def validate_payload(data: dict) -> tuple[bool, str]:
     """Validate incoming WebSocket payload. Returns (is_valid, error_message)."""
     msg_type = data.get("type")
-    if msg_type not in ("text", "audio"):
+    if msg_type not in ("text", "audio", "quick_reply"):
         return False, f"Invalid type: {msg_type}"
 
     user_id = data.get("userId", "")
-    if not user_id or not isinstance(user_id, str) or len(user_id) > 64:
+    if msg_type != "quick_reply" and (not user_id or not isinstance(user_id, str) or len(user_id) > 64):
         return False, "Invalid userId"
 
     if msg_type == "text":
@@ -112,7 +112,6 @@ def google_translate(text: str, target: str = "en") -> Optional[str]:
             json={
                 "q": text,
                 "target": target,
-                "source": "ja",
                 "format": "text",
             },
             timeout=5,  # Fail fast — this is the instant pass
@@ -177,14 +176,10 @@ async def websocket_endpoint(websocket: WebSocket):
 
     try:
         while True:
-            # Receive message with size limit
+            # Receive message — no idle timeout, this is a persistent connection
             try:
-                raw = await asyncio.wait_for(
-                    websocket.receive_text(),
-                    timeout=30.0  # 30s idle timeout
-                )
-            except asyncio.TimeoutError:
-                log.info(f"WebSocket idle timeout for {user_id}")
+                raw = await websocket.receive_text()
+            except Exception:
                 break
 
             # Parse JSON
@@ -206,9 +201,27 @@ async def websocket_endpoint(websocket: WebSocket):
                 }))
                 continue
 
-            user_id = data["userId"]
+            user_id = data.get("userId", "quick_reply_user")
             active_connections[user_id] = websocket
             start_time = time.time()
+
+            # ── Quick reply: EN → JP ───────────────────────────────────────
+            if data["type"] == "quick_reply":
+                en_text = data.get("text", "").strip()
+                if not en_text:
+                    continue
+                jp_result = google_translate(en_text, target="ja")
+                if not jp_result:
+                    jp_result = en_text  # fallback
+                romaji = to_romaji(jp_result)
+                await websocket.send_text(json.dumps({
+                    "type": "quick_reply_result",
+                    "jp": jp_result,
+                    "romaji": romaji,
+                    "en": en_text,
+                    "latencyMs": round((time.time() - start_time) * 1000),
+                }))
+                continue
 
             # ── Get Japanese text ──────────────────────────────────────────
             if data["type"] == "text":

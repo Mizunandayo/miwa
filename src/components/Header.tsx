@@ -57,6 +57,8 @@ export default function Header({ sendCommand }: HeaderProps) {
 
   const handleOpacity = (value: number) => {
     setOpacity(value);
+    const root = document.getElementById("root");
+    if (root) root.style.opacity = String(value / 100);
   };
 
   const handleClickThrough = async () => {

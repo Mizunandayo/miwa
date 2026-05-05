@@ -40,7 +40,7 @@ for (const key of REQUIRED_ENV) {
   }
 }
 
-const SERVER_WS_URL = process.env.AMD_SERVER_WS_URL || "ws://127.0.0.1:8765";
+const SERVER_WS_URL = process.env.AMD_SERVER_WS_URL || "ws://127.0.0.1:8765/ws";
 const UI_WS_PORT = parseInt(process.env.UI_WS_PORT || "8766", 10);
 const DEFAULT_STYLE = process.env.DEFAULT_STYLE || "casual";
 const MAX_AUDIO_BYTES = 2 * 1024 * 1024; // 2MB
@@ -355,6 +355,15 @@ function handleUiCommand(msg) {
   if (msg.action === "setStyle") {
     styleMode = msg.style || DEFAULT_STYLE;
     console.log(`[bot] Style → ${styleMode}`);
+  }
+
+  if (msg.action === "quickReply" && msg.text) {
+    // Forward EN text to server for EN→JP translation
+    sendToServer({
+      type: "quick_reply",
+      text: msg.text,
+      style: styleMode,
+    });
   }
 
   if (msg.action === "botSends" && currentGuildId && msg.text) {

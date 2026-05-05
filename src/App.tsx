@@ -20,10 +20,13 @@ import {
   channelNameAtom,
   statsAtom,
   wsStatusAtom,
+  quickReplyResultAtom,
+  quickReplyLoadingAtom,
   type SpeakerState,
 } from "./store/atoms";
 import Header from "./components/Header";
 import SpeakerCard from "./components/SpeakerCard";
+import QuickReplyBox from "./components/QuickReplyBox";
 
 const UI_WS_URL = "ws://127.0.0.1:8766";
 const SPEAKER_TIMEOUT_MS = 8_000; // Remove card after 8s of inactivity
@@ -36,6 +39,8 @@ export default function App() {
   const setChannelName = useSetAtom(channelNameAtom);
   const setStats = useSetAtom(statsAtom);
   const setWsStatus = useSetAtom(wsStatusAtom);
+  const setQuickReplyResult = useSetAtom(quickReplyResultAtom);
+  const setQuickReplyLoading = useSetAtom(quickReplyLoadingAtom);
 
   const wsRef = useRef<WebSocket | null>(null);
   const timeoutRefs = useRef<Map<string, ReturnType<typeof setTimeout>>>(
@@ -87,6 +92,17 @@ export default function App() {
         } else if (event === "ready") {
           setBotStatus("connected");
         }
+        return;
+      }
+
+      // Quick reply EN→JP result from server
+      if (type === "quick_reply_result") {
+        setQuickReplyLoading(false);
+        setQuickReplyResult({
+          jp: (packet.jp as string) ?? "",
+          romaji: (packet.romaji as string) ?? "",
+          en: (packet.en as string) ?? "",
+        });
         return;
       }
 
@@ -154,6 +170,8 @@ export default function App() {
       setChannelName,
       setStats,
       scheduleSpeakerRemoval,
+      setQuickReplyResult,
+      setQuickReplyLoading,
     ]
   );
 
@@ -210,6 +228,7 @@ export default function App() {
   return (
     <div className="overlay-root">
       <Header sendCommand={sendCommand} />
+      <QuickReplyBox sendCommand={sendCommand} />
       <div className="speaker-list">
         <AnimatePresence mode="popLayout">
           {orderedSpeakers.length === 0 ? (

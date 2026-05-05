@@ -77,6 +77,12 @@ export const opacityAtom = atom<number>(90);
 /** Compact single-line view */
 export const isMiniModeAtom = atom<boolean>(false);
 
+export interface QuickReplyResult {
+  jp: string;
+  romaji: string;
+  en: string;
+}
+
 /** Mouse events pass through overlay to game */
 export const isClickThroughAtom = atom<boolean>(false);
 
@@ -91,3 +97,9 @@ export const statsAtom = atom<StatsState>({ latencyMs: 0, lastUpdated: 0 });
 
 /** WebSocket connection to bot */
 export const wsStatusAtom = atom<"connecting" | "open" | "closed">("closed");
+
+/** Quick reply: pending EN→JP translation result */
+export const quickReplyResultAtom = atom<QuickReplyResult | null>(null);
+
+/** Quick reply: loading state while server translates */
+export const quickReplyLoadingAtom = atom<boolean>(false);

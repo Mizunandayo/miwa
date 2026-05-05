@@ -505,3 +505,114 @@ button {
   border: 1px solid rgba(245, 158, 11, 0.15);
   border-radius: var(--radius-sm);
 }
+
+/* ─── Quick Reply Box ─────────────────────────────────────────────────────── */
+.quick-reply-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.quick-reply-input-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.quick-reply-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.15s ease;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.quick-reply-input::placeholder {
+  color: var(--text-muted);
+}
+
+.quick-reply-input:focus {
+  border-color: var(--border-focus);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.quick-reply-spinner {
+  font-size: 14px;
+  color: var(--accent);
+  display: inline-block;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.quick-reply-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.quick-reply-preview-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.quick-reply-jp {
+  font-size: 14px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.quick-reply-romaji {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.quick-reply-send {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  padding: 3px 8px;
+  background: var(--accent-dim);
+  border: 1px solid var(--border-focus);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+}
+
+.quick-reply-send:hover {
+  background: rgba(59, 158, 255, 0.25);
+  cursor: pointer;
+}
