@@ -13,12 +13,21 @@
     "windows": [
       {
         "title": "Miwa",
-        "width": 800,
-        "height": 600
+        "width": 420,
+        "height": 700,
+        "x": 20,
+        "y": 100,
+        "alwaysOnTop": true,
+        "transparent": true,
+        "decorations": false,
+        "shadow": false,
+        "resizable": true,
+        "minWidth": 380,
+        "maxWidth": 500
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; connect-src 'self' ws://localhost:8765 ws://localhost:8766 ws://127.0.0.1:8765 ws://127.0.0.1:8766; img-src 'self' data: https://cdn.discordapp.com; style-src 'self' 'unsafe-inline'; script-src 'self'"
     }
   },
   "bundle": {
