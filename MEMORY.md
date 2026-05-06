@@ -637,3 +637,208 @@ overlay-root
 - SSH tunnel: `ssh -i "$HOME\.ssh\miwa_amd" -N -L 8765:localhost:8765 root@<new-ip>`
 - WhisperX, Qdrant, CrewAI (suggest.py — CRITICAL for Track 1), XTTS v2
 - Wire bot/tts.js with real XTTS endpoint
+
+---
+
+## SESSION 9 — May 6, 2026 (Day 4 — HF Space + Animated Pipeline + Day 4 Complete)
+
+### All Day 4 tasks verified COMPLETE
+
+| Task | Status | Evidence |
+|---|---|---|
+| README.md | ✅ | Full professional README with arch diagram, stack table, shortcuts, AMD commands |
+| 1/2/3 key shortcuts | ✅ | App.tsx line 287 — `onKey` handler, `parseInt(e.key, 10) - 1` |
+| Framer Motion spring animation | ✅ | SpeakerCard.tsx — `motion.div` + `AnimatePresence` at lines 54, 142–167 |
+| Snap-to-corner (double-click) | ✅ | Header.tsx — `handleSnapToCorner()` + `onDoubleClick` at lines 83–134 |
+| bot/tts.js stub | ✅ | `createTtsPlayer()` + `speak()` stub + Day 5 XTTS wiring commented in |
+| hf-space/README.md | ✅ | HF YAML front matter: `sdk: static`, `title: Miwa 美話`, `emoji: 🎙️`, `pinned: true` |
+| hf-space/index.html | ✅ | Full 7-section animated landing page (see below) |
+| Git commit + push | ✅ | `git push origin main` exit code 0 |
+
+### hf-space/index.html — full landing page (built this session)
+
+**Libraries used:**
+- Three.js 0.169.0 + postprocessing 6.36.4 via esm.sh import map — hyperspeed WebGL road animation
+- React 19 + tech-stack-icons@3.7.1 via esm.sh — Stack section icons
+- Vanilla JS IntersectionObserver for `.r` scroll-reveal (`.in` class, `data-d` delays)
+
+**CSS variables:** `--muted`, `--muted2`, `--surface`, `--surface2`, `--border`, `--border2`, `--mono`, `--text`
+
+**Section order (final, after reorder):**
+1. Hero — hyperspeed WebGL canvas, headline, stats row, CTAs
+2. `#demo` — faithful Miwa overlay replica (speaker card, karaoke, suggestions, quick reply)
+3. `#pipeline` — animated pipeline diagram (see below)
+4. `#amd` — MI300X hero banner + comparison table + 4 advantage cards
+5. `#features` — 7-card bento grid
+6. `#stack` — AMD featured card + 3 layer rows + tech-stack-icons
+7. `#engineering` — solo build banner + visual arch diagram + 6 decision cards
+
+**Pipeline section — animated diagram:**
+- 6 stage nodes (🎤 📝 ⚡ 🧠 🤖 🪟) connected by thin lines
+- Active node glows blue, passed nodes glow green, connectors fill left→right
+- Flowing track: 22 random Japanese kanji particles (今日ゲーム楽しかった...) animating left→right at varied speeds/colors/heights
+- Blue packet bubble transitions between stage positions (0.7s cubic-bezier)
+- Packet label changes per stage: `♪ PCM` → `日本語→` → `fast→EN` → `refined→` → `提案×3` → `✓ done`
+- Terminal output panel with macOS-style dots:
+  - IN: instant display of what enters the stage
+  - OUT: typewriter effect — JP at 14ms/char, EN at 18ms/char
+  - Badge color: green = fast stage, blue = slow/LLM stage
+- Starts via IntersectionObserver at 25% visibility, loops infinitely
+- JS IIFE script added as separate `<script>` block before `</body>`
+
+**Demo section — faithful Miwa overlay replica:**
+- Header with drag dots, Miwa brand, style pills (Formal/Neutral/Casual/Gaming), mini button
+- Speaker card: discord avatar (circle), name, 🎙️, speaking pulse dot
+- JP karaoke text with word highlighted
+- Romaji line below JP
+- EN translation with GT → AI badge
+- 3 suggestion chips (collapsed by default with expand toggle)
+- Resize nub at bottom
+
+**Key decisions made this session:**
+- Section reorder done via PowerShell `[System.IO.File]::WriteAllText` (bypasses VS Code file lock that blocked `Set-Content`)
+- Nav links and hero CTA updated to match new section order
+- Font sizes bumped from 9-11px → 11-15px; opacity from 28% → 60-85% for readability
+- Demo overlay CSS reads actual design tokens from `src/App.css` (--bg, --accent, --green, --amber)
+
+### Current state heading into Day 5 (May 8)
+
+| Component | Status |
+|---|---|
+| AMD MI300X instance | ❌ DESTROYED — recreate Day 5 (May 8) |
+| Llama 3.3 70B | ❌ Was on destroyed droplet — must re-download |
+| vLLM serving | ❌ Destroyed with droplet |
+| All local code (Days 1-4) | ✅ 100% complete |
+| hf-space/ (HF demo page) | ✅ Complete — 7 animated sections |
+| Git repo | ✅ Pushed — github.com/Mizunandayo/miwa |
+| WhisperX | ❌ Day 5 |
+| Qdrant | ❌ Day 5 |
+| CrewAI / suggest.py | ❌ Day 5 (CRITICAL for Track 1) |
+| XTTS v2 | ❌ Day 5 |
+| Demo video recording | ⬜ Still pending (any day — no cloud needed) |
+
+---
+
+## SESSION 10 — May 7, 2026 (Day 5 — Non-Cloud Module Wiring)
+
+### Strategy
+Write all 4 Python modules locally (no GPU needed) → git push → on cloud just `git pull` + `pip install`. Saves ~2hrs of billing on cloud.
+
+### New files created
+
+#### `server/transcribe.py`
+- Input: raw int16 PCM bytes (16kHz mono) from Discord
+- Output: `{ "text": str, "words": [{ "word", "start", "end" }] }`
+- Lazy-loads WhisperX: `load_model(large-v3, cuda, float16)` + `load_align_model(ja)`
+- `_pcm_to_float32()` converts raw bytes → numpy float32 via `struct.unpack`
+- Caps at 30s of audio (30*16000*2 bytes) — prevents memory exhaustion
+- Falls back to stub `{ "text": "おはようございます", words: [...] }` if whisperx not installed
+
+#### `server/memory.py`
+- Qdrant collection: `miwa_memory`, vector size 384 (MiniLM-L12-v2 cosine)
+- `store(user_id, jp, en, style)` → upsert with UUID point ID
+- `recall(user_id, query, top_k=5)` → filter by userId, cosine search
+- Both lazy-load: QdrantClient + SentenceTransformer on first call
+- Cap: top_k capped at 10 regardless of caller; input text capped at 500 chars
+
+#### `server/suggest.py`
+- 3-tier fallback: CrewAI → direct vLLM REST → static pool
+- CrewAI agents: Analyst (context reader) → Strategist (picks 3 intents) → Writer (JP replies)
+- LLM: `LLM(model=f"openai/{VLLM_MODEL}", base_url=VLLM_URL, api_key="not-required")`
+- Direct vLLM: POST to `{VLLM_URL}/chat/completions`, regex-extract JSON, validate structure
+- `_STYLE_DESCRIPTIONS` dict maps formal/neutral/casual/gaming → natural language description for prompt
+- Output always exactly 3 `{ jp, romaji, en }` dicts — padded with fallback pool if needed
+- Security: all string fields trimmed + sliced to 200 chars before returning
+
+#### `server/tts.py`
+- `synthesize(text)` → returns raw WAV bytes or None
+- XTTS v2 via `TTS(TTS_MODEL).to(TTS_DEVICE)`
+- Converts numpy float32 output → wave.open() → int16 → bytes
+- Sample rate: 22050Hz (XTTS native), 1 channel, 16-bit
+- Text capped at 200 chars; response size capped at 10MB in main.py
+
+### `server/main.py` changes
+1. Added imports: `from transcribe import transcribe`, `from memory import store/recall`, `from suggest import get_suggestions`, `from tts import synthesize`
+2. Added `TtsRequest(BaseModel)` + `POST /tts` endpoint (returns `audio/wav` Response)
+3. Audio path: `transcribe_stub()` → `transcribe(audio_bytes)` → extracts `text` + `whisper_words`
+4. After Google Translate fast packet: `run_in_executor` calls for `memory_store()` + `memory_recall()` + `get_suggestions()`
+5. Refined packet now uses real `suggestions` from suggest.py instead of `pick_suggestions()`
+
+### `bot/tts.js` changes
+- Uncommented the real XTTS wiring block
+- `fetch(`${serverUrl}/tts`, POST, JSON, AbortSignal.timeout(8000))`
+- `res.arrayBuffer()` → `Readable.from(Buffer.from(...))` → `createAudioResource(stream, {inputType: StreamType.Arbitrary})`
+- Added empty WAV guard (`byteLength === 0`)
+- Removed stub console.log
+
+### `requirements.txt` additions
+- `openai==1.77.0` (local-safe — used by CrewAI LLM client for vLLM compat)
+- Cloud-only (commented out): `whisperx`, `qdrant-client==1.12.2`, `sentence-transformers==3.3.1`, `crewai==0.95.0`, `TTS==0.22.0`
+
+### `.env` additions
+```
+VLLM_URL=http://localhost:8000/v1
+VLLM_MODEL=/app/models/llama3.3-70b
+WHISPERX_DEVICE=cuda
+WHISPERX_MODEL=large-v3
+TTS_DEVICE=cuda
+TTS_SPEAKER=Claribel Dervla
+QDRANT_URL=http://localhost:6333
+EMBED_MODEL=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+```
+
+### Security decisions
+- All user input trimmed + length-capped at module boundaries (not just main.py)
+- CrewAI LLM api_key set to "not-required" — vLLM doesn't auth
+- /tts endpoint response capped at 10MB
+- Qdrant filter strictly by userId — no cross-speaker data leakage
+- whisper_words from transcribe — audio bytes never logged
+
+### Architecture: why run_in_executor for suggest/memory
+CrewAI and Qdrant are blocking (sync) libraries. Using `asyncio.get_event_loop().run_in_executor(None, lambda: ...)` runs them in a thread pool without blocking the FastAPI async WebSocket loop. This keeps the fast packet (<100ms) unaffected by the slow agent pipeline (~2-3s).
+
+### Day 5 cloud checklist (when AMD instance is running)
+```bash
+# 1. SSH in
+ssh -i "$HOME\.ssh\miwa_amd" -o StrictHostKeyChecking=no root@<new-ip>
+
+# 2. Enter container
+docker exec -it rocm /bin/bash
+
+# 3. Git pull latest code
+cd /app && git pull origin main
+
+# 4. Re-download model (if new droplet)
+huggingface-cli download meta-llama/Llama-3.3-70B-Instruct \
+  --local-dir /app/models/llama3.3-70b --token $HF_TOKEN
+
+# 5. Start vLLM
+nohup vllm serve /app/models/llama3.3-70b --host 0.0.0.0 --port 8000 --max-model-len 8192 > /app/vllm.log 2>&1 &
+
+# 6. Start Qdrant
+docker run -d --name qdrant -p 6333:6333 qdrant/qdrant
+
+# 7. Uncomment cloud deps in requirements.txt, then:
+pip install -r server/requirements.txt
+
+# 8. Start Miwa server
+cd server && python main.py
+
+# 9. SSH tunnel (run locally in PowerShell)
+ssh -i "$HOME\.ssh\miwa_amd" -N -L 8765:localhost:8765 root@<new-ip>
+```
+
+### Current status after Session 10
+| Component | Status |
+|---|---|
+| server/transcribe.py | ✅ Written locally |
+| server/memory.py | ✅ Written locally |
+| server/suggest.py | ✅ Written locally |
+| server/tts.py | ✅ Written locally |
+| server/main.py (wired) | ✅ Updated |
+| bot/tts.js (real wiring) | ✅ Uncommented |
+| requirements.txt | ✅ Updated |
+| .env | ✅ Day 5 keys added |
+| AMD MI300X | ❌ Not yet created |
+| Model download | ❌ Not yet |
+| End-to-end cloud test | ❌ Not yet |

@@ -12,8 +12,8 @@
 | 1 | May 4 | Infrastructure + WebSocket + Discord audio | AMD Cloud provisioned, MI300X verified, Llama 3.3 70B downloaded (263GB), vLLM serving confirmed |
 | 2 | May 5 | Translation + profile pictures + multi-speaker UI | server/main.py, bot/index.js, bot/db.js, all React components (App.tsx, Header, SpeakerCard, KaraokeText, RomajiLine, atoms.ts), Tauri config, full design system CSS |
 | 3 | May 6 | LLM + Agents + Memory (cloud) | UI polish — QuickReplyBox, SuggestionCard (delivery buttons), RomajiPopup, QuickReactions, Phrasebook (Ctrl+1-9), StatsPanel, CallInfoStrip, resize handle, bug fix: google_translate source hardcode |
-| 4 | May 7 | Suggestions + Quick Reply + Full UX | 🔨 In progress — README.md ✅, 1/2/3 key shortcuts ✅, card animation polish (guided), snap-to-corner (guided), hf-space/ ⬜, bot/tts.js ⬜ |
-| 5 | May 8 | Polish + .exe build | ⬜ Planned: Recreate AMD cloud, WhisperX, Qdrant, CrewAI, XTTS, SSH tunnel, StatsPanel |
+| 4 | May 7 | Suggestions + Quick Reply + Full UX | ✅ Complete — README.md, 1/2/3 shortcuts, Framer Motion spring, snap-to-corner, bot/tts.js stub, hf-space/ (README + animated index.html), git push |
+| 5 | May 8 | Polish + .exe build | 🔨 In progress — non-cloud Python modules written locally: transcribe.py, memory.py, suggest.py, tts.py, main.py wiring, requirements.txt, .env additions |
 | 6 | May 9 | GitHub + HF Space + Demo Video | ⬜ Planned |
 | 7 | May 10 | Final Review + SUBMIT | ⬜ Planned |
 
@@ -69,27 +69,44 @@
 - ✅ App.tsx — phrasebook packet handler, QuickReactions + Phrasebook + StatsPanel + RomajiPopup in JSX
 - ✅ Git commit + push Day 3 work
 
-### Day 4 (May 7) — UI Polish + Demo Prep
-- ✅ Animate speaker cards in/out (Framer Motion spring polish) — guided (user implementing)
-- ✅ Window snap-to-corner (double-click header) — guided (user implementing)
-- ✅ Number key shortcuts 1/2/3 for suggestion delivery — guided + placement confirmed
+### Day 4 (May 7) — UI Polish + Demo Prep ✅
+- ✅ Animate speaker cards in/out (Framer Motion spring polish) — SpeakerCard.tsx motion.div + AnimatePresence
+- ✅ Window snap-to-corner (double-click header) — Header.tsx handleSnapToCorner() + LogicalPosition
+- ✅ Number key shortcuts 1/2/3 for suggestion delivery — App.tsx useEffect
 - ✅ README.md — full professional README written
-- ⬜ bot/tts.js — Bot Speaks stub file structure (for Day 5 XTTS v2 wiring)
-- ⬜ hf-space/ — create subfolder + README.md (HF front matter) + index.html (demo page)
+- ✅ bot/tts.js — XTTS v2 stub with createTtsPlayer() + speak() + Day 5 uncomment wiring
+- ✅ hf-space/README.md — HF Space YAML front matter (sdk: static, pinned: true)
+- ✅ hf-space/index.html — Full HF Space landing page:
+    - Hero with Three.js/postprocessing hyperspeed WebGL animation
+    - Demo section — faithful Miwa overlay replica (speaker card, suggestions, quick reply)
+    - Pipeline section — animated JP char flow + packet animation + terminal typewriter output
+    - AMD MI300X section — hero banner + comparison table + advantage cards
+    - Features section — 7-card bento grid
+    - Stack section — AMD featured + 3 layer rows + tech-stack-icons
+    - Engineering section — solo build banner + arch diagram + 6 decision cards
+- ✅ Git commit + push Day 4
 - ⬜ Record demo video footage (local pipeline — no cloud needed)
-- ⬜ Git commit + push Day 4
 
 ### Day 5 (May 8) — AMD Cloud Reconnect ☁️
+
+#### Non-cloud work (done locally May 7)
+- ✅ server/transcribe.py — WhisperX wrapper (stub-compatible, lazy-load)
+- ✅ server/memory.py — Qdrant vector store per speaker (lazy-load, graceful fallback)
+- ✅ server/suggest.py — CrewAI 3-agent pipeline (Analyst→Strategist→Writer) + direct vLLM + static fallback
+- ✅ server/tts.py — XTTS v2 synthesis wrapper (lazy-load, returns WAV bytes)
+- ✅ server/main.py — wired all 4 modules: transcribe(), memory_store/recall(), get_suggestions(), /tts endpoint
+- ✅ bot/tts.js — uncommented real XTTS wiring (POST /tts → WAV → AudioResource)
+- ✅ requirements.txt — added Day 5 deps (cloud-only deps commented out)
+- ✅ .env — added Day 5 env var keys (VLLM_URL, WHISPERX_DEVICE, TTS_DEVICE, QDRANT_URL, etc.)
+
+#### Cloud work (do when AMD instance is running)
 - ⬜ Recreate AMD MI300X droplet ($1.99/hr, ~$83 credit)
 - ⬜ Re-download Llama 3.3 70B (263GB) to /app/models/llama3.3-70b/
 - ⬜ Start vLLM background server (nohup vllm serve ...)
 - ⬜ SSH tunnel WebSocket (ssh -N -L 8765:localhost:8765 root@<new-ip>)
-- ⬜ Install WhisperX in ROCm container
-- ⬜ Replace transcribe_stub() with real WhisperX call
-- ⬜ Install Qdrant container, wire memory.py
-- ⬜ Install CrewAI, build suggest.py multi-agent pipeline
-- ⬜ Install XTTS v2, wire server/tts.py + bot/tts.js
-- ⬜ Real vLLM style differentiation (Formal/Neutral/Casual/Gaming)
+- ⬜ pip install whisperx qdrant-client sentence-transformers crewai TTS (uncomment requirements.txt)
+- ⬜ docker run qdrant/qdrant
+- ⬜ End-to-end test full pipeline
 
 ### Day 6 (May 9) — Integration + Testing
 - ⬜ End-to-end test with real voice + cloud GPU
@@ -342,8 +359,8 @@ miwa/
 | src/components/Phrasebook.tsx | ✅ DONE — saved phrases, Ctrl+1-9 hotkeys, collapsible |
 | src/components/StatsPanel.tsx | ✅ DONE — latency color-coded green/amber/red, WS status |
 | README.md | ✅ DONE — full professional README written |
-| hf-space/ | ⬜ NOT STARTED (Day 4 — create subfolder + 2 files) |
-| bot/tts.js | ❌ NOT STARTED (Day 5 — XTTS v2) |
+| hf-space/ | ✅ DONE — README.md (HF YAML) + index.html (animated hero, demo, pipeline, AMD, features, stack, engineering) |
+| bot/tts.js | ✅ DONE — XTTS v2 stub with createTtsPlayer() + speak(); Day 5 wiring commented in |
 | WhisperX installed | ❌ NOT STARTED (Day 5 — needs cloud) |
 | Qdrant container | ❌ NOT STARTED (Day 5) |
 | CrewAI agents | ❌ NOT STARTED (Day 5) |
