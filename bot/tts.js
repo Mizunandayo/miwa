@@ -72,32 +72,32 @@ export async function speak(
 
 
 
+  try {
+    const res = await fetch(`${serverUrl}/tts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: safeText }),
+      signal: AbortSignal.timeout(8000), // 8s — fail fast
+    });
 
+    if (!res.ok) {
+      console.error(`[tts] Server error ${res.status}: ${await res.text()}`);
+      return;
+    }
 
-  // --- Day 5: uncomment to wire XTTS v2---
-  // try {
-  //   const res = await fetch(`${serverUrl}/tts`, {
-  //     method: "POST",
-  //     headers: { "Content-Type": "application/json" },
-  //     body: JSON.stringify({ text: safeText, language: "ja" }),
-  //     signal: AbortSignal.timeout(8000), // 8s timeout
-  //   });
-  //
-  //   if (!res.ok) {
-  //     console.error(`[tts] Server error ${res.status}: ${await res.text()}`);
-  //     return;
-  //   }
-  //
-  //   const wavBuffer = await res.arrayBuffer();
-  //   const stream = Readable.from(Buffer.from(wavBuffer));
-  //   const resource = createAudioResource(stream, {
-  //     inputType: StreamType.Arbitrary,
-  //   });
-  //   player.play(resource);
-  // } catch (err) {
-  //   console.error("[tts] speak() failed:", err.message);
-  // }
+    const wavBuffer = await res.arrayBuffer();
+    if (wavBuffer.byteLength === 0) {
+      console.warn("[tts] Empty WAV received — skipping");
+      return;
+    }
 
-  // Stub — remove this log line when Day 5 code above is uncommented
-  console.log(`[tts] speak() stub (Day 5 — XTTS v2): "${safeText}"`);
+    const stream = Readable.from(Buffer.from(wavBuffer));
+    const resource = createAudioResource(stream, {
+      inputType: StreamType.Arbitrary,
+    });
+    player.play(resource);
+    console.log(`[tts] Playing: "${safeText}"`);
+  } catch (err) {
+    console.error("[tts] speak() failed:", err.message);
+  }
 }

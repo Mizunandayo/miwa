@@ -13,9 +13,17 @@ import time
 from typing import Optional
 
 import pykakasi
+# ─── Day 5 module imports ─────────────────────────────────────────────────────
+from transcribe import transcribe
+from memory    import store as memory_store, recall as memory_recall
+from suggest   import get_suggestions
+from tts       import synthesize as tts_synthesize
+from fastapi   import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, status
+from fastapi.responses import Response
+from pydantic  import BaseModel
+
 import requests
 from dotenv import load_dotenv
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))
@@ -270,7 +278,11 @@ async def websocket_endpoint(websocket: WebSocket):
             else:
                 # Audio path — decode base64 PCM and transcribe
                 audio_bytes = base64.b64decode(data["audio"])
-                jp_text = transcribe_stub(audio_bytes)  # ← replace with WhisperX
+                transcribe_result = transcribe(audio_bytes)
+                jp_text = transcribe_result.get("text", "").strip()
+                whisper_words = transcribe_result.get("words", [])
+                if not jp_text:
+                    continue  # no speech detected — skip this packet
 
             # ── Tokenize for karaoke ───────────────────────────────────────
             word_tokens = tokenize_words(jp_text)
@@ -297,20 +309,45 @@ async def websocket_endpoint(websocket: WebSocket):
 
             log.info(f"[{user_id}] fast packet sent in {gt_latency}ms")
 
-            # ── Refined packet (vLLM stub — will be real on cloud) ────────
-            # TODO Day 5: Replace with actual vLLM call via SSH tunnel
-            # For now, send the same GT result as "refined" after short delay
-            await asyncio.sleep(0.1)  # simulate refinement delay
+
+
+
+            # ── Store utterance in memory ──────────────────────────────────────────
+            await asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: memory_store(user_id, jp_text, en_fast or "", data.get("style", "casual"))
+            )
+
+            # ── Recall past context for this speaker ──────────────────────────────
+            memories = await asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: memory_recall(user_id, jp_text)
+            )
+
+            # ── Get AI suggestions (CrewAI → vLLM → fallback) ────────────────────
+            suggestions = await asyncio.get_event_loop().run_in_executor(
+               None,
+                lambda: get_suggestions(
+                    jp_text=jp_text,
+                    en_text=en_fast or jp_text,
+                    style=data.get("style", "casual"),
+                    memories=memories,
+                )
+            )
+
             total_latency = round((time.time() - start_time) * 1000)
 
             await websocket.send_text(json.dumps({
                 "type": "refined",
                 "userId": user_id,
-                "en": en_fast or jp_text,   # same for now, LLM will improve this
-                "suggestions": pick_suggestions(),
+                "en": en_fast or jp_text,
+                "suggestions": suggestions,
                 "translationSource": "llm",
                 "latencyMs": total_latency,
             }))
+
+
+
 
             log.info(f"[{user_id}] refined packet sent in {total_latency}ms")
 
@@ -326,6 +363,33 @@ async def websocket_endpoint(websocket: WebSocket):
 @app.get("/health")
 async def health():
     return {"status": "ok", "connections": len(active_connections)}
+
+
+# ─── TTS Endpoint ─────────────────────────────────────────────────────────────
+
+class TtsRequest(BaseModel):
+    text: str
+
+@app.post("/tts")
+async def tts_endpoint(req: TtsRequest):
+    """Synthesize Japanese text to WAV audio. Called by bot/tts.js."""
+    text = req.text.strip()[:200]
+    if not text:
+        raise HTTPException(status_code=400, detail="Empty text")
+
+    wav_bytes = await asyncio.get_event_loop().run_in_executor(
+        None,
+        lambda: tts_synthesize(text)
+    )
+
+    if wav_bytes is None:
+        raise HTTPException(status_code=503, detail="TTS unavailable")
+
+    # Cap response size — 10MB max
+    if len(wav_bytes) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=500, detail="TTS output too large")
+
+    return Response(content=wav_bytes, media_type="audio/wav")
 
 
 # ─── Entry Point ──────────────────────────────────────────────────────────────
