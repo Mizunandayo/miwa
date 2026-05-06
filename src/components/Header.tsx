@@ -12,6 +12,7 @@
 
 import { useAtom, useSetAtom } from "jotai";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { LogicalPosition } from "@tauri-apps/api/dpi";
 import {
   styleModeAtom,
   opacityAtom,
@@ -69,13 +70,70 @@ export default function Header({ sendCommand }: HeaderProps) {
     } catch { /* non-critical */ }
   };
 
+
+
+
+
+
+  /**
+   * Snap window to the nearest screen corner on header double-click.
+   * Uses outerposition (physical px) +  devicepixelratio -> logical px.
+   * nearest corner determined by with screen quadrat the window ceenter
+   */
+  const handleSnapToCorner = async () => {
+    try {
+      const win = getCurrentWindow();
+      const pos  = await win.outerPosition(); // physical pixels
+      const size = await win.outerSize();     // physical pixels
+      const sf   = window.devicePixelRatio || 1;
+
+      // Convert to logical coordinates
+      const logX = pos.x  / sf;
+      const logY = pos.y  / sf;
+      const logW = size.width  / sf;
+      const logH = size.height / sf;
+
+      const sw = window.screen.width;  // logical screen width
+      const sh = window.screen.height; // logical screen height
+      const MARGIN = 16;
+
+      // Find which quadrant the window center is in → snap to that corner
+      const cx = logX + logW / 2;
+      const cy = logY + logH / 2;
+      const snapX = cx < sw / 2 ? MARGIN : sw - logW - MARGIN;
+      const snapY = cy < sh / 2 ? MARGIN : sh - logH - MARGIN;
+
+      await win.setPosition(new LogicalPosition(snapX, snapY));
+    } catch {
+      // Non-critical — ignore if permission not granted or window hidden
+    }
+  };
+
+
+
   const displayStatus =
     botStatus === "joined" && channelName ? channelName : botStatus;
+
+
+
+
+
+
+
+
+
+
+
 
   return (
     <div className="header">
       {/* Drag region — Tauri handles drag natively via this attribute */}
-      <div className="drag-handle" data-tauri-drag-region>
+            <div
+        className="drag-handle"
+        data-tauri-drag-region
+        onDoubleClick={() => void handleSnapToCorner()}
+        title="Double-click to snap to nearest corner"
+      >
         <div className="drag-dots" data-tauri-drag-region />
         <span className="app-name" data-tauri-drag-region>Miwa</span>
 

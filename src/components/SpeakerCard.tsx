@@ -49,14 +49,24 @@ export default function SpeakerCard({ speaker, sendCommand }: SpeakerCardProps) 
   };
 
   return (
+
+
     <motion.div
-      className="speaker-card"
+      className={`speaker-card${isSpeaking && isVoice ? " speaking" : ""}`}
       layout
-      initial={{ opacity: 0, y: -8, scale: 0.97 }}
+      initial={{ opacity: 0, y: 14, scale: 0.97 }}
       animate={{ opacity: 1, y: 0,  scale: 1    }}
-      exit={{    opacity: 0, y: -8, scale: 0.95  }}
-      transition={{ type: "spring", stiffness: 420, damping: 32 }}
+      exit={{
+        opacity: 0,
+        scale: 0.94,
+        transition: { duration: 0.18, ease: "easeIn" },
+      }}
+      transition={{ type: "spring", stiffness: 390, damping: 28 }}
+      whileHover={{ scale: 1.005, transition: { duration: 0.12 } }}
     >
+
+
+
       {/* ── Card header ─────────────────────────────────────────────────── */}
       <div className="card-header">
         <div className="avatar-wrap">

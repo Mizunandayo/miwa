@@ -9,3 +9,4 @@ export { default as Phrasebook }      from "./Phrasebook";
 export { default as StatsPanel }      from "./StatsPanel";
 export { default as QuickReplyBox }   from "./QuickReplyBox";
 export { default as CallInfoStrip }   from "./CallInfoStrip";
+export { default as Hyperspeed }      from "./Hyperspeed";

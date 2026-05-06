@@ -281,8 +281,42 @@ export default function App() {
     }
   }, []);
 
+
+
+
+  // --- 1/2/3 key shortcuts → botSends for most recently active speaker ---
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const activeTag = (document.activeElement as HTMLElement | null)?.tagName;
+      if (activeTag === "INPUT" || activeTag === "TEXTAREA") return;
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+      const idx = parseInt(e.key, 10) - 1;
+      if (idx < 0 || idx > 2) return;
+
+      const candidates = orderedSpeakers.filter((s) => s.suggestions.length > idx);
+      if (!candidates.length) return;
+
+      const active = candidates.reduce((a, b) =>
+        a.lastUpdated > b.lastUpdated ? a : b
+      );
+
+      e.preventDefault();
+      sendCommand({ action: "botSends", text: active.suggestions[idx].jp });
+    };
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [orderedSpeakers, sendCommand]);
+
+
+
+
   // ── Bottom resize handle ────────────────────────────────────────────────
   const resizeDragRef = useRef<{ startY: number; startH: number } | null>(null);
+
+
+
 
   const onResizeMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();

@@ -571,3 +571,69 @@ overlay-root
 - Record demo video footage (local pipeline — no cloud needed)
 - Write README + HuggingFace Space demo page draft
 - Keyboard shortcuts polish (Tab between suggestions, number keys 1/2/3 for suggestions)
+
+---
+
+## SESSION 8 — May 6, 2026 (Day 4 — UI Polish + README)
+
+### What was done this session
+
+#### App.tsx — 1/2/3 key shortcuts useEffect
+- User asked: "should I add the 1/2/3 shortcuts useEffect before `// ── Bottom resize handle`?"
+- **Answer confirmed: YES** — the blank lines between `sendCommand` useCallback and the resize handle comment are the correct insertion point
+- Placement rationale: after `orderedSpeakers` and `sendCommand` are both defined; before window manipulation logic
+- useEffect skips INPUT/TEXTAREA active elements, skips Ctrl/Alt/Meta (reserved for phrasebook Ctrl+1-9)
+- Finds most recently updated speaker (`lastUpdated` field) that has a suggestion at the chosen index
+- Calls `sendCommand({ action: "botSends", text: active.suggestions[idx].jp })`
+- deps array: `[orderedSpeakers, sendCommand]`
+
+#### README.md — OVERWRITTEN (STEP 7)
+- Full professional README written with:
+  - 7-step "What It Does" explanation + text sidechat mention
+  - Architecture diagram (text ASCII) + two-pass translation explanation
+  - Full tech stack table (14 rows)
+  - Quick start guide (clone → .env → server → bot → overlay)
+  - Keyboard shortcuts table (1/2/3, Ctrl+1-9, Escape, double-click header)
+  - AMD Cloud setup commands (SSH, Docker, vLLM, SSH tunnel)
+  - Project structure tree
+  - Hackathon identity + prize tracks targeted
+  - MIT license
+
+#### Day 4 tasks guided (user implementing, not yet applied by agent)
+- `src-tauri/capabilities/default.json` — add 3 position permissions:
+  - `"core:window:allow-outer-position"`
+  - `"core:window:allow-outer-size"`
+  - `"core:window:allow-set-position"`
+- `src/components/Header.tsx` — add `LogicalPosition` import, `handleSnapToCorner()` function, `onDoubleClick` on `.drag-handle`
+- `src/components/SpeakerCard.tsx` — speaking className conditional, updated motion props (spring stiffness:390 damping:28, whileHover scale:1.005)
+- `src/App.css` — append `@keyframes speaking-glow` + `.speaker-card.speaking` rule
+
+### Current Day 4 status
+| Task | Status |
+|---|---|
+| Card animation polish (Framer Motion spring) | ✅ Guided — user implementing |
+| Snap-to-corner (double-click header) | ✅ Guided — user implementing |
+| 1/2/3 key shortcuts useEffect | ✅ Guided + placement confirmed |
+| README.md | ✅ DONE (written this session) |
+| bot/tts.js stub | ⬜ Not started |
+| hf-space/ folder + 2 files | ⬜ Not started |
+| Demo video recording | ⬜ Not started |
+| Git commit + push Day 4 | ⬜ Not started |
+
+### Remaining Day 4 work (in recommended order)
+1. `src-tauri/capabilities/default.json` — add 3 position permissions
+2. `src/components/Header.tsx` — LogicalPosition import + handleSnapToCorner + onDoubleClick
+3. `src/components/SpeakerCard.tsx` — speaking className + motion props polish
+4. `src/App.css` — append speaking-glow keyframes
+5. `src/App.tsx` — insert 1/2/3 shortcuts useEffect before `// ── Bottom resize handle`
+6. `bot/tts.js` — create stub file
+7. `hf-space/README.md` + `hf-space/index.html` — create both
+8. Demo video recording
+9. `git commit -m "Day 4: card animation polish, snap-to-corner, 1/2/3 shortcuts, tts.js stub, README, HF Space draft"`
+
+### Day 5 plan (unchanged — May 8)
+- Recreate AMD MI300X droplet (~$83 credit, $1.99/hr)
+- Re-download Llama 3.3 70B (263GB, ~1-2hrs)
+- SSH tunnel: `ssh -i "$HOME\.ssh\miwa_amd" -N -L 8765:localhost:8765 root@<new-ip>`
+- WhisperX, Qdrant, CrewAI (suggest.py — CRITICAL for Track 1), XTTS v2
+- Wire bot/tts.js with real XTTS endpoint

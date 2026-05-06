@@ -1309,3 +1309,21 @@ button {
 .stats-ws-open       { color: var(--green); }
 .stats-ws-connecting { color: var(--amber); }
 .stats-ws-closed     { color: var(--red);   }
+
+
+
+
+
+
+
+/* ─── Speaker Card Polish ─────────────────────────────────────────────────── */
+
+/* Subtle glow pulse while speaker is actively talking */
+@keyframes speaking-glow {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(59, 158, 255, 0.08); }
+  50%       { box-shadow: 0 0 0 1px rgba(59, 158, 255, 0.32), 0 0 12px rgba(59, 158, 255, 0.06); }
+}
+
+.speaker-card.speaking {
+  animation: speaking-glow 2s ease-in-out infinite;
+}

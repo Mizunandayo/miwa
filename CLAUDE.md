@@ -11,8 +11,8 @@
 |---|---|---|---|
 | 1 | May 4 | Infrastructure + WebSocket + Discord audio | AMD Cloud provisioned, MI300X verified, Llama 3.3 70B downloaded (263GB), vLLM serving confirmed |
 | 2 | May 5 | Translation + profile pictures + multi-speaker UI | server/main.py, bot/index.js, bot/db.js, all React components (App.tsx, Header, SpeakerCard, KaraokeText, RomajiLine, atoms.ts), Tauri config, full design system CSS |
-| 3 | May 6 | LLM + Agents + Memory (cloud) | UI polish — QuickReplyBox (EN→JP debounced), Suggestion chips (collapse/refresh/pool), vertical resize handle, CallInfoStrip (guild icon + member avatars), bug fix: google_translate source hardcode |
-| 4 | May 7 | Suggestions + Quick Reply + Full UX | ⬜ Planned: RomajiPopup, QuickReactions, Phrasebook, Bot Speaks (XTTS) |
+| 3 | May 6 | LLM + Agents + Memory (cloud) | UI polish — QuickReplyBox, SuggestionCard (delivery buttons), RomajiPopup, QuickReactions, Phrasebook (Ctrl+1-9), StatsPanel, CallInfoStrip, resize handle, bug fix: google_translate source hardcode |
+| 4 | May 7 | Suggestions + Quick Reply + Full UX | 🔨 In progress — README.md ✅, 1/2/3 key shortcuts ✅, card animation polish (guided), snap-to-corner (guided), hf-space/ ⬜, bot/tts.js ⬜ |
 | 5 | May 8 | Polish + .exe build | ⬜ Planned: Recreate AMD cloud, WhisperX, Qdrant, CrewAI, XTTS, SSH tunnel, StatsPanel |
 | 6 | May 9 | GitHub + HF Space + Demo Video | ⬜ Planned |
 | 7 | May 10 | Final Review + SUBMIT | ⬜ Planned |
@@ -49,7 +49,7 @@
 - ✅ Server idle timeout bug fixed (30s disconnect removed)
 - ✅ Full pipeline confirmed working end-to-end (real Discord avatars, latency <800ms)
 
-### Day 3 (May 6) — Quick Reply + Polish 🔨 (today)
+### Day 3 (May 6) — Quick Reply + Polish ✅
 - ✅ QuickReplyBox.tsx — debounced auto-translate (500ms), style-aware
 - ✅ quickReplyResultAtom, quickReplyLoadingAtom atoms added
 - ✅ Server quick_reply handler — EN→JP + romaji
@@ -59,21 +59,25 @@
 - ✅ CallInfoStrip.tsx — guild icon, member avatars, collapsible
 - ✅ callInfoAtom + CallInfo/CallMember types
 - ✅ broadcastCallInfo() in bot — async, fetches guild icon + all VC member avatars
-- ⬜ SuggestionCard.tsx — delivery buttons (Bot Speaks / Bot Sends / I'll Speak)
-- ⬜ RomajiPopup.tsx — fullscreen romaji overlay for "I'll Speak"
-- ⬜ QuickReactions.tsx — 草 えー マジ? gg もう一回 待って
-- ⬜ Phrasebook.tsx — saved phrases, Ctrl+1-9 hotkeys
-- ⬜ StatsPanel.tsx — latency, tokens/sec display
-- ⬜ Git commit + push Day 3 work
+- ✅ SuggestionCard.tsx — delivery buttons (Bot Speaks stub / Bot Sends / I'll Speak), save to phrasebook 📌
+- ✅ RomajiPopup.tsx — fullscreen romaji overlay, Escape + click-outside to close
+- ✅ QuickReactions.tsx — 草 えー マジ? gg もう一回 待って (one-click botSends)
+- ✅ Phrasebook.tsx — saved phrases, Ctrl+1-9 hotkeys, collapsible
+- ✅ StatsPanel.tsx — latency color-coded (green/amber/red), WS status
+- ✅ romajiPopupAtom, phrasebookAtom, phrasebookOpenAtom added to atoms.ts
+- ✅ bot/index.js — savePhrase, deletePhrase, botSpeaks stub handlers; phrasebook sent on UI connect
+- ✅ App.tsx — phrasebook packet handler, QuickReactions + Phrasebook + StatsPanel + RomajiPopup in JSX
+- ✅ Git commit + push Day 3 work
 
 ### Day 4 (May 7) — UI Polish + Demo Prep
-- ⬜ Animate speaker cards in/out (Framer Motion spring)
-- ⬜ bot/tts.js — Bot Speaks delivery (XTTS stub until Day 5)
-- ⬜ Suggestion delivery — Bot Sends to Discord chat
-- ⬜ Keyboard shortcuts (Ctrl+1-9 phrasebook)
-- ⬜ Window resize / snap behavior
-- ⬜ Record demo video footage (local pipeline)
-- ⬜ Write README + HuggingFace Space demo page
+- ✅ Animate speaker cards in/out (Framer Motion spring polish) — guided (user implementing)
+- ✅ Window snap-to-corner (double-click header) — guided (user implementing)
+- ✅ Number key shortcuts 1/2/3 for suggestion delivery — guided + placement confirmed
+- ✅ README.md — full professional README written
+- ⬜ bot/tts.js — Bot Speaks stub file structure (for Day 5 XTTS v2 wiring)
+- ⬜ hf-space/ — create subfolder + README.md (HF front matter) + index.html (demo page)
+- ⬜ Record demo video footage (local pipeline — no cloud needed)
+- ⬜ Git commit + push Day 4
 
 ### Day 5 (May 8) — AMD Cloud Reconnect ☁️
 - ⬜ Recreate AMD MI300X droplet ($1.99/hr, ~$83 credit)
@@ -332,15 +336,19 @@ miwa/
 | Vertical resize handle | ✅ DONE — drag bottom edge, LogicalSize API |
 | Suggestion refresh (↻) | ✅ DONE — random pool of 12, exclude-previous logic |
 | QuickReply EN→JP bug fix | ✅ FIXED — google_translate source was hardcoded ja (now auto-detect) |
+| src/components/SuggestionCard.tsx | ✅ DONE — Bot Speaks stub / Bot Sends / I'll Speak delivery buttons, 📌 save |
+| src/components/RomajiPopup.tsx | ✅ DONE — fullscreen romaji overlay, Escape + click-outside close |
+| src/components/QuickReactions.tsx | ✅ DONE — 草 えー マジ? gg もう一回 待って one-click botSends |
+| src/components/Phrasebook.tsx | ✅ DONE — saved phrases, Ctrl+1-9 hotkeys, collapsible |
+| src/components/StatsPanel.tsx | ✅ DONE — latency color-coded green/amber/red, WS status |
+| README.md | ✅ DONE — full professional README written |
+| hf-space/ | ⬜ NOT STARTED (Day 4 — create subfolder + 2 files) |
+| bot/tts.js | ❌ NOT STARTED (Day 5 — XTTS v2) |
 | WhisperX installed | ❌ NOT STARTED (Day 5 — needs cloud) |
 | Qdrant container | ❌ NOT STARTED (Day 5) |
 | CrewAI agents | ❌ NOT STARTED (Day 5) |
 | XTTS v2 | ❌ NOT STARTED (Day 5) |
 | SSH tunnel for WebSocket | ❌ NOT STARTED (Day 5) |
-| StatsPanel.tsx | ❌ NOT STARTED (Day 3 remaining) |
-| RomajiPopup.tsx | ❌ NOT STARTED (Day 3 remaining) |
-| QuickReactions.tsx | ❌ NOT STARTED (Day 3 remaining) |
-| Phrasebook.tsx | ❌ NOT STARTED (Day 3 remaining) |
 
 ---
 
