@@ -192,25 +192,145 @@
     .r[data-d="4"] { transition-delay: 320ms; }
 
     /* ── PIPELINE ── */
-    .pflow { display: flex; align-items: stretch; gap: 0; margin-bottom: 40px; }
-    @media (max-width: 900px) { .pflow { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; } }
-    @media (max-width: 500px) { .pflow { grid-template-columns: repeat(2,1fr); } }
-    .pf-conn { display: flex; align-items: center; justify-content: center; width: 28px; flex-shrink: 0; color: rgba(255,255,255,.14); }
-    @media (max-width: 900px) { .pf-conn { display: none; } }
-    .pf-step {
-      flex: 1; padding: 22px 18px 20px; border-radius: 8px;
-      background: var(--surface); border: 1px solid var(--border);
-      transition: background 160ms, border-color 160ms;
+    /* ── PIPELINE (animated) ── */
+    .pipe-viz { margin-top: 40px; display: flex; flex-direction: column; gap: 16px; }
+
+    /* Stage nodes row */
+    .pipe-stages-row {
+      display: flex; align-items: flex-start;
+      padding: 0 4px; gap: 0;
     }
-    .pf-step:hover { background: var(--surface2); border-color: var(--border2); }
-    .pf-ico { width: 26px; height: 26px; margin-bottom: 14px; opacity: .55; }
-    .pf-ico svg { width: 26px; height: 26px; display: block; }
-    .pf-num { font-size: 11px; font-family: var(--mono); color: var(--muted2); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 8px; }
-    .pf-title { font-size: 14px; font-weight: 600; letter-spacing: -.015em; margin-bottom: 6px; }
-    .pf-desc { font-size: 12px; font-family: var(--mono); color: var(--muted); line-height: 1.6; }
-    .pf-badge { display: inline-block; margin-top: 13px; font-size: 11px; font-family: var(--mono); padding: 3px 8px; border-radius: 3px; }
-    .pf-badge--fast { border: 1px solid rgba(255,255,255,.18); color: rgba(255,255,255,.9); }
-    .pf-badge--mid  { border: 1px solid rgba(255,255,255,.08); color: var(--muted); }
+    .pipe-stage {
+      display: flex; flex-direction: column; align-items: center; gap: 5px;
+      flex: 0 0 auto; position: relative; z-index: 2; min-width: 72px;
+    }
+    .pipe-node {
+      width: 34px; height: 34px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.15);
+      background: rgba(255,255,255,.04);
+      transition: border-color .35s, background .35s, box-shadow .35s;
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    .pipe-node::after {
+      content: ''; position: absolute; inset: -4px; border-radius: 50%;
+      border: 1px solid transparent;
+      transition: border-color .35s;
+    }
+    .pipe-stage.active .pipe-node {
+      border-color: #3b9eff;
+      background: rgba(59,158,255,.18);
+      box-shadow: 0 0 18px rgba(59,158,255,.55), 0 0 40px rgba(59,158,255,.2);
+    }
+    .pipe-stage.active .pipe-node::after { border-color: rgba(59,158,255,.25); }
+    .pipe-stage.passed .pipe-node { border-color: rgba(74,222,128,.5); background: rgba(74,222,128,.08); }
+
+    .pipe-node-ico { font-size: 13px; line-height: 1; }
+    .pipe-num { font-size: 10px; font-family: var(--mono); color: rgba(255,255,255,.35); font-weight: 700; letter-spacing: .04em; }
+    .pipe-stage.active .pipe-num { color: #3b9eff; }
+    .pipe-stage.passed .pipe-num { color: rgba(74,222,128,.7); }
+    .pipe-sname { font-size: 11px; font-weight: 600; text-align: center; line-height: 1.3; color: rgba(255,255,255,.45); }
+    .pipe-stage.active .pipe-sname { color: #fff; }
+    .pipe-stage.passed .pipe-sname { color: rgba(255,255,255,.6); }
+    .pipe-stime { font-size: 10px; font-family: var(--mono); padding: 2px 7px; border-radius: 4px; background: rgba(255,255,255,.05); color: rgba(255,255,255,.3); border: 1px solid transparent; }
+    .pipe-stage.active .pipe-stime { background: rgba(59,158,255,.12); color: #3b9eff; border-color: rgba(59,158,255,.25); }
+
+    /* Connector segments between nodes */
+    .pipe-cseg {
+      flex: 1; height: 2px; background: rgba(255,255,255,.07);
+      margin-top: 16px; position: relative; overflow: hidden; min-width: 12px;
+    }
+    .pipe-cseg::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(90deg, #4ade80, rgba(59,158,255,.6));
+      transform: translateX(-101%);
+      transition: transform .5s ease;
+    }
+    .pipe-cseg.filled::after { transform: translateX(0); }
+
+    /* Track: flowing chars + packet */
+    .pipe-track {
+      position: relative; height: 40px;
+      background: rgba(255,255,255,.02); border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.06); overflow: hidden;
+    }
+    .pipe-track-glow {
+      position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(59,158,255,.04), transparent);
+      animation: track-shimmer 3s linear infinite;
+    }
+    @keyframes track-shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+    /* Flowing Japanese character particles */
+    .pipe-char {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      font-size: 14px; font-weight: 600;
+      animation: pipe-char-flow linear infinite;
+      pointer-events: none;
+    }
+    @keyframes pipe-char-flow {
+      from { left: -30px; opacity: 0; }
+      8%   { opacity: 1; }
+      88%  { opacity: 1; }
+      to   { left: calc(100% + 30px); opacity: 0; }
+    }
+
+    /* Animated packet */
+    .pipe-packet {
+      position: absolute; top: 50%; transform: translate(-50%, -50%);
+      height: 28px; padding: 0 12px;
+      background: rgba(59,158,255,.22); border: 1px solid rgba(59,158,255,.7);
+      border-radius: 6px; display: flex; align-items: center;
+      font-size: 11px; font-family: var(--mono); color: #fff; font-weight: 600;
+      white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis;
+      transition: left .7s cubic-bezier(.4,0,.2,1);
+      box-shadow: 0 0 16px rgba(59,158,255,.45), 0 0 4px rgba(59,158,255,.8);
+      z-index: 5;
+    }
+
+    /* Terminal output panel */
+    .pipe-terminal {
+      background: #050505; border: 1px solid rgba(59,158,255,.2);
+      border-radius: 12px; overflow: hidden; font-family: var(--mono);
+    }
+    .pipe-term-bar {
+      display: flex; align-items: center; gap: 8px; padding: 9px 14px 8px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      background: rgba(59,158,255,.04);
+    }
+    .pipe-term-dots { display: flex; gap: 5px; }
+    .pipe-term-dots span { width: 8px; height: 8px; border-radius: 50%; }
+    .pipe-term-dots span:nth-child(1) { background: #ff5f57; }
+    .pipe-term-dots span:nth-child(2) { background: #febc2e; }
+    .pipe-term-dots span:nth-child(3) { background: #28c840; }
+    .pipe-term-title {
+      flex: 1; font-size: 11px; color: rgba(255,255,255,.4); text-align: center; letter-spacing: .04em;
+    }
+    .pipe-term-stage-lbl { font-size: 11px; font-weight: 700; color: #3b9eff; letter-spacing: .04em; }
+    .pipe-term-badge {
+      font-size: 10px; padding: 2px 8px; border-radius: 4px;
+      font-weight: 600; border: 1px solid;
+    }
+    .pipe-term-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-height: 90px; }
+    .pipe-term-row { display: flex; align-items: flex-start; gap: 12px; }
+    .pipe-term-key {
+      font-size: 10px; font-weight: 700; letter-spacing: .08em; padding: 2px 7px;
+      border-radius: 3px; flex-shrink: 0; margin-top: 2px;
+    }
+    .ptk-in  { background: rgba(255,255,255,.07); color: rgba(255,255,255,.45); }
+    .ptk-out { background: rgba(74,222,128,.12); color: #4ade80; }
+    .pipe-term-val {
+      font-size: 13px; color: rgba(255,255,255,.8); line-height: 1.65;
+      white-space: pre-wrap; word-break: break-word;
+    }
+    .ptv-jp  { font-size: 16px; font-weight: 500; color: #fff; font-family: sans-serif; }
+    .ptv-dim { color: rgba(255,255,255,.4); }
+    .pipe-cursor {
+      display: inline-block; width: 7px; height: 14px;
+      background: #3b9eff; vertical-align: middle; margin-left: 1px;
+      animation: pipe-blink .65s step-end infinite;
+    }
+    @keyframes pipe-blink { 50% { opacity: 0; } }
 
     /* latency bar */
     .pfl { margin-top: 0; }
@@ -326,100 +446,209 @@
 
     /* ── DEMO PREVIEW ── */
     .demo-outer { display: flex; justify-content: center; }
+    /* Simulated Tauri window — matches actual app */
     .demo-frame {
-      width: 100%; max-width: 420px;
-      background: rgba(14,14,14,0.96);
-      border: 1px solid rgba(255,255,255,.18);
-      border-radius: 14px;
+      width: 100%; max-width: 440px;
+      background: transparent;
+      border-radius: 16px;
       overflow: hidden;
-      box-shadow: 0 32px 80px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.06);
+      filter: drop-shadow(0 32px 80px rgba(0,0,0,.75));
+      display: flex; flex-direction: column; gap: 8px;
+      padding: 10px;
+      background: rgba(5,5,5,.94);
+      border: 1px solid rgba(255,255,255,.10);
     }
-    .demo-titlebar {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 14px; background: rgba(255,255,255,.03);
-      border-bottom: 1px solid rgba(255,255,255,.08);
+    /* ── Header (matches real .header) ── */
+    .demo-header {
+      background: rgba(5,5,5,.88);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex; flex-direction: column; gap: 10px;
     }
-    .demo-titlebar-dots { display: flex; gap: 6px; }
-    .demo-dot { width: 10px; height: 10px; border-radius: 50%; }
-    .demo-dot-r { background: #ff5f57; }
-    .demo-dot-y { background: #febc2e; }
-    .demo-dot-g { background: #28c840; }
-    .demo-title-label { font-size: 11px; font-family: var(--mono); color: var(--muted2); }
-    .demo-style-pills { display: flex; gap: 4px; }
-    .demo-sp {
-      font-size: 10px; font-family: var(--mono); padding: 3px 8px;
-      border-radius: 3px; border: 1px solid rgba(255,255,255,.1);
-      color: var(--muted2);
+    .demo-drag-row {
+      display: flex; align-items: center; gap: 10px;
     }
-    .demo-sp.active { border-color: rgba(255,255,255,.4); color: var(--text); }
-    .demo-body { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
-    /* Speaker card inside demo */
+    .demo-drag-dots {
+      width: 16px; height: 10px;
+      background-image: radial-gradient(circle, rgba(255,255,255,.28) 1px, transparent 1px);
+      background-size: 4px 4px;
+      flex-shrink: 0;
+    }
+    .demo-app-name {
+      font-size: 13px; font-weight: 600; letter-spacing: .02em; color: #fff;
+    }
+    .demo-status {
+      display: flex; align-items: center; gap: 5px;
+      margin-left: auto;
+    }
+    .demo-status-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: #22c55e;
+    }
+    .demo-status-text {
+      font-size: 10px; font-family: var(--mono); color: rgba(255,255,255,.55);
+    }
+    /* style mode buttons row */
+    .demo-style-row { display: flex; gap: 5px; }
+    .demo-sb {
+      flex: 1; padding: 6px 0; font-size: 11px; font-weight: 500;
+      border-radius: 7px; border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.04); color: rgba(255,255,255,.55);
+      text-align: center;
+    }
+    .demo-sb.active {
+      background: rgba(59,158,255,.15); border-color: rgba(59,158,255,.4);
+      color: #3b9eff;
+    }
+    /* ── Call info strip ── */
+    .demo-call-strip {
+      background: rgba(5,5,5,.8);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .demo-call-guild { font-size: 11px; flex-shrink: 0; }
+    .demo-call-server {
+      font-size: 10px; font-family: var(--mono); color: #3b9eff;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px;
+    }
+    .demo-call-sep { font-size: 10px; color: rgba(59,158,255,.4); flex-shrink: 0; }
+    .demo-call-channel {
+      font-size: 10px; font-family: var(--mono); color: rgba(255,255,255,.55);
+    }
+    .demo-call-count {
+      font-size: 10px; font-family: var(--mono); color: rgba(255,255,255,.28);
+      margin-left: auto; white-space: nowrap;
+    }
+    /* ── Speaker card (matches real .speaker-card) ── */
     .demo-speaker {
-      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1);
-      border-radius: 10px; padding: 14px 14px 12px;
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 12px; padding: 14px;
+      display: flex; flex-direction: column; gap: 10px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.03), 0 4px 20px rgba(0,0,0,.45);
     }
-    .demo-sp-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    /* card header row */
+    .demo-card-head { display: flex; align-items: center; gap: 10px; }
+    .demo-avatar-wrap { position: relative; flex-shrink: 0; }
     .demo-avatar {
-      width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+      width: 32px; height: 32px; border-radius: 50%;
       background: linear-gradient(135deg,#5865f2,#eb459e);
       display: flex; align-items: center; justify-content: center;
       font-size: 14px; font-weight: 700; color: #fff;
+      border: 1.5px solid rgba(255,255,255,.08);
     }
-    .demo-sp-info { flex: 1; }
-    .demo-sp-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
-    .demo-sp-meta { font-size: 11px; font-family: var(--mono); color: var(--muted2); }
-    .demo-mic {
-      width: 22px; height: 22px; border-radius: 50%;
-      background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12);
-      display: flex; align-items: center; justify-content: center;
+    @keyframes demo-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.75)} }
+    .demo-speaking-dot {
+      position: absolute; bottom: -1px; right: -1px;
+      width: 9px; height: 9px; border-radius: 50%;
+      background: #22c55e; border: 2px solid #050505;
+      animation: demo-pulse 1s ease-in-out infinite;
     }
+    .demo-card-meta { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; }
+    .demo-username { font-size: 12px; font-weight: 600; color: #fff; }
+    .demo-source-icon { font-size: 12px; line-height: 1; }
+    .demo-badge {
+      font-size: 9px; font-family: var(--mono); font-weight: 700;
+      padding: 2px 5px; border-radius: 4px; letter-spacing: .06em; flex-shrink: 0;
+    }
+    .demo-badge-gt { background: rgba(245,158,11,.12); color: #f59e0b; border: 1px solid rgba(245,158,11,.2); }
+    .demo-badge-ai { background: rgba(59,158,255,.15); color: #3b9eff; border: 1px solid rgba(59,158,255,.4); }
+    /* card body */
+    .demo-card-body { display: flex; flex-direction: column; gap: 6px; }
     .demo-jp {
-      font-size: 18px; font-weight: 600; letter-spacing: .04em; line-height: 1.5;
-      margin-bottom: 6px;
+      font-size: 16px; font-weight: 500; color: #fff;
+      line-height: 1.45; letter-spacing: .01em;
     }
     .demo-jp .hl {
-      background: rgba(255,255,255,.18); border-radius: 3px;
-      padding: 0 3px; position: relative;
+      background: rgba(255,255,255,.18); border-radius: 3px; padding: 0 3px;
     }
-    .demo-romaji { font-size: 12px; font-family: var(--mono); color: var(--muted2); margin-bottom: 10px; }
-    .demo-en {
-      font-size: 14px; color: var(--muted); line-height: 1.5;
-      padding-top: 10px; border-top: 1px solid rgba(255,255,255,.07);
+    .demo-romaji {
+      font-size: 11px; font-family: var(--mono);
+      color: rgba(255,255,255,.28); letter-spacing: .04em;
     }
-    .demo-en strong { color: var(--text); font-weight: 500; }
-    /* Suggestion cards */
-    .demo-sugs { display: flex; flex-direction: column; gap: 6px; }
+    .demo-en { font-size: 13px; color: rgba(255,255,255,.55); line-height: 1.45; }
+    /* suggestions section */
+    .demo-sugs {
+      border-top: 1px solid rgba(255,255,255,.08);
+      padding-top: 10px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .demo-sugs-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .demo-sugs-lbl {
+      font-size: 10px; font-family: var(--mono); color: rgba(255,255,255,.28);
+      text-transform: uppercase; letter-spacing: .08em;
+    }
+    .demo-sugs-refresh {
+      font-size: 12px; color: rgba(255,255,255,.28); line-height: 1;
+    }
     .demo-sug {
       background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08);
-      border-radius: 8px; padding: 10px 12px;
-      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      border-radius: 10px; padding: 10px 10px 8px;
+      display: flex; flex-direction: column; gap: 8px;
     }
-    .demo-sug:first-child { border-color: rgba(255,255,255,.16); background: rgba(255,255,255,.05); }
-    .demo-sug-num { font-size: 11px; font-family: var(--mono); color: var(--muted2); flex-shrink: 0; }
-    .demo-sug-jp { font-size: 13px; font-weight: 500; flex: 1; }
-    .demo-sug-en { font-size: 11px; font-family: var(--mono); color: var(--muted2); flex: 1; }
-    .demo-sug-btns { display: flex; gap: 4px; flex-shrink: 0; }
+    .demo-sug-top {
+      display: flex; align-items: flex-start; gap: 10px;
+    }
+    .demo-sug-num {
+      width: 17px; height: 17px; border-radius: 4px; flex-shrink: 0;
+      background: rgba(59,158,255,.15); color: #3b9eff;
+      font-size: 10px; font-weight: 700; font-family: var(--mono);
+      display: flex; align-items: center; justify-content: center; margin-top: 2px;
+    }
+    .demo-sug-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+    .demo-sug-jp { font-size: 13px; font-weight: 500; color: #fff; }
+    .demo-sug-en { font-size: 11px; color: rgba(255,255,255,.55); }
+    .demo-sug-romaji { font-size: 10px; font-family: var(--mono); color: rgba(255,255,255,.28); }
+    .demo-sug-btns { display: flex; gap: 5px; }
     .demo-sug-btn {
-      font-size: 10px; font-family: var(--mono); padding: 3px 7px;
-      border-radius: 4px; border: 1px solid rgba(255,255,255,.12);
-      color: var(--muted2); white-space: nowrap;
+      flex: 1; padding: 5px 6px; font-size: 10px; font-weight: 500;
+      border-radius: 6px; border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.04); color: rgba(255,255,255,.55);
+      text-align: center; white-space: nowrap;
     }
-    .demo-sug-btn.primary { border-color: rgba(255,255,255,.3); color: var(--text); }
-    /* Quick reactions bar */
+    .demo-sug-btn.speak { border-color: rgba(59,158,255,.35); color: #3b9eff; background: rgba(59,158,255,.10); }
+    .demo-sug-btn.send  { border-color: rgba(34,197,94,.3);  color: #22c55e; background: rgba(34,197,94,.08); }
+    .demo-sug-btn.say   { border-color: rgba(245,158,11,.3); color: #f59e0b; background: rgba(245,158,11,.08); }
+    /* Quick reactions */
     .demo-reactions {
-      display: flex; gap: 5px; flex-wrap: wrap;
-      padding: 10px 12px;
-      background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.07);
-      border-radius: 8px;
+      display: flex; gap: 6px; flex-wrap: wrap; padding: 2px 0;
     }
     .demo-react {
-      font-size: 13px; padding: 4px 10px;
-      background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
-      border-radius: 5px;
+      padding: 6px 13px; font-size: 12px; font-weight: 500;
+      color: rgba(255,255,255,.55);
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 20px; white-space: nowrap;
+    }
+    /* Quick reply box */
+    .demo-qr {
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 10px; padding: 10px 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .demo-qr-input {
+      flex: 1; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 6px; padding: 7px 12px; font-size: 12px;
+      font-family: var(--mono); color: rgba(255,255,255,.4);
+    }
+    .demo-qr-hint {
+      font-size: 10px; font-family: var(--mono); color: rgba(255,255,255,.28);
+      white-space: nowrap;
+    }
+    /* resize nub */
+    .demo-nub {
+      height: 6px; display: flex; align-items: center; justify-content: center;
+    }
+    .demo-nub-line {
+      width: 32px; height: 3px; border-radius: 2px;
+      background: rgba(255,255,255,.08);
     }
     .demo-caption {
       text-align: center; font-size: 12px; font-family: var(--mono);
-      color: var(--muted2); margin-top: 20px;
+      color: var(--muted2); margin-top: 16px;
     }
     /* 2-col layout for demo section */
     .demo-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
@@ -503,26 +732,107 @@
     .eng-lang { display: flex; align-items: center; gap: 9px; font-size: 12px; font-family: var(--mono); color: var(--muted); }
     .eng-lang-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
     /* Architecture diagram */
+    /* Architecture diagram — visual flow */
     .arch-wrap {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; padding: 28px 32px; margin-bottom: 12px;
+      border-radius: 12px; padding: 32px; margin-bottom: 12px; overflow: hidden;
     }
-    .arch-label { font-size: 11px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--muted2); margin-bottom: 20px; }
-    .arch-layers { display: flex; flex-direction: column; }
-    .arch-layer {
-      border-radius: 8px; padding: 16px 20px;
-      display: grid; grid-template-columns: 100px 1fr 1fr; gap: 0 20px; align-items: start;
+    .arch-label { font-size: 12px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .1em; color: rgba(255,255,255,.7); margin-bottom: 28px; }
+    /* Main flow — horizontal pipeline */
+    .arch-flow { display: flex; align-items: center; gap: 0; overflow-x: auto; padding-bottom: 4px; }
+    .arch-node {
+      flex-shrink: 0; min-width: 130px; max-width: 160px; flex: 1;
+      border-radius: 10px; padding: 18px 16px; text-align: center;
+      border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04);
+      transition: border-color 160ms;
     }
-    @media (max-width: 680px) { .arch-layer { grid-template-columns: 1fr; gap: 4px; } }
-    .al-1 { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); }
-    .al-2 { background: rgba(74,222,128,.05); border: 1px solid rgba(74,222,128,.16); }
-    .al-3 { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07); }
-    .al-4 { background: rgba(96,165,250,.04); border: 1px solid rgba(96,165,250,.14); }
-    .arch-layer-tag { font-size: 10px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted2); line-height: 1.5; padding-top: 1px; }
-    .arch-layer-name { font-size: 15px; font-weight: 700; letter-spacing: -.025em; margin-bottom: 5px; }
-    .arch-layer-detail { font-size: 12px; font-family: var(--mono); color: var(--muted); line-height: 1.65; }
-    .arch-layer-runtime { font-size: 11px; font-family: var(--mono); color: var(--muted2); line-height: 1.55; }
-    .arch-arrow { text-align: center; font-size: 11px; font-family: var(--mono); color: var(--muted2); padding: 9px 0; letter-spacing: .04em; }
+    .arch-node:hover { border-color: rgba(255,255,255,.28); }
+    .arch-node-ico { font-size: 26px; line-height: 1; margin-bottom: 12px; display: block; }
+    .arch-node-name { font-size: 15px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 4px; }
+    .arch-node-rt {
+      display: inline-block; margin-top: 10px;
+      font-size: 11px; font-family: var(--mono); padding: 3px 8px;
+      border-radius: 3px; border: 1px solid rgba(255,255,255,.15); color: rgba(255,255,255,.75);
+    }
+    /* Color accents per runtime */
+    .an-js  { border-color: rgba(247,223,30,.35);  background: rgba(247,223,30,.06); }
+    .an-js .arch-node-rt  { border-color: rgba(247,223,30,.3);  color: rgba(247,223,30,.9); }
+    .an-py  { border-color: rgba(74,222,128,.38);  background: rgba(74,222,128,.07); }
+    .an-py .arch-node-rt  { border-color: rgba(74,222,128,.3);  color: rgba(74,222,128,.95); }
+    .an-rs  { border-color: rgba(222,165,132,.38); background: rgba(222,165,132,.06); }
+    .an-rs .arch-node-rt  { border-color: rgba(222,165,132,.3); color: rgba(222,165,132,.9); }
+    .an-ts  { border-color: rgba(49,120,198,.38);  background: rgba(49,120,198,.07); }
+    .an-ts .arch-node-rt  { border-color: rgba(49,120,198,.3);  color: rgba(96,165,250,.95); }
+    /* Arrow connector between nodes */
+    .arch-conn {
+      flex-shrink: 0; display: flex; flex-direction: column; align-items: center;
+      gap: 4px; padding: 0 8px;
+    }
+    .arch-conn-line {
+      display: flex; align-items: center; gap: 3px;
+    }
+    .arch-conn-dash {
+      width: 20px; height: 1px; background: rgba(255,255,255,.18);
+    }
+    .arch-conn-arrow {
+      font-size: 16px; color: rgba(255,255,255,.55); line-height: 1;
+    }
+    .arch-conn-lbl {
+      font-size: 11px; font-family: var(--mono); color: rgba(255,255,255,.65);
+      white-space: nowrap; text-align: center; line-height: 1.4;
+    }
+    .arch-conn-badge {
+      font-size: 11px; font-family: var(--mono); padding: 3px 7px;
+      border-radius: 3px; white-space: nowrap; font-weight: 600;
+    }
+    .cb-ssh  { background: rgba(250,204,21,.15);  border: 1px solid rgba(250,204,21,.35);  color: rgba(250,204,21,.95); }
+    .cb-ws   { background: rgba(96,165,250,.13);  border: 1px solid rgba(96,165,250,.35);   color: rgba(96,165,250,.95); }
+    .cb-ipc  { background: rgba(222,165,132,.13); border: 1px solid rgba(222,165,132,.35);  color: rgba(222,165,132,.95); }
+    /* AI pipeline internals zoom */
+    .arch-zoom-wrap {
+      margin-top: 24px;
+      border: 1px solid rgba(74,222,128,.18); border-radius: 10px;
+      background: rgba(74,222,128,.03); overflow: hidden;
+    }
+    .arch-zoom-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 18px;
+      border-bottom: 1px solid rgba(74,222,128,.12);
+      background: rgba(74,222,128,.04);
+    }
+    .arch-zoom-tag { font-size: 12px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .08em; color: rgba(74,222,128,.9); font-weight: 600; }
+    .arch-zoom-name { font-size: 14px; font-weight: 700; letter-spacing: -.02em; }
+    .arch-zoom-sub { font-size: 12px; font-family: var(--mono); color: rgba(255,255,255,.7); margin-left: auto; }
+    .arch-zoom-body { padding: 20px; overflow-x: auto; }
+    .arch-pipe { display: flex; align-items: stretch; gap: 0; min-width: 600px; }
+    .arch-step {
+      flex: 1; min-width: 120px;
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1);
+      border-radius: 8px; padding: 16px 14px; position: relative;
+    }
+    .arch-step-fast { border-color: rgba(255,255,255,.2); background: rgba(255,255,255,.06); }
+    .arch-step-llm  { border-color: rgba(74,222,128,.35);  background: rgba(74,222,128,.07); }
+    .arch-step-num { font-size: 11px; font-family: var(--mono); color: rgba(255,255,255,.65); margin-bottom: 8px; letter-spacing: .06em; font-weight: 600; }
+    .arch-step-name { font-size: 14px; font-weight: 700; letter-spacing: -.01em; margin-bottom: 6px; }
+    .arch-step-detail { font-size: 12px; color: rgba(255,255,255,.8); line-height: 1.55; }
+    .arch-step-time {
+      display: inline-block; margin-top: 12px;
+      font-size: 12px; font-family: var(--mono); padding: 3px 8px;
+      border-radius: 3px; border: 1px solid rgba(255,255,255,.2); color: rgba(255,255,255,.85); font-weight: 600;
+    }
+    .arch-step-time.fast { border-color: rgba(255,255,255,.3); color: #fff; }
+    .arch-step-time.good { border-color: rgba(74,222,128,.5); color: #4ade80; }
+    .arch-pipe-arr {
+      display: flex; align-items: center; flex-shrink: 0;
+      padding: 0 8px; color: rgba(255,255,255,.45); font-size: 18px;
+    }
+    /* Two-pass split */
+    .arch-split { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px; }
+    .arch-split-row { display: flex; align-items: center; gap: 0; }
+    /* Runtime legend */
+    .arch-legend { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,.1); }
+    .arch-leg-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-family: var(--mono); color: rgba(255,255,255,.85); }
+    .arch-leg-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
     /* Engineering decisions */
     .eng-decisions { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-top: 16px; }
     @media (max-width: 860px) { .eng-decisions { grid-template-columns: 1fr 1fr; } }
@@ -533,9 +843,9 @@
       transition: background 160ms, border-color 160ms;
     }
     .eng-dec:hover { background: var(--surface2); border-color: var(--border2); }
-    .eng-dec-num { font-size: 11px; font-family: var(--mono); color: var(--muted2); letter-spacing: .06em; margin-bottom: 12px; }
-    .eng-dec-title { font-size: 15px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 10px; }
-    .eng-dec-body { font-size: 12px; color: var(--muted); line-height: 1.75; }
+    .eng-dec-num { font-size: 12px; font-family: var(--mono); color: rgba(255,255,255,.6); letter-spacing: .06em; margin-bottom: 12px; font-weight: 600; }
+    .eng-dec-title { font-size: 16px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 10px; }
+    .eng-dec-body { font-size: 13px; color: rgba(255,255,255,.82); line-height: 1.75; }
 
     /* ── FOOTER ── */
     footer { border-top: 1px solid var(--border); padding: 36px 0; position: relative; z-index: 1; }
@@ -554,11 +864,11 @@
   <div class="nav-left">
     <div class="nav-brand">Miwa <span style="color:var(--muted);font-weight:400;">美話</span></div>
     <div class="nav-links">
-      <a class="nav-link" href="#pipeline">Pipeline</a>
-      <a class="nav-link" href="#features">Features</a>
       <a class="nav-link" href="#demo">Demo</a>
-      <a class="nav-link" href="#stack">Stack</a>
+      <a class="nav-link" href="#pipeline">Pipeline</a>
       <a class="nav-link" href="#amd">MI300X</a>
+      <a class="nav-link" href="#features">Features</a>
+      <a class="nav-link" href="#stack">Stack</a>
       <a class="nav-link" href="#engineering">Engineering</a>
     </div>
   </div>
@@ -599,7 +909,7 @@
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
         View on GitHub
       </a>
-      <a class="btn-ghost" href="#pipeline">See how it works</a>
+      <a class="btn-ghost" href="#demo">See how it works</a>
     </div>
 
     <!-- Stats -->
@@ -624,70 +934,263 @@
   </div>
 </section>
 
+<!-- ─── DEMO PREVIEW ─── -->
+<section id="demo">
+  <div class="wrap">
+    <div class="s-label r">Demo</div>
+    <div class="demo-layout">
+
+      <!-- Left: copy + feature list -->
+      <div class="demo-copy r" data-d="1">
+        <h2 class="demo-copy-title">What you see <em>during a call</em></h2>
+        <p style="font-size:15px;color:var(--muted);line-height:1.75;margin-bottom:8px;">The Miwa overlay sits transparently above your game or browser. Per-speaker cards appear as each person talks, fading out when they go silent.</p>
+        <div class="demo-feature-list">
+          <div class="demo-feat">
+            <div class="demo-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 12 5 12 5 8 8 8 8 16 11 16 11 4 14 4 14 20 17 20 17 9 20 9 20 12 22 12"/></svg></div>
+            <div class="demo-feat-body">
+              <div class="demo-feat-title">Word-by-word karaoke highlight</div>
+              <div class="demo-feat-desc">Each word lights up in sync with the speaker's voice as WhisperX emits word-level timestamps.</div>
+            </div>
+          </div>
+          <div class="demo-feat">
+            <div class="demo-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
+            <div class="demo-feat-body">
+              <div class="demo-feat-title">Two-pass translation</div>
+              <div class="demo-feat-desc">Google Translate appears in ~100ms. Llama 3.3 70B refines it to your chosen style in ~700ms — the card updates in place.</div>
+            </div>
+          </div>
+          <div class="demo-feat">
+            <div class="demo-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div>
+            <div class="demo-feat-body">
+              <div class="demo-feat-title">Reply with one key</div>
+              <div class="demo-feat-desc">Press <strong>1</strong> for Bot Speaks in VC, <strong>2</strong> for Bot Sends to chat, <strong>3</strong> for a fullscreen romaji popup so you can say it yourself.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: mock overlay window -->
+      <div class="demo-outer r" data-d="2">
+        <div class="demo-frame">
+
+          <!-- Header (matches real .header) -->
+          <div class="demo-header">
+            <!-- Drag row: dots + app name + status -->
+            <div class="demo-drag-row">
+              <div class="demo-drag-dots"></div>
+              <span class="demo-app-name">Miwa</span>
+              <div class="demo-status">
+                <div class="demo-status-dot"></div>
+                <span class="demo-status-text">connected</span>
+              </div>
+            </div>
+            <!-- Style mode buttons -->
+            <div class="demo-style-row">
+              <span class="demo-sb">Formal</span>
+              <span class="demo-sb">Neutral</span>
+              <span class="demo-sb active">Casual</span>
+              <span class="demo-sb">Gaming</span>
+            </div>
+          </div>
+
+          <!-- Call info strip -->
+          <div class="demo-call-strip">
+            <span class="demo-call-guild">🎮</span>
+            <span class="demo-call-server">Mizu's Server</span>
+            <span class="demo-call-sep">#</span>
+            <span class="demo-call-channel">general-vc</span>
+            <span class="demo-call-count">3 members</span>
+          </div>
+
+          <!-- Speaker card -->
+          <div class="demo-speaker">
+            <!-- Card header -->
+            <div class="demo-card-head">
+              <div class="demo-avatar-wrap">
+                <div class="demo-avatar">友</div>
+                <div class="demo-speaking-dot"></div>
+              </div>
+              <div class="demo-card-meta">
+                <span class="demo-username">友達さん</span>
+                <span class="demo-source-icon">🎤</span>
+              </div>
+              <span class="demo-badge demo-badge-ai">AI</span>
+            </div>
+            <!-- Card body -->
+            <div class="demo-card-body">
+              <div class="demo-jp">今日の<span class="hl">ゲーム</span>本当に楽しかったよ！</div>
+              <div class="demo-romaji">kyō no <u>gēmu</u> hontō ni tanoshikatta yo!</div>
+              <div class="demo-en">Today's game was really fun!</div>
+            </div>
+            <!-- Suggestions -->
+            <div class="demo-sugs">
+              <div class="demo-sugs-header">
+                <span class="demo-sugs-lbl">Suggestions</span>
+                <span class="demo-sugs-refresh">↻</span>
+              </div>
+              <div class="demo-sug">
+                <div class="demo-sug-top">
+                  <div class="demo-sug-num">1</div>
+                  <div class="demo-sug-text">
+                    <div class="demo-sug-jp">私もすごく楽しかった！</div>
+                    <div class="demo-sug-en">I had so much fun too!</div>
+                    <div class="demo-sug-romaji">watashi mo sugoku tanoshikatta!</div>
+                  </div>
+                </div>
+                <div class="demo-sug-btns">
+                  <span class="demo-sug-btn speak">🔊 Bot Speaks</span>
+                  <span class="demo-sug-btn send">💬 Bot Sends</span>
+                  <span class="demo-sug-btn say">👤 I'll Say</span>
+                </div>
+              </div>
+              <div class="demo-sug">
+                <div class="demo-sug-top">
+                  <div class="demo-sug-num">2</div>
+                  <div class="demo-sug-text">
+                    <div class="demo-sug-jp">また明日やろう！</div>
+                    <div class="demo-sug-en">Let's play again tomorrow!</div>
+                  </div>
+                </div>
+                <div class="demo-sug-btns">
+                  <span class="demo-sug-btn">🔊</span>
+                  <span class="demo-sug-btn">💬</span>
+                  <span class="demo-sug-btn">👤</span>
+                </div>
+              </div>
+              <div class="demo-sug">
+                <div class="demo-sug-top">
+                  <div class="demo-sug-num">3</div>
+                  <div class="demo-sug-text">
+                    <div class="demo-sug-jp">本当に上手だったね！</div>
+                    <div class="demo-sug-en">You were seriously amazing!</div>
+                  </div>
+                </div>
+                <div class="demo-sug-btns">
+                  <span class="demo-sug-btn">🔊</span>
+                  <span class="demo-sug-btn">💬</span>
+                  <span class="demo-sug-btn">👤</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick reactions -->
+          <div class="demo-reactions">
+            <span class="demo-react">草</span>
+            <span class="demo-react">えー</span>
+            <span class="demo-react">マジ?</span>
+            <span class="demo-react">gg</span>
+            <span class="demo-react">もう一回</span>
+            <span class="demo-react">待って</span>
+          </div>
+
+          <!-- Quick reply box -->
+          <div class="demo-qr">
+            <div class="demo-qr-input">Type in English&hellip;</div>
+            <span class="demo-qr-hint">EN → JP live</span>
+          </div>
+
+          <!-- Resize nub -->
+          <div class="demo-nub"><div class="demo-nub-line"></div></div>
+
+        </div>
+        <div class="demo-caption">Simulated overlay &mdash; actual app runs as a transparent Tauri window</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
 <!-- ─── PIPELINE ─── -->
 <section id="pipeline">
   <div class="wrap">
     <div class="s-label r">Pipeline</div>
     <h2 class="s-h2 r" data-d="1">Voice to translation <em>in under 800ms</em></h2>
 
-    <div class="pflow">
+    <div class="pipe-viz r" id="pipe-viz" data-d="2">
 
-      <div class="pf-step r" data-d="1">
-        <div class="pf-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg></div>
-        <div class="pf-num">01</div>
-        <div class="pf-title">Audio Capture</div>
-        <div class="pf-desc">discord.js VoiceReceiver — per-speaker Opus streams</div>
-        <span class="pf-badge pf-badge--fast">&lt;5ms</span>
+      <!-- Stage nodes + connectors -->
+      <div class="pipe-stages-row">
+
+        <div class="pipe-stage" data-i="0">
+          <div class="pipe-node"><span class="pipe-node-ico">🎤</span></div>
+          <div class="pipe-num">01</div>
+          <div class="pipe-sname">Audio<br>Capture</div>
+          <div class="pipe-stime">&lt;5ms</div>
+        </div>
+
+        <div class="pipe-cseg"><div></div></div>
+
+        <div class="pipe-stage" data-i="1">
+          <div class="pipe-node"><span class="pipe-node-ico">📝</span></div>
+          <div class="pipe-num">02</div>
+          <div class="pipe-sname">WhisperX<br>STT</div>
+          <div class="pipe-stime">~150ms</div>
+        </div>
+
+        <div class="pipe-cseg"><div></div></div>
+
+        <div class="pipe-stage" data-i="2">
+          <div class="pipe-node"><span class="pipe-node-ico">⚡</span></div>
+          <div class="pipe-num">03</div>
+          <div class="pipe-sname">Google<br>Translate</div>
+          <div class="pipe-stime">&lt;100ms</div>
+        </div>
+
+        <div class="pipe-cseg"><div></div></div>
+
+        <div class="pipe-stage" data-i="3">
+          <div class="pipe-node"><span class="pipe-node-ico">🧠</span></div>
+          <div class="pipe-num">04</div>
+          <div class="pipe-sname">Llama 3.3<br>70B FP16</div>
+          <div class="pipe-stime">~500ms</div>
+        </div>
+
+        <div class="pipe-cseg"><div></div></div>
+
+        <div class="pipe-stage" data-i="4">
+          <div class="pipe-node"><span class="pipe-node-ico">🤖</span></div>
+          <div class="pipe-num">05</div>
+          <div class="pipe-sname">CrewAI<br>Agents</div>
+          <div class="pipe-stime">~300ms</div>
+        </div>
+
+        <div class="pipe-cseg"><div></div></div>
+
+        <div class="pipe-stage" data-i="5">
+          <div class="pipe-node"><span class="pipe-node-ico">🪟</span></div>
+          <div class="pipe-num">06</div>
+          <div class="pipe-sname">Tauri<br>Overlay</div>
+          <div class="pipe-stime">&lt;20ms</div>
+        </div>
+
       </div>
 
-      <div class="pf-conn" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M10 4l4 4-4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-
-      <div class="pf-step r" data-d="2">
-        <div class="pf-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 12 5 12 5 8 8 8 8 16 11 16 11 4 14 4 14 20 17 20 17 9 20 9 20 12 22 12"/></svg></div>
-        <div class="pf-num">02</div>
-        <div class="pf-title">Transcription</div>
-        <div class="pf-desc">WhisperX on AMD MI300X — word-level timestamps</div>
-        <span class="pf-badge pf-badge--mid">~200ms</span>
+      <!-- Flowing track: Japanese chars + animated packet -->
+      <div class="pipe-track" id="pipe-track">
+        <div class="pipe-track-glow"></div>
+        <!-- chars + packet injected by JS -->
+        <div class="pipe-packet" id="pipe-pkt">♪ PCM</div>
       </div>
 
-      <div class="pf-conn" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M10 4l4 4-4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-
-      <div class="pf-step r" data-d="3">
-        <div class="pf-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
-        <div class="pf-num">03</div>
-        <div class="pf-title">Fast Translation</div>
-        <div class="pf-desc">Google Translate — first pass shown immediately</div>
-        <span class="pf-badge pf-badge--fast">&lt;100ms</span>
-      </div>
-
-      <div class="pf-conn" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M10 4l4 4-4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-
-      <div class="pf-step r" data-d="1">
-        <div class="pf-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="15" x2="4" y2="15"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="15" x2="23" y2="15"/></svg></div>
-        <div class="pf-num">04</div>
-        <div class="pf-title">LLM Refinement</div>
-        <div class="pf-desc">Llama 3.3 70B via vLLM — style-aware translation</div>
-        <span class="pf-badge pf-badge--mid">~500ms</span>
-      </div>
-
-      <div class="pf-conn" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M10 4l4 4-4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-
-      <div class="pf-step r" data-d="2">
-        <div class="pf-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
-        <div class="pf-num">05</div>
-        <div class="pf-title">AI Suggestions</div>
-        <div class="pf-desc">CrewAI multi-agent — 3 contextual reply suggestions</div>
-        <span class="pf-badge pf-badge--mid">~700ms</span>
-      </div>
-
-      <div class="pf-conn" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M10 4l4 4-4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-
-      <div class="pf-step r" data-d="3">
-        <div class="pf-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div>
-        <div class="pf-num">06</div>
-        <div class="pf-title">Delivery</div>
-        <div class="pf-desc">Bot speaks / sends / romaji popup for the user</div>
-        <span class="pf-badge pf-badge--fast">&lt;20ms</span>
+      <!-- Terminal output panel -->
+      <div class="pipe-terminal">
+        <div class="pipe-term-bar">
+          <div class="pipe-term-dots"><span></span><span></span><span></span></div>
+          <div class="pipe-term-title">miwa — live pipeline simulation</div>
+          <span class="pipe-term-stage-lbl" id="term-stage">01 — Audio Capture</span>
+          <span class="pipe-term-badge" id="term-badge">&lt;5ms</span>
+        </div>
+        <div class="pipe-term-body">
+          <div class="pipe-term-row">
+            <span class="pipe-term-key ptk-in">IN</span>
+            <span class="pipe-term-val ptv-dim" id="term-in">Discord Opus stream (per-speaker, 48 kHz)</span>
+          </div>
+          <div class="pipe-term-row">
+            <span class="pipe-term-key ptk-out">OUT</span>
+            <span class="pipe-term-val" id="term-out"></span>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -717,6 +1220,111 @@
       </div>
     </div>
 
+  </div>
+</section>
+
+<!-- ─── WHY MI300X ─── -->
+<section id="amd">
+  <div class="wrap">
+    <div class="s-label r">Infrastructure</div>
+    <h2 class="s-h2 r" data-d="1">Why AMD MI300X <em>matters for this</em></h2>
+
+    <!-- MI300X hero banner -->
+    <div class="amd-hero r" data-d="1">
+      <div class="amd-hero-left">
+        <div class="amd-hero-tag">Used in Miwa &mdash; AMD Developer Cloud</div>
+        <div class="amd-hero-name">AMD MI300X</div>
+        <div class="amd-hero-sub">ROCm 7.2 &middot; vLLM 0.17.1 &middot; PyTorch 2.6.0 &middot; 20 vCPU &middot; 240 GB RAM</div>
+      </div>
+      <div class="amd-hero-stats">
+        <div class="amd-hs">
+          <div class="amd-hs-num">192<em>GB</em></div>
+          <div class="amd-hs-lbl">HBM3 VRAM</div>
+        </div>
+        <div class="amd-hs">
+          <div class="amd-hs-num">5.3<em>TB/s</em></div>
+          <div class="amd-hs-lbl">Mem bandwidth</div>
+        </div>
+        <div class="amd-hs">
+          <div class="amd-hs-num">FP16</div>
+          <div class="amd-hs-lbl">Full precision</div>
+        </div>
+        <div class="amd-hs">
+          <div class="amd-hs-num">&lt;800<em>ms</em></div>
+          <div class="amd-hs-lbl">E2E latency</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comparison table -->
+    <div class="amd-table-wrap r" data-d="2">
+      <table class="amd-table">
+        <thead>
+          <tr>
+            <th class="col-feat"></th>
+            <th>RTX 4090 &mdash; Consumer</th>
+            <th>NVIDIA A100 &mdash; Data center</th>
+            <th class="col-mi col-mi-head">AMD MI300X <span class="amd-mi-badge">✓ Miwa</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-feat">VRAM</td>
+            <td class="val-bad">24 GB GDDR6X</td>
+            <td class="val-bad">80 GB HBM2e</td>
+            <td class="col-mi val-good">192 GB HBM3</td>
+          </tr>
+          <tr>
+            <td class="col-feat">Llama 3.3 70B</td>
+            <td class="val-bad">INT4 only &mdash; quality loss</td>
+            <td class="val-bad">INT8, sharded across GPUs</td>
+            <td class="col-mi val-good">Full FP16, single GPU</td>
+          </tr>
+          <tr>
+            <td class="col-feat">Bandwidth</td>
+            <td class="val-bad">1.0 TB/s</td>
+            <td class="val-bad">2.0 TB/s</td>
+            <td class="col-mi val-good">5.3 TB/s</td>
+          </tr>
+          <tr>
+            <td class="col-feat">Multi-GPU</td>
+            <td class="val-bad">Required for 70B</td>
+            <td class="val-bad">Often needed</td>
+            <td class="col-mi val-good">Not needed</td>
+          </tr>
+          <tr>
+            <td class="col-feat">Ecosystem</td>
+            <td class="val-bad">CUDA only</td>
+            <td class="val-bad">CUDA only</td>
+            <td class="col-mi val-good">ROCm &mdash; open source</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 4 advantage cards -->
+    <div class="amd-advantage r" data-d="3">
+      <div class="amd-adv">
+        <div class="amd-adv-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg></div>
+        <div class="amd-adv-title">Zero quantization loss</div>
+        <div class="amd-adv-desc">192GB unified HBM3 memory fits Llama 3.3 70B entirely in FP16. No INT4/INT8 rounding errors that degrade Japanese nuance and translation style.</div>
+      </div>
+      <div class="amd-adv">
+        <div class="amd-adv-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div class="amd-adv-title">Latency under 800ms</div>
+        <div class="amd-adv-desc">High memory bandwidth means tokens fly through the model fast. Combined with vLLM's continuous batching, the LLM step stays under 500ms even during live calls.</div>
+      </div>
+      <div class="amd-adv">
+        <div class="amd-adv-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="15" x2="4" y2="15"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="15" x2="23" y2="15"/></svg></div>
+        <div class="amd-adv-title">ROCm open ecosystem</div>
+        <div class="amd-adv-desc">WhisperX, vLLM 0.17.1, PyTorch 2.6.0, and XTTS v2 all run natively on ROCm 7.2 — the same code that runs on CUDA runs here with a single env flag.</div>
+      </div>
+      <div class="amd-adv">
+        <div class="amd-adv-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="amd-adv-title">Multi-speaker concurrency</div>
+        <div class="amd-adv-desc">Discord voice channels can have 10+ speakers. The MI300X handles concurrent WhisperX transcription and vLLM inference requests without GPU contention.</div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -917,231 +1525,6 @@
   </div>
 </section>
 
-<!-- ─── DEMO PREVIEW ─── -->
-<section id="demo">
-  <div class="wrap">
-    <div class="s-label r">Demo</div>
-    <div class="demo-layout">
-
-      <!-- Left: copy + feature list -->
-      <div class="demo-copy r" data-d="1">
-        <h2 class="demo-copy-title">What you see <em>during a call</em></h2>
-        <p style="font-size:15px;color:var(--muted);line-height:1.75;margin-bottom:8px;">The Miwa overlay sits transparently above your game or browser. Per-speaker cards appear as each person talks, fading out when they go silent.</p>
-        <div class="demo-feature-list">
-          <div class="demo-feat">
-            <div class="demo-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 12 5 12 5 8 8 8 8 16 11 16 11 4 14 4 14 20 17 20 17 9 20 9 20 12 22 12"/></svg></div>
-            <div class="demo-feat-body">
-              <div class="demo-feat-title">Word-by-word karaoke highlight</div>
-              <div class="demo-feat-desc">Each word lights up in sync with the speaker's voice as WhisperX emits word-level timestamps.</div>
-            </div>
-          </div>
-          <div class="demo-feat">
-            <div class="demo-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
-            <div class="demo-feat-body">
-              <div class="demo-feat-title">Two-pass translation</div>
-              <div class="demo-feat-desc">Google Translate appears in ~100ms. Llama 3.3 70B refines it to your chosen style in ~700ms — the card updates in place.</div>
-            </div>
-          </div>
-          <div class="demo-feat">
-            <div class="demo-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div>
-            <div class="demo-feat-body">
-              <div class="demo-feat-title">Reply with one key</div>
-              <div class="demo-feat-desc">Press <strong>1</strong> for Bot Speaks in VC, <strong>2</strong> for Bot Sends to chat, <strong>3</strong> for a fullscreen romaji popup so you can say it yourself.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Right: mock overlay window -->
-      <div class="demo-outer r" data-d="2">
-        <div class="demo-frame">
-          <!-- Titlebar -->
-          <div class="demo-titlebar">
-            <div class="demo-titlebar-dots">
-              <div class="demo-dot demo-dot-r"></div>
-              <div class="demo-dot demo-dot-y"></div>
-              <div class="demo-dot demo-dot-g"></div>
-            </div>
-            <span class="demo-title-label">Miwa 美話</span>
-            <div class="demo-style-pills">
-              <span class="demo-sp">Formal</span>
-              <span class="demo-sp">Neutral</span>
-              <span class="demo-sp active">Casual</span>
-              <span class="demo-sp">Gaming</span>
-            </div>
-          </div>
-          <!-- Body -->
-          <div class="demo-body">
-            <!-- Speaker card -->
-            <div class="demo-speaker">
-              <div class="demo-sp-head">
-                <div class="demo-avatar">友</div>
-                <div class="demo-sp-info">
-                  <div class="demo-sp-name">友達さん</div>
-                  <div class="demo-sp-meta">🎙️ speaking · casual</div>
-                </div>
-                <div class="demo-mic">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
-                </div>
-              </div>
-              <!-- JP text with karaoke highlight -->
-              <div class="demo-jp">今日の<span class="hl">ゲーム</span>本当に楽しかったよ！</div>
-              <div class="demo-romaji">Kyō no <u>gēmu</u> hontō ni tanoshikatta yo!</div>
-              <div class="demo-en"><strong>Today's game was really fun!</strong></div>
-            </div>
-            <!-- Suggestion cards -->
-            <div class="demo-sugs">
-              <div class="demo-sug">
-                <span class="demo-sug-num">1</span>
-                <span class="demo-sug-jp">私もすごく楽しかった！</span>
-                <span class="demo-sug-en">I had so much fun too!</span>
-                <div class="demo-sug-btns">
-                  <span class="demo-sug-btn primary">🔊 Speak</span>
-                  <span class="demo-sug-btn">💬 Send</span>
-                </div>
-              </div>
-              <div class="demo-sug">
-                <span class="demo-sug-num">2</span>
-                <span class="demo-sug-jp">また明日やろう！</span>
-                <span class="demo-sug-en">Let's play again tomorrow!</span>
-                <div class="demo-sug-btns">
-                  <span class="demo-sug-btn">🔊</span>
-                  <span class="demo-sug-btn">💬</span>
-                </div>
-              </div>
-              <div class="demo-sug">
-                <span class="demo-sug-num">3</span>
-                <span class="demo-sug-jp">本当に上手だったね！</span>
-                <span class="demo-sug-en">You were seriously amazing!</span>
-                <div class="demo-sug-btns">
-                  <span class="demo-sug-btn">🔊</span>
-                  <span class="demo-sug-btn">💬</span>
-                </div>
-              </div>
-            </div>
-            <!-- Quick reactions -->
-            <div class="demo-reactions">
-              <span class="demo-react">草</span>
-              <span class="demo-react">えー</span>
-              <span class="demo-react">マジ?</span>
-              <span class="demo-react">gg</span>
-              <span class="demo-react">もう一回</span>
-              <span class="demo-react">待って</span>
-            </div>
-          </div>
-        </div>
-        <div class="demo-caption">Simulated overlay — actual app runs as a Tauri desktop window</div>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-<!-- ─── WHY MI300X ─── -->
-<section id="amd">
-  <div class="wrap">
-    <div class="s-label r">Infrastructure</div>
-    <h2 class="s-h2 r" data-d="1">Why AMD MI300X <em>matters for this</em></h2>
-
-    <!-- MI300X hero banner -->
-    <div class="amd-hero r" data-d="1">
-      <div class="amd-hero-left">
-        <div class="amd-hero-tag">Used in Miwa &mdash; AMD Developer Cloud</div>
-        <div class="amd-hero-name">AMD MI300X</div>
-        <div class="amd-hero-sub">ROCm 7.2 &middot; vLLM 0.17.1 &middot; PyTorch 2.6.0 &middot; 20 vCPU &middot; 240 GB RAM</div>
-      </div>
-      <div class="amd-hero-stats">
-        <div class="amd-hs">
-          <div class="amd-hs-num">192<em>GB</em></div>
-          <div class="amd-hs-lbl">HBM3 VRAM</div>
-        </div>
-        <div class="amd-hs">
-          <div class="amd-hs-num">5.3<em>TB/s</em></div>
-          <div class="amd-hs-lbl">Mem bandwidth</div>
-        </div>
-        <div class="amd-hs">
-          <div class="amd-hs-num">FP16</div>
-          <div class="amd-hs-lbl">Full precision</div>
-        </div>
-        <div class="amd-hs">
-          <div class="amd-hs-num">&lt;800<em>ms</em></div>
-          <div class="amd-hs-lbl">E2E latency</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Comparison table -->
-    <div class="amd-table-wrap r" data-d="2">
-      <table class="amd-table">
-        <thead>
-          <tr>
-            <th class="col-feat"></th>
-            <th>RTX 4090 &mdash; Consumer</th>
-            <th>NVIDIA A100 &mdash; Data center</th>
-            <th class="col-mi col-mi-head">AMD MI300X <span class="amd-mi-badge">✓ Miwa</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td class="col-feat">VRAM</td>
-            <td class="val-bad">24 GB GDDR6X</td>
-            <td class="val-bad">80 GB HBM2e</td>
-            <td class="col-mi val-good">192 GB HBM3</td>
-          </tr>
-          <tr>
-            <td class="col-feat">Llama 3.3 70B</td>
-            <td class="val-bad">INT4 only &mdash; quality loss</td>
-            <td class="val-bad">INT8, sharded across GPUs</td>
-            <td class="col-mi val-good">Full FP16, single GPU</td>
-          </tr>
-          <tr>
-            <td class="col-feat">Bandwidth</td>
-            <td class="val-bad">1.0 TB/s</td>
-            <td class="val-bad">2.0 TB/s</td>
-            <td class="col-mi val-good">5.3 TB/s</td>
-          </tr>
-          <tr>
-            <td class="col-feat">Multi-GPU</td>
-            <td class="val-bad">Required for 70B</td>
-            <td class="val-bad">Often needed</td>
-            <td class="col-mi val-good">Not needed</td>
-          </tr>
-          <tr>
-            <td class="col-feat">Ecosystem</td>
-            <td class="val-bad">CUDA only</td>
-            <td class="val-bad">CUDA only</td>
-            <td class="col-mi val-good">ROCm &mdash; open source</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- 4 advantage cards -->
-    <div class="amd-advantage r" data-d="3">
-      <div class="amd-adv">
-        <div class="amd-adv-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg></div>
-        <div class="amd-adv-title">Zero quantization loss</div>
-        <div class="amd-adv-desc">192GB unified HBM3 memory fits Llama 3.3 70B entirely in FP16. No INT4/INT8 rounding errors that degrade Japanese nuance and translation style.</div>
-      </div>
-      <div class="amd-adv">
-        <div class="amd-adv-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-        <div class="amd-adv-title">Latency under 800ms</div>
-        <div class="amd-adv-desc">High memory bandwidth means tokens fly through the model fast. Combined with vLLM's continuous batching, the LLM step stays under 500ms even during live calls.</div>
-      </div>
-      <div class="amd-adv">
-        <div class="amd-adv-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="15" x2="4" y2="15"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="15" x2="23" y2="15"/></svg></div>
-        <div class="amd-adv-title">ROCm open ecosystem</div>
-        <div class="amd-adv-desc">WhisperX, vLLM 0.17.1, PyTorch 2.6.0, and XTTS v2 all run natively on ROCm 7.2 — the same code that runs on CUDA runs here with a single env flag.</div>
-      </div>
-      <div class="amd-adv">
-        <div class="amd-adv-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-        <div class="amd-adv-title">Multi-speaker concurrency</div>
-        <div class="amd-adv-desc">Discord voice channels can have 10+ speakers. The MI300X handles concurrent WhisperX transcription and vLLM inference requests without GPU contention.</div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- ─── ENGINEERING DEPTH ─── -->
 <section id="engineering">
   <div class="wrap">
@@ -1164,54 +1547,150 @@
       </div>
     </div>
 
-    <!-- Architecture layers -->
+    <!-- Architecture diagram -->
     <div class="arch-wrap r" data-d="2">
-      <div class="arch-label">System architecture &mdash; 4 runtime layers</div>
-      <div class="arch-layers">
+      <div class="arch-label">System architecture &mdash; data flow</div>
 
-        <div class="arch-layer al-1">
-          <div class="arch-layer-tag">Layer 1 &middot; Input</div>
-          <div>
-            <div class="arch-layer-name">Discord Voice Channel</div>
-            <div class="arch-layer-detail">Per-speaker Opus stream isolation via VoiceReceiver API &middot; prism-media PCM decode &middot; opusscript fallback &middot; sharp avatar fetch</div>
-          </div>
-          <div class="arch-layer-runtime">Node.js 18 &middot; discord.js v14 &middot; @discordjs/voice &middot; better-sqlite3</div>
+      <!-- Top: main 4-node flow -->
+      <div class="arch-flow">
+
+        <!-- Node 1: Discord -->
+        <div class="arch-node an-js">
+          <span class="arch-node-ico">🎤</span>
+          <div class="arch-node-name">Discord Voice</div>
+          <div style="font-size:12px;font-family:var(--mono);color:rgba(255,255,255,.8);line-height:1.55;margin-top:8px">Per-speaker Opus stream &middot; VoiceReceiver API &middot; PCM decode</div>
+          <span class="arch-node-rt">Node.js 18 &middot; discord.js v14</span>
         </div>
 
-        <div class="arch-arrow">&darr;&nbsp;&nbsp;WebSocket &middot; SSH encrypted tunnel (port 22) &middot; zero public exposure</div>
-
-        <div class="arch-layer al-2">
-          <div class="arch-layer-tag">Layer 2 &middot; AI Pipeline</div>
-          <div>
-            <div class="arch-layer-name">FastAPI Processing Server</div>
-            <div class="arch-layer-detail">WhisperX STT (word timestamps) &rarr; Google Translate fast-pass &rarr; vLLM style refinement &rarr; pykakasi romaji &middot; CrewAI multi-agent suggestions &middot; Qdrant vector memory</div>
+        <!-- Conn 1: WS over SSH -->
+        <div class="arch-conn">
+          <div class="arch-conn-line">
+            <div class="arch-conn-dash"></div>
+            <div class="arch-conn-dash"></div>
+            <div class="arch-conn-arrow">&rarr;</div>
           </div>
-          <div class="arch-layer-runtime">Python &middot; FastAPI &middot; ROCm 7.2 &middot; AMD MI300X &middot; 192 GB HBM3</div>
+          <span class="arch-conn-badge cb-ssh">SSH tunnel</span>
+          <div class="arch-conn-lbl">WebSocket<br>port 22</div>
         </div>
 
-        <div class="arch-arrow">&darr;&nbsp;&nbsp;vLLM 0.17.1 &middot; Llama 3.3 70B &middot; FP16 &middot; continuous batching &middot; &lt;500ms inference</div>
-
-        <div class="arch-layer al-3">
-          <div class="arch-layer-tag">Layer 3 &middot; Bridge</div>
-          <div>
-            <div class="arch-layer-name">Tauri 2 Rust Backend</div>
-            <div class="arch-layer-detail">Always-on-top transparent window &middot; WebSocket bridge to Discord bot &middot; LogicalSize resize API &middot; Tauri IPC commands</div>
-          </div>
-          <div class="arch-layer-runtime">Rust &middot; Tauri v2 &middot; tokio async &middot; 50 MB binary (vs Electron&rsquo;s 200 MB)</div>
+        <!-- Node 2: AMD MI300X FastAPI -->
+        <div class="arch-node an-py">
+          <span class="arch-node-ico">⚡</span>
+          <div class="arch-node-name">FastAPI Server</div>
+          <div style="font-size:12px;font-family:var(--mono);color:rgba(255,255,255,.8);line-height:1.55;margin-top:8px">AI pipeline &middot; STT &rarr; LLM &rarr; romaji &rarr; suggestions</div>
+          <span class="arch-node-rt">AMD MI300X &middot; ROCm 7.2</span>
         </div>
 
-        <div class="arch-arrow">&darr;&nbsp;&nbsp;Tauri IPC &middot; typed commands &middot; event bridge</div>
-
-        <div class="arch-layer al-4">
-          <div class="arch-layer-tag">Layer 4 &middot; UI</div>
-          <div>
-            <div class="arch-layer-name">React 19 Overlay</div>
-            <div class="arch-layer-detail">Jotai atoms &middot; Framer Motion spring animations &middot; karaoke word-by-word highlight &middot; suggestion cards &middot; Phrasebook Ctrl+1&ndash;9 &middot; QuickReactions one-click</div>
+        <!-- Conn 2: WS back -->
+        <div class="arch-conn">
+          <div class="arch-conn-line">
+            <div class="arch-conn-dash"></div>
+            <div class="arch-conn-dash"></div>
+            <div class="arch-conn-arrow">&rarr;</div>
           </div>
-          <div class="arch-layer-runtime">React 19 &middot; TypeScript strict &middot; Tailwind v4 &middot; Vite &middot; Geist font</div>
+          <span class="arch-conn-badge cb-ws">WebSocket</span>
+          <div class="arch-conn-lbl">JSON packets<br>typed events</div>
+        </div>
+
+        <!-- Node 3: Tauri Rust -->
+        <div class="arch-node an-rs">
+          <span class="arch-node-ico">🦀</span>
+          <div class="arch-node-name">Tauri Backend</div>
+          <div style="font-size:12px;font-family:var(--mono);color:rgba(255,255,255,.8);line-height:1.55;margin-top:8px">WS bridge &middot; always-on-top window &middot; transparent overlay</div>
+          <span class="arch-node-rt">Rust &middot; Tauri v2 &middot; 50 MB</span>
+        </div>
+
+        <!-- Conn 3: IPC -->
+        <div class="arch-conn">
+          <div class="arch-conn-line">
+            <div class="arch-conn-dash"></div>
+            <div class="arch-conn-dash"></div>
+            <div class="arch-conn-arrow">&rarr;</div>
+          </div>
+          <span class="arch-conn-badge cb-ipc">Tauri IPC</span>
+          <div class="arch-conn-lbl">typed cmds<br>event bridge</div>
+        </div>
+
+        <!-- Node 4: React UI -->
+        <div class="arch-node an-ts">
+          <span class="arch-node-ico">⛛️</span>
+          <div class="arch-node-name">React Overlay</div>
+          <div style="font-size:12px;font-family:var(--mono);color:rgba(255,255,255,.8);line-height:1.55;margin-top:8px">Speaker cards &middot; karaoke &middot; suggestions &middot; phrasebook</div>
+          <span class="arch-node-rt">React 19 &middot; TypeScript strict</span>
         </div>
 
       </div>
+
+      <!-- Bottom: AI pipeline zoom -->
+      <div class="arch-zoom-wrap">
+        <div class="arch-zoom-header">
+          <div class="arch-zoom-tag">↓ zoom &mdash; AI pipeline</div>
+          <div class="arch-zoom-name">FastAPI Server &mdash; AMD MI300X &middot; 192 GB HBM3</div>
+          <div class="arch-zoom-sub">Python &middot; ROCm 7.2 &middot; vLLM 0.17.1 &middot; PyTorch 2.6.0</div>
+        </div>
+        <div class="arch-zoom-body">
+          <div class="arch-pipe">
+
+            <div class="arch-step">
+              <div class="arch-step-num">STT</div>
+              <div class="arch-step-name">WhisperX</div>
+              <div class="arch-step-detail">PCM &rarr; Japanese text + word-level timestamps for karaoke</div>
+              <span class="arch-step-time">&lt;150ms</span>
+            </div>
+
+            <div class="arch-pipe-arr">&rarr;</div>
+
+            <!-- Two-pass translation split -->
+            <div class="arch-split">
+              <div class="arch-split-row">
+                <div class="arch-step arch-step-fast" style="flex:1">
+                  <div class="arch-step-num">TRANSLATE &middot; pass 1</div>
+                  <div class="arch-step-name">Google Translate</div>
+                  <div class="arch-step-detail">Fast EN result &rarr; shown immediately as <em style="font-style:normal;color:#fff">fast</em> packet</div>
+                  <span class="arch-step-time fast">&lt;100ms</span>
+                </div>
+              </div>
+              <div class="arch-split-row">
+                <div class="arch-step arch-step-llm" style="flex:1">
+                  <div class="arch-step-num">TRANSLATE &middot; pass 2</div>
+                  <div class="arch-step-name">vLLM &mdash; Llama 3.3 70B FP16</div>
+                  <div class="arch-step-detail">Style-refined EN &rarr; updates card as <em style="font-style:normal;color:#4ade80">refined</em> packet</div>
+                  <span class="arch-step-time good">&lt;700ms</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="arch-pipe-arr">&rarr;</div>
+
+            <div class="arch-step">
+              <div class="arch-step-num">ROMAJI</div>
+              <div class="arch-step-name">pykakasi</div>
+              <div class="arch-step-detail">JP text &rarr; phonetic reading for pronunciation guide</div>
+              <span class="arch-step-time">&lt;5ms</span>
+            </div>
+
+            <div class="arch-pipe-arr">&rarr;</div>
+
+            <div class="arch-step">
+              <div class="arch-step-num">AGENTS</div>
+              <div class="arch-step-name">CrewAI + Qdrant</div>
+              <div class="arch-step-detail">3 reply suggestions &middot; vector memory per speaker user ID &middot; context-aware</div>
+              <span class="arch-step-time">&lt;300ms</span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Runtime legend -->
+      <div class="arch-legend">
+        <div class="arch-leg-item"><span class="arch-leg-dot" style="background:#f7df1e"></span>JavaScript &mdash; Discord bot</div>
+        <div class="arch-leg-item"><span class="arch-leg-dot" style="background:#3572A5"></span>Python &mdash; AI server</div>
+        <div class="arch-leg-item"><span class="arch-leg-dot" style="background:#dea584"></span>Rust &mdash; Tauri backend</div>
+        <div class="arch-leg-item"><span class="arch-leg-dot" style="background:#3178c6"></span>TypeScript &mdash; React UI</div>
+        <div class="arch-leg-item"><span class="arch-leg-dot" style="background:#4ade80"></span>AMD MI300X &mdash; 192 GB HBM3</div>
+      </div>
+
     </div>
 
     <!-- 6 Engineering decisions -->
@@ -1277,6 +1756,163 @@
     entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); obs.unobserve(e.target); } });
   }, { threshold: 0.08 });
   document.querySelectorAll('.r').forEach(el => obs.observe(el));
+</script>
+
+<!-- Pipeline animation -->
+<script>
+(function() {
+  const STAGES = [
+    {
+      name: '01 — Audio Capture',
+      badge: '<5ms', fast: true,
+      pkt: '♪ PCM',
+      inText: 'Discord Opus stream (per-speaker, 48 kHz)',
+      outText: '♪ PCM decoded — 48 kHz mono, 20 ms chunks\n  stream ID: user_819204 | buffer: 4096 bytes',
+      outCls: 'ptv-dim', hold: 1800
+    },
+    {
+      name: '02 — WhisperX STT',
+      badge: '~150ms', fast: false,
+      pkt: '日本語→',
+      inText: 'PCM audio buffer (48 kHz, 960 ms window)',
+      outText: '今日のゲーム本当に楽しかったよ！\n  [今日:0.00s] [の:0.21s] [ゲーム:0.35s]\n  [本当に:0.72s] [楽しかった:1.01s] [よ:1.38s]',
+      outCls: 'ptv-jp', hold: 2200
+    },
+    {
+      name: '03 — Google Translate',
+      badge: '<100ms', fast: true,
+      pkt: 'fast→EN',
+      inText: '今日のゲーム本当に楽しかったよ！',
+      outText: '→ "Today\'s game was really fun!"  [type: fast]\n  packet dispatched → UI in <5ms',
+      outCls: '', hold: 1600
+    },
+    {
+      name: '04 — Llama 3.3 70B FP16',
+      badge: '~500ms', fast: false,
+      pkt: 'refined→',
+      inText: 'JP text + style=casual + speaker context',
+      outText: '→ "Today\'s gaming session was genuinely enjoyable!"\n  [type: refined] [style: casual] [tokens: 42]\n  vLLM · ROCm 7.2 · AMD MI300X · 192 GB HBM3',
+      outCls: '', hold: 2400
+    },
+    {
+      name: '05 — CrewAI + Qdrant',
+      badge: '~300ms', fast: false,
+      pkt: '提案×3',
+      inText: 'refined EN + speaker vector memory (Qdrant)',
+      outText: '私もすごく楽しかった！  →  I had so much fun too!\nまた明日やろう！        →  Let\'s play again tomorrow!\n本当に上手だったね！    →  You were seriously amazing!',
+      outCls: 'ptv-jp', hold: 2000
+    },
+    {
+      name: '06 — Tauri Overlay',
+      badge: '<20ms', fast: true,
+      pkt: '✓ done',
+      inText: 'JSON packets via WebSocket (ws://localhost:8766)',
+      outText: '✓ Speaker card updated   ✓ Karaoke highlighting active\n✓ Romaji generated       ✓ Suggestions displayed\n✓ Phrasebook saved       ✓ Stats latency: 782ms',
+      outCls: '', hold: 1800
+    }
+  ];
+
+  const JP_CHARS = '今日ゲーム楽しかった語翻訳文字音声話友達ねよ！私また本当に速い美会話';
+  const COLORS   = ['rgba(59,158,255,.5)','rgba(74,222,128,.35)','rgba(255,255,255,.25)','rgba(168,85,247,.4)'];
+
+  const stageEls = Array.from(document.querySelectorAll('.pipe-stage'));
+  const connSegs = Array.from(document.querySelectorAll('.pipe-cseg'));
+  const pkt      = document.getElementById('pipe-pkt');
+  const track    = document.getElementById('pipe-track');
+  const termStage = document.getElementById('term-stage');
+  const termBadge = document.getElementById('term-badge');
+  const termIn    = document.getElementById('term-in');
+  const termOut   = document.getElementById('term-out');
+
+  if (!track || !pkt || !termStage) return;
+
+  // Spawn flowing Japanese character particles
+  for (let i = 0; i < 22; i++) {
+    const s = document.createElement('span');
+    s.className = 'pipe-char';
+    s.textContent = JP_CHARS[Math.floor(Math.random() * JP_CHARS.length)];
+    const dur = 2.2 + Math.random() * 2.6;
+    const delay = -(Math.random() * dur * 1.8);
+    const top = 20 + Math.random() * 60;
+    const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+    s.style.cssText = `animation-duration:${dur}s;animation-delay:${delay}s;top:${top}%;color:${color}`;
+    track.appendChild(s);
+  }
+
+  // Packet horizontal position per stage (% left, accounting for centered transform)
+  function stagePct(i) {
+    return 6 + (i / (STAGES.length - 1)) * 88;
+  }
+
+  // Typewriter that resolves when done
+  function typewrite(el, text, speed) {
+    el.textContent = '';
+    let i = 0;
+    const cur = document.createElement('span');
+    cur.className = 'pipe-cursor';
+    el.appendChild(cur);
+    return new Promise(resolve => {
+      function tick() {
+        if (i >= text.length) { cur.remove(); resolve(); return; }
+        cur.before(document.createTextNode(text[i++]));
+        setTimeout(tick, speed);
+      }
+      tick();
+    });
+  }
+
+  let running = false;
+
+  async function runStage(i) {
+    const s = STAGES[i];
+
+    // Update node states
+    stageEls.forEach((el, j) => {
+      el.classList.toggle('active', j === i);
+      el.classList.toggle('passed', j < i);
+    });
+
+    // Fill connector segments up to current
+    connSegs.forEach((seg, j) => seg.classList.toggle('filled', j < i));
+
+    // Move packet
+    pkt.textContent = s.pkt;
+    pkt.style.left = stagePct(i) + '%';
+
+    // Update terminal header
+    termStage.textContent = s.name;
+    termBadge.textContent = s.badge;
+    if (s.fast) {
+      termBadge.style.cssText = 'background:rgba(74,222,128,.12);color:#4ade80;border-color:rgba(74,222,128,.25)';
+    } else {
+      termBadge.style.cssText = 'background:rgba(59,158,255,.12);color:#3b9eff;border-color:rgba(59,158,255,.25)';
+    }
+
+    // IN (instant)
+    termIn.textContent = s.inText;
+
+    // OUT (typewriter)
+    termOut.className = 'pipe-term-val ' + s.outCls;
+    const charSpeed = (s.outCls === 'ptv-jp') ? 14 : 18;
+    await typewrite(termOut, s.outText, charSpeed);
+
+    // Hold at this stage then advance
+    await new Promise(r => setTimeout(r, s.hold));
+
+    if (running) runStage((i + 1) % STAGES.length);
+  }
+
+  // Start when pipeline section enters viewport
+  const viz = document.getElementById('pipe-viz');
+  const startObs = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting && !running) {
+      running = true;
+      startObs.disconnect();
+      runStage(0);
+    }
+  }, { threshold: 0.25 });
+  startObs.observe(viz);
+})();
 </script>
 
 <!-- Tech stack icons via esm.sh -->
