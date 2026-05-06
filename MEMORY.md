@@ -483,3 +483,91 @@ node bot/index.js
 # Terminal 3 — overlay (full rebuild after capability changes)
 npm run tauri dev
 ```
+
+---
+
+## SESSION 7 — May 6, 2026 (Day 3 — Remaining Tasks: Implementation Guide)
+
+### Guide delivered for these pending Day 3 tasks
+- ⬜→✅ SuggestionCard.tsx — delivery buttons (Bot Speaks / Bot Sends / I'll Speak)
+- ⬜→✅ RomajiPopup.tsx — fullscreen romaji overlay for "I'll Speak"
+- ⬜→✅ QuickReactions.tsx — 草 えー マジ? gg もう一回 待って
+- ⬜→✅ Phrasebook.tsx — saved phrases, Ctrl+1-9 hotkeys
+- ⬜→✅ StatsPanel.tsx — latency display, WS status
+- ⬜→✅ Git commit + push Day 3 work
+
+### Files to CREATE (new)
+1. `src/components/SuggestionCard.tsx`
+2. `src/components/RomajiPopup.tsx`
+3. `src/components/QuickReactions.tsx`
+4. `src/components/Phrasebook.tsx`
+5. `src/components/StatsPanel.tsx`
+
+### Files to MODIFY
+- `src/store/atoms.ts` — append: `romajiPopupAtom`, `phrasebookAtom`, `phrasebookOpenAtom` + their interfaces
+- `src/components/index.ts` — add exports for all 5 new components + QuickReplyBox + CallInfoStrip
+- `src/components/SpeakerCard.tsx` — import SuggestionCard; replace `.suggestion-chips` div with `.suggestion-cards` + `<SuggestionCard>`
+- `src/App.tsx` — new imports, new atom `setPhrasebook`, new `phrasebook` packet type in handlePacket, add QuickReactions+Phrasebook+StatsPanel+RomajiPopup to JSX
+- `src/App.css` — append CSS for all new components
+- `bot/index.js` — update import (add savePhrase, getPhrasebook, deletePhrase), send phrasebook on connect, add savePhrase/deletePhrase/botSpeaks handlers to handleUiCommand
+- `bot/db.js` — NO CHANGE needed (savePhrase, getPhrasebook, deletePhrase, getPhraseBySlot all already exist)
+
+### Architecture decisions made this session
+- `romajiPopupAtom` in Jotai so SuggestionCard + Phrasebook can both trigger it without prop drilling
+- `phrasebookAtom` in Jotai — synced from bot via `type: "phrasebook"` WS packet on save/delete/connect
+- Auto slot assignment (1-9) done in bot's handleUiCommand — queries existing slots, assigns first free
+- `botSpeaks` implemented as a logged stub — Day 5 will wire XTTS v2
+- `deletePhrase` validates id as positive integer before calling db
+- `botSends` in handleUiCommand now has `.trim().slice(0, 500)` validation (security hardening added)
+- QuickReactions uses hardcoded array — no atom needed (fixed data)
+- StatsPanel hidden when `stats.lastUpdated === 0` — no wasted space before first packet
+
+### Render order in App.tsx (final Day 3)
+```
+overlay-root
+├── Header
+├── QuickReplyBox
+├── CallInfoStrip
+├── QuickReactions      ← NEW
+├── speaker-list (flex:1 scrollable)
+├── Phrasebook          ← NEW
+├── StatsPanel          ← NEW
+├── resize-handle
+└── RomajiPopup         ← NEW (position:fixed overlay, renders last)
+```
+
+### Phrasebook WS protocol
+- Bot → UI: `{ type: "phrasebook", phrases: [{ id, slot, jp, romaji, en }] }`
+- UI → Bot: `{ action: "savePhrase", jp, romaji, en }`
+- UI → Bot: `{ action: "deletePhrase", id }`
+- Sent: on UI connect (300ms delay), after save, after delete
+
+### Security hardening done
+- `botSends` in handleUiCommand: added `.trim().slice(0, 500)` validation
+- `savePhrase`: validates jp/romaji/en as strings, trimmed, max 200 chars each
+- `deletePhrase`: validates id as `parseInt`, `isInteger`, `> 0`
+- React renders all JP/EN/romaji as text nodes (not innerHTML) — XSS safe by default
+- Keyboard hotkeys (Ctrl+1-9) only call `botSends` — no eval/navigation/DOM
+
+### CSS classes added (appended to App.css)
+- `.suggestion-card`, `.suggestion-card-top`, `.suggestion-card-index`, `.suggestion-card-text`
+- `.suggestion-card-jp`, `.suggestion-card-romaji`, `.suggestion-card-en`
+- `.suggestion-save-btn`, `.suggestion-card-actions`
+- `.suggest-btn`, `.suggest-btn--speaks`, `.suggest-btn--sends`, `.suggest-btn--speak`
+- `.romaji-popup-overlay`, `.romaji-popup-card`, `.romaji-popup-label`
+- `.romaji-popup-text`, `.romaji-popup-jp`, `.romaji-popup-close`, `.romaji-popup-esc`
+- `.quick-reactions`, `.reaction-btn`
+- `.phrasebook`, `.phrasebook-header`, `.phrasebook-icon`, `.phrasebook-title`
+- `.phrasebook-count`, `.phrasebook-chevron`, `.phrasebook-list`
+- `.phrase-row`, `.phrase-slot`, `.phrase-text`, `.phrase-jp`, `.phrase-romaji`
+- `.phrase-actions`, `.phrase-btn`, `.phrase-btn--speak`, `.phrase-btn--send`, `.phrase-btn--delete`
+- `.stats-panel`, `.stats-item`, `.stats-label`, `.stats-value`, `.stats-sep`
+- `.stats-ws-open`, `.stats-ws-connecting`, `.stats-ws-closed`
+
+### Day 4 priorities (May 7)
+- Framer Motion card animations (spring polish)
+- bot/tts.js — botSpeaks stub structure for Day 5
+- Window snap-to-corner (double-click header)
+- Record demo video footage (local pipeline — no cloud needed)
+- Write README + HuggingFace Space demo page draft
+- Keyboard shortcuts polish (Tab between suggestions, number keys 1/2/3 for suggestions)

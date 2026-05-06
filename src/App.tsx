@@ -25,6 +25,9 @@ import {
   wsStatusAtom,
   quickReplyResultAtom,
   quickReplyLoadingAtom,
+  romajiPopupAtom,
+  phrasebookAtom,
+  type PhrasebookEntry,
   type SpeakerState,
   type CallInfo,
 } from "./store/atoms";
@@ -32,6 +35,17 @@ import Header from "./components/Header";
 import SpeakerCard from "./components/SpeakerCard";
 import QuickReplyBox from "./components/QuickReplyBox";
 import CallInfoStrip from "./components/CallInfoStrip";
+import RomajiPopup from "./components/RomajiPopup";
+import QuickReactions from "./components/QuickReactions";
+import Phrasebook     from "./components/Phrasebook";
+import StatsPanel     from "./components/StatsPanel";
+
+
+
+
+
+
+
 
 const UI_WS_URL = "ws://127.0.0.1:8766";
 const SPEAKER_TIMEOUT_MS = 8_000; // Remove card after 8s of inactivity
@@ -47,6 +61,7 @@ export default function App() {
   const setWsStatus = useSetAtom(wsStatusAtom);
   const setQuickReplyResult = useSetAtom(quickReplyResultAtom);
   const setQuickReplyLoading = useSetAtom(quickReplyLoadingAtom);
+  const setPhrasebook = useSetAtom(phrasebookAtom);
 
   const wsRef = useRef<WebSocket | null>(null);
   const timeoutRefs = useRef<Map<string, ReturnType<typeof setTimeout>>>(
@@ -112,6 +127,12 @@ export default function App() {
         } else {
           setCallInfo(null);
         }
+        return;
+      }
+
+      // Phrasebook sync from bot (on save / delete / connect)
+      if (type === "phrasebook") {
+        setPhrasebook((packet.phrases as PhrasebookEntry[]) ?? []);
         return;
       }
 
@@ -206,6 +227,7 @@ export default function App() {
       scheduleSpeakerRemoval,
       setQuickReplyResult,
       setQuickReplyLoading,
+      setPhrasebook,
     ]
   );
 
@@ -291,6 +313,7 @@ export default function App() {
       <Header sendCommand={sendCommand} />
       <QuickReplyBox sendCommand={sendCommand} />
       <CallInfoStrip />
+      <QuickReactions sendCommand={sendCommand} />
       <div className="speaker-list">
         <AnimatePresence mode="popLayout">
           {orderedSpeakers.length === 0 ? (
@@ -307,8 +330,12 @@ export default function App() {
           )}
         </AnimatePresence>
       </div>
+      <Phrasebook sendCommand={sendCommand} />
+      <StatsPanel />
       {/* Bottom resize grip */}
       <div className="resize-handle" onMouseDown={onResizeMouseDown} />
+      {/* Full-screen overlay — must render last for correct z-index */}
+      <RomajiPopup />
     </div>
   );
 }

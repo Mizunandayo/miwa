@@ -840,3 +840,472 @@ button {
   background: rgba(59, 158, 255, 0.25);
   cursor: pointer;
 }
+
+
+
+
+
+/* ─── Suggestion Card (replaces suggestion-chip) ─────────────────────────── */
+.suggestion-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 2px;
+}
+
+.suggestion-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 7px 8px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 0.15s ease;
+}
+
+.suggestion-card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.suggestion-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+.suggestion-card-index {
+  width: 17px;
+  height: 17px;
+  border-radius: 4px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.suggestion-card-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.suggestion-card-jp {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.suggestion-card-romaji {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.suggestion-card-en {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.suggestion-save-btn {
+  font-size: 11px;
+  padding: 2px 3px;
+  opacity: 0.35;
+  background: none;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  border-radius: 3px;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  line-height: 1;
+}
+
+.suggestion-save-btn:hover {
+  opacity: 1;
+  background: var(--surface-hover);
+  cursor: pointer;
+}
+
+.suggestion-card-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.suggest-btn {
+  flex: 1;
+  padding: 4px 4px;
+  font-size: 10px;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.suggest-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.suggest-btn:active {
+  transform: scale(0.97);
+}
+
+.suggest-btn--speaks:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.suggest-btn--sends:hover {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(34, 197, 94, 0.10);
+}
+
+.suggest-btn--speak:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+  background: rgba(245, 158, 11, 0.10);
+}
+
+/* ─── Romaji Popup ────────────────────────────────────────────────────────── */
+.romaji-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 5, 5, 0.90);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  cursor: pointer;
+}
+
+.romaji-popup-card {
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: var(--radius-lg);
+  padding: 28px 20px 20px;
+  max-width: 370px;
+  width: 88%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  cursor: default;
+  text-align: center;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.04),
+    0 24px 60px rgba(0,0,0,0.6);
+}
+
+.romaji-popup-label {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.romaji-popup-text {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.35;
+  letter-spacing: 0.04em;
+  word-break: break-word;
+}
+
+.romaji-popup-jp {
+  font-size: 18px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.romaji-popup-close {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 14px;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.romaji-popup-close:hover {
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.15);
+  background: var(--surface-hover);
+  cursor: pointer;
+}
+
+.romaji-popup-esc {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--text-muted);
+}
+
+/* ─── Quick Reactions ─────────────────────────────────────────────────────── */
+.quick-reactions {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.reaction-btn {
+  padding: 4px 11px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.14s ease;
+  white-space: nowrap;
+  line-height: 1.5;
+}
+
+.reaction-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+  border-color: var(--accent);
+  cursor: pointer;
+}
+
+.reaction-btn:active {
+  transform: scale(0.95);
+  background: var(--accent-dim);
+}
+
+/* ─── Phrasebook ──────────────────────────────────────────────────────────── */
+.phrasebook {
+  background: rgba(5, 5, 5, 0.75);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.phrasebook-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.14s ease;
+}
+
+.phrasebook-header:hover {
+  background: var(--surface-hover);
+  cursor: pointer;
+}
+
+.phrasebook-icon {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.phrasebook-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+
+.phrasebook-count {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--accent);
+  background: var(--accent-dim);
+  border-radius: 8px;
+  padding: 1px 6px;
+  font-weight: 700;
+}
+
+.phrasebook-chevron {
+  margin-left: auto;
+  font-size: 9px;
+  color: var(--text-muted);
+  transition: transform 0.18s ease;
+  flex-shrink: 0;
+}
+
+.phrasebook-chevron.open {
+  transform: rotate(90deg);
+}
+
+.phrasebook-list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+}
+
+.phrase-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.12s ease;
+}
+
+.phrase-row:last-child {
+  border-bottom: none;
+}
+
+.phrase-row:hover {
+  background: rgba(255,255,255,0.02);
+}
+
+.phrase-slot {
+  width: 14px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--accent);
+  font-weight: 700;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.phrase-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.phrase-jp {
+  font-size: 12px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.phrase-romaji {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.phrase-actions {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.phrase-btn {
+  width: 22px;
+  height: 22px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.14s ease;
+  line-height: 1;
+}
+
+.phrase-btn:hover {
+  background: var(--surface-hover);
+  cursor: pointer;
+}
+
+.phrase-btn--speak:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.phrase-btn--send:hover {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.phrase-btn--delete:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+/* ─── Stats Panel ─────────────────────────────────────────────────────────── */
+.stats-panel {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 6px;
+  flex-shrink: 0;
+}
+
+.stats-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stats-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.stats-value {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.stats-sep {
+  font-size: 10px;
+  color: var(--border);
+}
+
+.stats-ws-open       { color: var(--green); }
+.stats-ws-connecting { color: var(--amber); }
+.stats-ws-closed     { color: var(--red);   }

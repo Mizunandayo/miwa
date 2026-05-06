@@ -119,3 +119,35 @@ export const quickReplyResultAtom = atom<QuickReplyResult | null>(null);
 
 /** Quick reply: loading state while server translates */
 export const quickReplyLoadingAtom = atom<boolean>(false);
+
+
+
+
+
+
+
+// ---Romaji Popup ---
+
+export interface RomajiPopupData {
+  jp: string;
+  romaji: string;
+}
+
+/** Full-screen romaji overlay — non-null = visible */
+export const romajiPopupAtom = atom<RomajiPopupData | null>(null);
+
+// --- Phrasebook ---
+
+export interface PhrasebookEntry {
+  id: number;
+  slot: number | null;
+  jp: string;
+  romaji: string;
+  en: string;
+}
+
+/** All saved phrases — synced from bot via WS phrasebook packet */
+export const phrasebookAtom = atom<PhrasebookEntry[]>([]);
+
+/** Whether the Phrasebook panel is expanded */
+export const phrasebookOpenAtom = atom<boolean>(false);

@@ -29,9 +29,24 @@ import prism from "prism-media";
 import { WebSocket, WebSocketServer } from "ws";
 import https from "https";
 import sharp from "sharp";
-import { initDb, getCachedAvatar, saveAvatar } from "./db.js";
+import {
+  initDb,
+  getCachedAvatar,
+  saveAvatar,
+  savePhrase,
+  getPhrasebook,
+  deletePhrase,
+} from "./db.js";
 
-// ─── Startup validation ────────────────────────────────────────────────────
+
+
+
+
+
+
+
+
+// --- Startup validation ---
 const REQUIRED_ENV = ["DISCORD_TOKEN"];
 for (const key of REQUIRED_ENV) {
   if (!process.env[key]) {
@@ -45,7 +60,7 @@ const UI_WS_PORT = parseInt(process.env.UI_WS_PORT || "8766", 10);
 const DEFAULT_STYLE = process.env.DEFAULT_STYLE || "casual";
 const MAX_AUDIO_BYTES = 2 * 1024 * 1024; // 2MB
 
-// ─── State ─────────────────────────────────────────────────────────────────
+// --- State ---
 let serverWs = null;
 let currentVoiceChannelId = null;
 let currentGuildId = null;
@@ -60,7 +75,7 @@ let cachedGuildIconForId = null; // guild ID the icon was fetched for
  */
 const speakerCache = new Map();
 
-// ─── Init DB ───────────────────────────────────────────────────────────────
+// --- Init DB ---
 initDb();
 
 
@@ -68,7 +83,7 @@ initDb();
 
 
 
-// ─── Discord Client ────────────────────────────────────────────────────────
+// --- Discord Client ---
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -102,6 +117,16 @@ uiWss.on("connection", (ws, req) => {
 
   // Send current call state immediately so overlay is up-to-date on reconnect
   setTimeout(() => broadcastCallInfo(), 200);
+
+  // Send phrasebook so hotkeys work immediately after reconnect
+  setTimeout(() => {
+    try {
+      const phrases = getPhrasebook();
+      if (phrases.length > 0 && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "phrasebook", phrases }));
+      }
+    } catch { /* db may not be ready yet */ }
+  }, 300);
 
   ws.on("message", (data) => {
     // Commands FROM the UI: setStyle, botSends, etc.
@@ -178,7 +203,11 @@ async function broadcastCallInfo() {
 
 
 
-// ─── Server WebSocket Client (port 8765) ───────────────────────────────────
+
+
+
+
+// --- Server WebSocket Client (port 8765) ---
 // Connects to server/main.py. Reconnects automatically if server is down.
 function connectToServer() {
   if (
@@ -235,7 +264,11 @@ function sendToServer(payload) {
 
 
 
-// ─── Avatar Fetching ───────────────────────────────────────────────────────
+
+
+
+
+// --- Avatar Fetching ---
 async function fetchAvatarBase64(userId, avatarHash) {
   // Check cache first
   const cached = getCachedAvatar(userId);
@@ -272,6 +305,9 @@ async function fetchAvatarBase64(userId, avatarHash) {
 
 
 
+
+
+
 async function fetchGuildIconBase64(guildId, iconHash) {
   if (!iconHash) return null;
   return new Promise((resolve) => {
@@ -292,7 +328,21 @@ async function fetchGuildIconBase64(guildId, iconHash) {
   });
 }
 
-// ─── Voice Audio Pipeline ──────────────────────────────────────────────────
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// --- Voice Audio Pipeline ---
 function attachVoiceReceiver(connection) {
   const receiver = connection.receiver;
 
@@ -366,7 +416,7 @@ function attachVoiceReceiver(connection) {
 
 
 
-// ─── Voice Channel Text Chat ───────────────────────────────────────────────
+// --- Voice Channel Text Chat ---
 // Captures messages typed in the voice channel's text tab.
 client.on("messageCreate", async (message) => {
   if (message.author.bot || !message.guild) return;
@@ -420,7 +470,7 @@ client.on("messageCreate", async (message) => {
 
 
 
-// ─── Commands from UI ──────────────────────────────────────────────────────
+// --- Commands from UI ──────────────────────────────────────────────────────
 function handleUiCommand(msg) {
   if (!msg.action) return;
 
@@ -447,17 +497,88 @@ function handleUiCommand(msg) {
     });
   }
 
+
+
+
+
+
+
+
+
+
+
   if (msg.action === "botSends" && currentGuildId && msg.text) {
     // Bot types Japanese into the voice channel text chat
+    // Validate text before sending — never forward raw UI input unsanitized
+    const text = String(msg.text).trim().slice(0, 500);
+    if (!text) return;
     const guild = client.guilds.cache.get(currentGuildId);
     const channel = guild?.channels.cache.get(currentVoiceChannelId);
-    channel?.send(msg.text).catch((err) => {
+    channel?.send(text).catch((err) => {
       console.error("[bot] botSends failed:", err.message);
     });
   }
 
-  // botSpeaks (XTTS v2 TTS) → Day 5
+  if (msg.action === "botSpeaks") {
+    // Stub — XTTS v2 wired on Day 5 (server/tts.py + bot/tts.js)
+    const text = String(msg.text || "").trim().slice(0, 200);
+    if (!text) return;
+    console.log(`[bot] botSpeaks stub (Day 5 — XTTS v2): "${text}"`);
+    // TODO Day 5: const tts = require("./tts.js"); tts.speak(text, getVoiceConnection(currentGuildId));
+  }
+
+  if (msg.action === "savePhrase") {
+    // Validate all fields — never trust UI input
+    const jp     = String(msg.jp     || "").trim().slice(0, 200);
+    const romaji = String(msg.romaji || "").trim().slice(0, 200);
+    const en     = String(msg.en     || "").trim().slice(0, 200);
+    if (!jp) return;
+
+    // Find next free slot (1–9), or null if all slots are taken
+    try {
+      const existing = getPhrasebook();
+      const usedSlots = new Set(existing.map((p) => p.slot).filter(Boolean));
+      let nextSlot = null;
+      for (let i = 1; i <= 9; i++) {
+        if (!usedSlots.has(i)) { nextSlot = i; break; }
+      }
+      savePhrase(jp, romaji, en, nextSlot);
+      const phrases = getPhrasebook();
+      broadcastToUI({ type: "phrasebook", phrases });
+      console.log(`[bot] Phrase saved to slot ${nextSlot ?? "none"}: "${jp}"`);
+    } catch (err) {
+      console.error("[bot] savePhrase failed:", err.message);
+    }
+  }
+
+  if (msg.action === "deletePhrase") {
+    // Validate id is a positive integer
+    const id = parseInt(String(msg.id || ""), 10);
+    if (!id || id <= 0 || !Number.isInteger(id)) return;
+    try {
+      deletePhrase(id);
+      const phrases = getPhrasebook();
+      broadcastToUI({ type: "phrasebook", phrases });
+      console.log(`[bot] Phrase deleted: id=${id}`);
+    } catch (err) {
+      console.error("[bot] deletePhrase failed:", err.message);
+    }
+  }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -12,6 +12,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import type { SpeakerState } from "../store/atoms";
 import KaraokeText from "./KaraokeText";
 import RomajiLine from "./RomajiLine";
+import SuggestionCard from "./SuggestionCard";
+
+
 
 interface SpeakerCardProps {
   speaker: SpeakerState;
@@ -136,20 +139,14 @@ export default function SpeakerCard({ speaker, sendCommand }: SpeakerCardProps) 
                 transition={{ duration: 0.18, ease: "easeInOut" }}
                 style={{ overflow: "hidden" }}
               >
-                <div className="suggestion-chips">
+                <div className="suggestion-cards">
                   {suggestions.map((s, i) => (
-                    <div
+                    <SuggestionCard
                       key={i}
-                      className="suggestion-chip"
-                      role="button"
-                      tabIndex={0}
-                    >
-                      <div className="suggestion-left">
-                        <span className="suggestion-jp">{s.jp}</span>
-                        <span className="suggestion-en">{s.en}</span>
-                      </div>
-                      <span className="suggestion-romaji">{s.romaji}</span>
-                    </div>
+                      suggestion={s}
+                      index={i}
+                      sendCommand={sendCommand}
+                    />
                   ))}
                 </div>
               </motion.div>
