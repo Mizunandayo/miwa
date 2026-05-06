@@ -135,13 +135,16 @@ def transcribe(pcm_bytes: bytes) -> dict:
                         })
 
             # ── Hallucination filter ──────────────────────────────────────────
-            HALLUCINATIONS = {
-                "ご視聴ありがとうございました", "ご視聴ありがとうございます",
+            HALLUCINATION_SUBSTRINGS = [
+                "ご視聴ありがとう", "チャンネル登録", "字幕は自動生成",
+                "ご視聴いただき", "高評価", "チャンネル登",
+            ]
+            HALLUCINATION_EXACT = {
                 "おやすみなさい", "ありがとうございました", "ありがとうございます",
-                "チャンネル登録", "よろしくお願いします", "よろしくお願いいたします",
-                "字幕", "字幕は自動生成されています",
+                "よろしくお願いします", "よろしくお願いいたします", "字幕",
             }
-            if full_text.strip() in HALLUCINATIONS:
+            stripped = full_text.strip()
+            if stripped in HALLUCINATION_EXACT or any(h in stripped for h in HALLUCINATION_SUBSTRINGS):
                 log.warning(f"Hallucination filtered: {full_text!r}")
                 return {"text": "", "words": []}
 
