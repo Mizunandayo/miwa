@@ -1,16 +1,19 @@
 """
-server/transcribe.py — WhisperX speech-to-text wrapper
+server/transcribe.py — Whisper speech-to-text wrapper (openai-whisper + ROCm GPU)
 
 Input:  raw PCM bytes (16kHz, mono, int16, little-endian)
 Output: { "text": str, "words": [{ "word": str, "start": float, "end": float }] }
 
 Environment variables:
-  WHISPERX_DEVICE   = "cuda" | "cpu"   (default: cpu, set to cuda on AMD cloud)
-  WHISPERX_MODEL    = "large-v3"        (default: large-v3)
-  HF_TOKEN          = "hf_..."          (required for diarization model)
+  WHISPERX_DEVICE   = "cuda" | "cpu"   (default: cpu; set "cuda" on AMD cloud — ROCm exposes as CUDA via HIP)
+  WHISPERX_MODEL    = "large-v2"        (default: large-v2; large-v3 also works)
+  HF_TOKEN          = "hf_..."          (not required for openai-whisper)
+
+Why openai-whisper instead of WhisperX/faster-whisper:
+  faster-whisper uses CTranslate2 which has NO ROCm support — always falls back to CPU (3-4s).
+  openai-whisper uses PyTorch directly — ROCm maps HIP as CUDA, giving ~200-400ms on MI300X.
 """
 
-import io
 import logging
 import os
 import struct
@@ -18,43 +21,31 @@ import struct
 log = logging.getLogger("miwa.transcribe")
 
 #--- Config ---
-DEVICE       = os.getenv("WHISPERX_DEVICE", "cpu")
-COMPUTE_TYPE = "float16" if DEVICE == "cuda" else "int8"
-MODEL_NAME   = os.getenv("WHISPERX_MODEL", "large-v3")
-HF_TOKEN     = os.getenv("HF_TOKEN", "")
+DEVICE     = os.getenv("WHISPERX_DEVICE", "cpu")
+MODEL_NAME = os.getenv("WHISPERX_MODEL", "large-v2")
+USE_FP16   = DEVICE == "cuda"
 
 
-#--- Lazy-load WhisperX (not installed locally) ---
+#--- Lazy-load openai-whisper ---
 _model = None
-_align_model = None
-_align_meta = None
 
 def _load_model():
-    global _model, _align_model, _align_meta
+    global _model
     if _model is not None:
         return True
     try:
-        import whisperx
-        log.info(f"Loading WhisperX model={MODEL_NAME} device={DEVICE}")
-        _model = whisperx.load_model(
-            MODEL_NAME,
-            DEVICE,
-            compute_type=COMPUTE_TYPE,
-            language="ja",
-        )
-        _align_model, _align_meta = whisperx.load_align_model(
-            language_code="ja",
-            device=DEVICE,
-        )
-        log.info("WhisperX loaded")
+        import whisper
+        log.info(f"Loading Whisper model={MODEL_NAME} device={DEVICE} fp16={USE_FP16}")
+        _model = whisper.load_model(MODEL_NAME, device=DEVICE)
+        log.info("Whisper loaded")
         return True
     except ImportError:
-        log.warning("whisperx not installed - using transcribe stub")
+        log.warning("openai-whisper not installed — using transcribe stub")
         return False
     except Exception as e:
-        log.error(f"WhisperX load failed: {e}")
+        log.error(f"Whisper load failed: {e}")
         return False
-    
+
 
 def _pcm_to_float32(pcm_bytes: bytes) -> "np.ndarray":
     """Convert raw int16 PCM bytes to float32 numpy array (range -1.0 to 1.0)"""
@@ -92,39 +83,30 @@ def transcribe(pcm_bytes: bytes) -> dict:
         log.warning(f"Audio truncated from {len(pcm_bytes)} to {MAX_BYTES} bytes")
         pcm_bytes = pcm_bytes[:MAX_BYTES]
 
-    # Try real WhisperX
+    # Try real Whisper (openai-whisper, PyTorch — works on ROCm via HIP)
     if _load_model():
         try:
-            import whisperx
             import numpy as np
 
             audio = _pcm_to_float32(pcm_bytes)
 
-            # Transcribe
-            result = _model.transcribe(audio, batch_size=16, language="ja")
+            # Transcribe with word-level timestamps
+            result = _model.transcribe(
+                audio,
+                language="ja",
+                word_timestamps=True,
+                fp16=USE_FP16,
+            )
 
             if not result.get("segments"):
                 return {"text": "", "words": []}
 
-            # Align for word timestamps
-            aligned = whisperx.align(
-                result["segments"],
-                _align_model,
-                _align_meta,
-                audio,
-                DEVICE,
-                return_char_alignments=False,
-            )
+            # Extract full text
+            full_text = result.get("text", "").strip()
 
-            # Extract text
-            full_text = " ".join(
-                seg.get("text", "").strip()
-                for seg in aligned.get("segments", [])
-            ).strip()
-
-            # Extract word timestamps
+            # Extract word timestamps from segments
             words = []
-            for seg in aligned.get("segments", []):
+            for seg in result.get("segments", []):
                 for w in seg.get("words", []):
                     word = w.get("word", "").strip()
                     if word:
@@ -152,8 +134,7 @@ def transcribe(pcm_bytes: bytes) -> dict:
             return {"text": full_text, "words": words}
 
         except Exception as e:
-            log.error(f"WhisperX transcription failed: {e}")
-            # Fall through to stub
+            log.error(f"Whisper transcription failed: {e}")
 
     # ── Stub fallback ─────────────────────────────────────────────────────────
     log.info(f"transcribe_stub: {len(pcm_bytes)} bytes → stub response")

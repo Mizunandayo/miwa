@@ -202,8 +202,8 @@ async def websocket_endpoint(websocket: WebSocket):
     client_host = websocket.client.host if websocket.client else "unknown"
     log.info(f"New WebSocket connection from {client_host}")
 
-    # Security: only accept from localhost
-    if client_host not in ("127.0.0.1", "::1", "localhost"):
+    # Security: only accept from localhost / Docker gateway (172.17.0.1 = host→container tunnel)
+    if client_host not in ("127.0.0.1", "::1", "localhost", "172.17.0.1"):
         log.warning(f"Rejected connection from non-localhost: {client_host}")
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
@@ -395,4 +395,4 @@ async def tts_endpoint(req: TtsRequest):
 # ─── Entry Point ──────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8765, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=8765, log_level="info")
