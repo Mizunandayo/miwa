@@ -134,6 +134,17 @@ def transcribe(pcm_bytes: bytes) -> dict:
                             "end":   round(w.get("end",   0.0), 3),
                         })
 
+            # ── Hallucination filter ──────────────────────────────────────────
+            HALLUCINATIONS = {
+                "ご視聴ありがとうございました", "ご視聴ありがとうございます",
+                "おやすみなさい", "ありがとうございました", "ありがとうございます",
+                "チャンネル登録", "よろしくお願いします", "よろしくお願いいたします",
+                "字幕", "字幕は自動生成されています",
+            }
+            if full_text.strip() in HALLUCINATIONS:
+                log.warning(f"Hallucination filtered: {full_text!r}")
+                return {"text": "", "words": []}
+
             log.info(f"Transcribed: '{full_text}' ({len(words)} words)")
             return {"text": full_text, "words": words}
 
