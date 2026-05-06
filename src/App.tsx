@@ -10,6 +10,8 @@
  */
 
 import { useEffect, useCallback, useRef } from "react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { LogicalSize } from "@tauri-apps/api/dpi";
 import { useAtom, useSetAtom } from "jotai";
 import { AnimatePresence } from "framer-motion";
 import {
@@ -18,15 +20,18 @@ import {
   orderedSpeakersAtom,
   botStatusAtom,
   channelNameAtom,
+  callInfoAtom,
   statsAtom,
   wsStatusAtom,
   quickReplyResultAtom,
   quickReplyLoadingAtom,
   type SpeakerState,
+  type CallInfo,
 } from "./store/atoms";
 import Header from "./components/Header";
 import SpeakerCard from "./components/SpeakerCard";
 import QuickReplyBox from "./components/QuickReplyBox";
+import CallInfoStrip from "./components/CallInfoStrip";
 
 const UI_WS_URL = "ws://127.0.0.1:8766";
 const SPEAKER_TIMEOUT_MS = 8_000; // Remove card after 8s of inactivity
@@ -37,6 +42,7 @@ export default function App() {
   const [orderedSpeakers] = useAtom(orderedSpeakersAtom);
   const setBotStatus = useSetAtom(botStatusAtom);
   const setChannelName = useSetAtom(channelNameAtom);
+  const setCallInfo = useSetAtom(callInfoAtom);
   const setStats = useSetAtom(statsAtom);
   const setWsStatus = useSetAtom(wsStatusAtom);
   const setQuickReplyResult = useSetAtom(quickReplyResultAtom);
@@ -95,6 +101,20 @@ export default function App() {
         return;
       }
 
+      // Call info from bot (guild, channel, members)
+      if (type === "call_info") {
+        const guildName = (packet.guildName as string) ?? "";
+        const channelName = (packet.channelName as string) ?? "";
+        const members = (packet.members as CallInfo["members"]) ?? [];
+        if (guildName) {
+          const guildIconB64 = (packet.guildIconB64 as string | null) ?? null;
+          setCallInfo({ guildName, guildIconB64, channelName, members });
+        } else {
+          setCallInfo(null);
+        }
+        return;
+      }
+
       // Quick reply EN→JP result from server
       if (type === "quick_reply_result") {
         setQuickReplyLoading(false);
@@ -111,9 +131,22 @@ export default function App() {
         const userId = packet.userId as string;
         if (!userId) return;
 
+        const suggestionsOnly = packet.suggestionsOnly === true;
+
         setSpeakers((prev) => {
           const next = new Map(prev);
           const existing = next.get(userId);
+
+          // suggestionsOnly: only patch suggestions, leave everything else
+          if (suggestionsOnly && existing) {
+            next.set(userId, {
+              ...existing,
+              suggestions:
+                (packet.suggestions as SpeakerState["suggestions"]) ??
+                existing.suggestions,
+            });
+            return next;
+          }
 
           const updated: SpeakerState = {
             userId,
@@ -168,6 +201,7 @@ export default function App() {
       setSpeakerOrder,
       setBotStatus,
       setChannelName,
+      setCallInfo,
       setStats,
       scheduleSpeakerRemoval,
       setQuickReplyResult,
@@ -225,10 +259,38 @@ export default function App() {
     }
   }, []);
 
+  // ── Bottom resize handle ────────────────────────────────────────────────
+  const resizeDragRef = useRef<{ startY: number; startH: number } | null>(null);
+
+  const onResizeMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    resizeDragRef.current = { startY: e.clientY, startH: window.innerHeight };
+
+    const onMouseMove = async (ev: MouseEvent) => {
+      if (!resizeDragRef.current) return;
+      const delta = ev.clientY - resizeDragRef.current.startY;
+      const newH = Math.max(260, resizeDragRef.current.startH + delta);
+      try {
+        const win = getCurrentWindow();
+        await win.setSize(new LogicalSize(window.innerWidth, newH));
+      } catch { /* ignore */ }
+    };
+
+    const onMouseUp = () => {
+      resizeDragRef.current = null;
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  }, []);
+
   return (
     <div className="overlay-root">
       <Header sendCommand={sendCommand} />
       <QuickReplyBox sendCommand={sendCommand} />
+      <CallInfoStrip />
       <div className="speaker-list">
         <AnimatePresence mode="popLayout">
           {orderedSpeakers.length === 0 ? (
@@ -240,11 +302,13 @@ export default function App() {
             </div>
           ) : (
             orderedSpeakers.map((speaker) => (
-              <SpeakerCard key={speaker.userId} speaker={speaker} />
+              <SpeakerCard key={speaker.userId} speaker={speaker} sendCommand={sendCommand} />
             ))
           )}
         </AnimatePresence>
       </div>
+      {/* Bottom resize grip */}
+      <div className="resize-handle" onMouseDown={onResizeMouseDown} />
     </div>
   );
 }

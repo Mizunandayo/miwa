@@ -5,6 +5,100 @@
 
 ---
 
+## ACTUAL DAY PROGRESS (vs. blueprint plan)
+
+| Day | Date | Blueprint Plan | What Was Actually Done |
+|---|---|---|---|
+| 1 | May 4 | Infrastructure + WebSocket + Discord audio | AMD Cloud provisioned, MI300X verified, Llama 3.3 70B downloaded (263GB), vLLM serving confirmed |
+| 2 | May 5 | Translation + profile pictures + multi-speaker UI | server/main.py, bot/index.js, bot/db.js, all React components (App.tsx, Header, SpeakerCard, KaraokeText, RomajiLine, atoms.ts), Tauri config, full design system CSS |
+| 3 | May 6 | LLM + Agents + Memory (cloud) | UI polish — QuickReplyBox (EN→JP debounced), Suggestion chips (collapse/refresh/pool), vertical resize handle, CallInfoStrip (guild icon + member avatars), bug fix: google_translate source hardcode |
+| 4 | May 7 | Suggestions + Quick Reply + Full UX | ⬜ Planned: RomajiPopup, QuickReactions, Phrasebook, Bot Speaks (XTTS) |
+| 5 | May 8 | Polish + .exe build | ⬜ Planned: Recreate AMD cloud, WhisperX, Qdrant, CrewAI, XTTS, SSH tunnel, StatsPanel |
+| 6 | May 9 | GitHub + HF Space + Demo Video | ⬜ Planned |
+| 7 | May 10 | Final Review + SUBMIT | ⬜ Planned |
+
+**Note:** Cloud (MI300X) was destroyed after Day 1 to stop billing (~$83 remaining). All Day 2–3 work done locally with stub server. Cloud will be recreated Day 5 (May 8).
+
+---
+
+## FULL TASK LIST (by day)
+
+### Day 1 (May 4) — Foundation ✅
+- ✅ Git repo initialized + pushed to GitHub
+- ✅ Tailwind v4 installed (@tailwindcss/vite)
+- ✅ TypeScript strict mode configured (tsconfig.json, @types/react)
+- ✅ .gitignore updated, .env.example created
+- ✅ AMD MI300X provisioned, SSH key configured (miwa_amd)
+- ✅ PyTorch + ROCm GPU access confirmed
+- ✅ Japanese output confirmed from Llama 3.3 70B
+
+### Day 2 (May 5) — Core Pipeline ✅
+- ✅ main.py — FastAPI WebSocket server on ws://127.0.0.1:8765/ws
+- ✅ requirements.txt locked (setuptools<71 fix)
+- ✅ db.js — SQLite helper
+- ✅ index.js — Discord voice capture, dual WS bridge
+- ✅ atoms.ts — Jotai atoms
+- ✅ App.tsx — WebSocket bridge, packet routing
+- ✅ Header.tsx — drag, opacity, style buttons
+- ✅ SpeakerCard.tsx — avatar, JP/romaji/EN, suggestions
+- ✅ KaraokeText.tsx — word-by-word highlight
+- ✅ RomajiLine.tsx
+- ✅ Tauri window config — always-on-top, transparent, no decorations
+- ✅ opusscript installed (Opus decoder fallback)
+- ✅ .env bug fixed (/ws path missing)
+- ✅ Server idle timeout bug fixed (30s disconnect removed)
+- ✅ Full pipeline confirmed working end-to-end (real Discord avatars, latency <800ms)
+
+### Day 3 (May 6) — Quick Reply + Polish 🔨 (today)
+- ✅ QuickReplyBox.tsx — debounced auto-translate (500ms), style-aware
+- ✅ quickReplyResultAtom, quickReplyLoadingAtom atoms added
+- ✅ Server quick_reply handler — EN→JP + romaji
+- ✅ google_translate source bug fixed (was hardcoded "source": "ja")
+- ✅ Suggestion chips — collapse/expand, EN text below JP, refresh from pool of 12
+- ✅ Vertical resize handle (drag bottom edge, LogicalSize API)
+- ✅ CallInfoStrip.tsx — guild icon, member avatars, collapsible
+- ✅ callInfoAtom + CallInfo/CallMember types
+- ✅ broadcastCallInfo() in bot — async, fetches guild icon + all VC member avatars
+- ⬜ SuggestionCard.tsx — delivery buttons (Bot Speaks / Bot Sends / I'll Speak)
+- ⬜ RomajiPopup.tsx — fullscreen romaji overlay for "I'll Speak"
+- ⬜ QuickReactions.tsx — 草 えー マジ? gg もう一回 待って
+- ⬜ Phrasebook.tsx — saved phrases, Ctrl+1-9 hotkeys
+- ⬜ StatsPanel.tsx — latency, tokens/sec display
+- ⬜ Git commit + push Day 3 work
+
+### Day 4 (May 7) — UI Polish + Demo Prep
+- ⬜ Animate speaker cards in/out (Framer Motion spring)
+- ⬜ bot/tts.js — Bot Speaks delivery (XTTS stub until Day 5)
+- ⬜ Suggestion delivery — Bot Sends to Discord chat
+- ⬜ Keyboard shortcuts (Ctrl+1-9 phrasebook)
+- ⬜ Window resize / snap behavior
+- ⬜ Record demo video footage (local pipeline)
+- ⬜ Write README + HuggingFace Space demo page
+
+### Day 5 (May 8) — AMD Cloud Reconnect ☁️
+- ⬜ Recreate AMD MI300X droplet ($1.99/hr, ~$83 credit)
+- ⬜ Re-download Llama 3.3 70B (263GB) to /app/models/llama3.3-70b/
+- ⬜ Start vLLM background server (nohup vllm serve ...)
+- ⬜ SSH tunnel WebSocket (ssh -N -L 8765:localhost:8765 root@<new-ip>)
+- ⬜ Install WhisperX in ROCm container
+- ⬜ Replace transcribe_stub() with real WhisperX call
+- ⬜ Install Qdrant container, wire memory.py
+- ⬜ Install CrewAI, build suggest.py multi-agent pipeline
+- ⬜ Install XTTS v2, wire server/tts.py + bot/tts.js
+- ⬜ Real vLLM style differentiation (Formal/Neutral/Casual/Gaming)
+
+### Day 6 (May 9) — Integration + Testing
+- ⬜ End-to-end test with real voice + cloud GPU
+- ⬜ Latency profiling (target: <800ms total)
+- ⬜ Qwen2.5-72B alternate model path (Qwen partner prize)
+- ⬜ Fix any bugs found in full pipeline
+
+### Day 7 (May 10) — Submission
+- ⬜ Publish HuggingFace Space web demo (Space likes prize)
+- ⬜ 2 social posts tagging @AIatAMD + @lablab (Ship It challenge)
+- ⬜ Final git push
+- ⬜ Submit to lablab.ai before May 11, 3:00 AM PHT
+
 ## IDENTITY
 
 - **Project:** Miwa (美話 — "Beautiful Conversation")
@@ -182,17 +276,23 @@ miwa/
 
 ---
 
-## TAURI WINDOW CONFIGURATION (target)
+## TAURI WINDOW CONFIGURATION (actual — src-tauri/tauri.conf.json)
 
 ```json
 {
   "title": "Miwa",
   "width": 420,
   "height": 700,
+  "x": 20,
+  "y": 100,
   "alwaysOnTop": true,
   "transparent": true,
   "decorations": false,
-  "resizable": true
+  "shadow": false,
+  "resizable": true,
+  "minWidth": 380,
+  "maxWidth": 500,
+  "minHeight": 260
 }
 ```
 
@@ -216,16 +316,31 @@ miwa/
 | .env.example | ✅ created |
 | server/main.py (FastAPI) | ✅ DONE — running on ws://127.0.0.1:8765 |
 | server/requirements.txt | ✅ locked (setuptools<71 fix applied) |
-| bot/db.js | 🔨 Guide delivered — user coding |
-| bot/index.js | 🔨 Guide delivered — user coding |
-| React UI components | 🔨 Guide delivered — App.tsx/Header.tsx/SpeakerCard.tsx/KaraokeText.tsx/RomajiLine.tsx |
-| src/store/atoms.ts | 🔨 Guide delivered — user coding |
-| Tauri window config | 🔨 Guide delivered — user coding |
+| bot/db.js | ✅ DONE — SQLite WAL, avatars + phrasebook tables |
+| bot/index.js | ✅ DONE — VoiceReceiver, text chat, broadcastCallInfo, guild icon fetch |
+| src/App.tsx | ✅ DONE — WS bridge, packet routing, resize handle, call_info handler |
+| src/App.css | ✅ DONE — full design system, all component CSS |
+| src/store/atoms.ts | ✅ DONE — all Jotai atoms + CallInfo/CallMember types |
+| src/components/Header.tsx | ✅ DONE — drag, style modes, opacity, mini/click-through |
+| src/components/SpeakerCard.tsx | ✅ DONE — avatar, karaoke, suggestions collapse/refresh |
+| src/components/KaraokeText.tsx | ✅ DONE |
+| src/components/RomajiLine.tsx | ✅ DONE |
+| src/components/QuickReplyBox.tsx | ✅ DONE — 500ms debounce, style-aware, EN→JP live |
+| src/components/CallInfoStrip.tsx | ✅ DONE — guild icon, member avatars, collapsible |
+| Tauri window config | ✅ DONE — minHeight 260, shadow:false, x:20, y:100 |
+| Tauri capabilities | ✅ DONE — core:window:allow-set-size added |
+| Vertical resize handle | ✅ DONE — drag bottom edge, LogicalSize API |
+| Suggestion refresh (↻) | ✅ DONE — random pool of 12, exclude-previous logic |
+| QuickReply EN→JP bug fix | ✅ FIXED — google_translate source was hardcoded ja (now auto-detect) |
 | WhisperX installed | ❌ NOT STARTED (Day 5 — needs cloud) |
 | Qdrant container | ❌ NOT STARTED (Day 5) |
 | CrewAI agents | ❌ NOT STARTED (Day 5) |
 | XTTS v2 | ❌ NOT STARTED (Day 5) |
 | SSH tunnel for WebSocket | ❌ NOT STARTED (Day 5) |
+| StatsPanel.tsx | ❌ NOT STARTED (Day 3 remaining) |
+| RomajiPopup.tsx | ❌ NOT STARTED (Day 3 remaining) |
+| QuickReactions.tsx | ❌ NOT STARTED (Day 3 remaining) |
+| Phrasebook.tsx | ❌ NOT STARTED (Day 3 remaining) |
 
 ---
 

@@ -8,6 +8,7 @@ import base64
 import json
 import logging
 import os
+import random
 import time
 from typing import Optional
 
@@ -53,14 +54,39 @@ active_connections: dict[str, WebSocket] = {}
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
+# ─── Stub suggestion pool (replaced by CrewAI on Day 5) ──────────────────────
+SUGGESTION_POOL = [
+    {"jp": "そうですね",        "romaji": "sou desu ne",        "en": "That's right"},
+    {"jp": "面白い！",           "romaji": "omoshiroi!",          "en": "Interesting!"},
+    {"jp": "もう一回言って",    "romaji": "mou ikkai itte",      "en": "Say that again"},
+    {"jp": "マジで？",          "romaji": "maji de?",            "en": "Seriously?"},
+    {"jp": "わかった！",        "romaji": "wakatta!",            "en": "Got it!"},
+    {"jp": "すごいね",          "romaji": "sugoi ne",            "en": "That's amazing"},
+    {"jp": "ちょっと待って",    "romaji": "chotto matte",        "en": "Wait a sec"},
+    {"jp": "なるほどね",        "romaji": "naruhodo ne",         "en": "I see / Makes sense"},
+    {"jp": "同意します",        "romaji": "doui shimasu",        "en": "I agree"},
+    {"jp": "もっと教えて",      "romaji": "motto oshiete",       "en": "Tell me more"},
+    {"jp": "草ｗ",              "romaji": "kusa w",              "en": "lol"},
+    {"jp": "ナイス！",          "romaji": "naisu!",              "en": "Nice!"},
+]
+
+
+def pick_suggestions(exclude: list | None = None) -> list:
+    """Pick 3 random suggestions, optionally excluding ones already shown."""
+    pool = [s for s in SUGGESTION_POOL if s not in (exclude or [])]
+    if len(pool) < 3:
+        pool = SUGGESTION_POOL  # fallback: full pool
+    return random.sample(pool, min(3, len(pool)))
+
+
 def validate_payload(data: dict) -> tuple[bool, str]:
     """Validate incoming WebSocket payload. Returns (is_valid, error_message)."""
     msg_type = data.get("type")
-    if msg_type not in ("text", "audio", "quick_reply"):
+    if msg_type not in ("text", "audio", "quick_reply", "refresh_suggestions"):
         return False, f"Invalid type: {msg_type}"
 
     user_id = data.get("userId", "")
-    if msg_type != "quick_reply" and (not user_id or not isinstance(user_id, str) or len(user_id) > 64):
+    if msg_type not in ("quick_reply", "refresh_suggestions") and (not user_id or not isinstance(user_id, str) or len(user_id) > 64):
         return False, "Invalid userId"
 
     if msg_type == "text":
@@ -205,6 +231,21 @@ async def websocket_endpoint(websocket: WebSocket):
             active_connections[user_id] = websocket
             start_time = time.time()
 
+            # ── Refresh suggestions ────────────────────────────────────────
+            if data["type"] == "refresh_suggestions":
+                target_user = data.get("userId", "").strip()
+                if not target_user:
+                    continue
+                new_suggestions = pick_suggestions()
+                await websocket.send_text(json.dumps({
+                    "type": "refined",
+                    "userId": target_user,
+                    "suggestionsOnly": True,
+                    "suggestions": new_suggestions,
+                    "latencyMs": 0,
+                }))
+                continue
+
             # ── Quick reply: EN → JP ───────────────────────────────────────
             if data["type"] == "quick_reply":
                 en_text = data.get("text", "").strip()
@@ -266,11 +307,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 "type": "refined",
                 "userId": user_id,
                 "en": en_fast or jp_text,   # same for now, LLM will improve this
-                "suggestions": [
-                    {"jp": "そうですね", "romaji": "sou desu ne", "en": "That's right"},
-                    {"jp": "面白い！", "romaji": "omoshiroi!", "en": "Interesting!"},
-                    {"jp": "もう一回言って", "romaji": "mou ikkai itte", "en": "Say that again"},
-                ],
+                "suggestions": pick_suggestions(),
                 "translationSource": "llm",
                 "latencyMs": total_latency,
             }))

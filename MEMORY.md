@@ -365,3 +365,121 @@ ssh -i "$HOME\.ssh\miwa_amd" -N -L 8000:localhost:8000 root@165.245.134.220
 # Local dev
 npm run tauri dev
 ```
+
+---
+
+## SESSION 6 — May 6, 2026 (Day 3 — UI Polish & CallInfo)
+
+### Full Task Status as of end of Day 3
+
+#### Day 1 ✅ Complete
+- ✅ Git repo, Tailwind v4, TypeScript strict, .gitignore, .env.example
+- ✅ AMD MI300X provisioned, SSH key (miwa_amd), PyTorch+ROCm confirmed
+- ✅ Llama 3.3 70B downloaded (263GB), vLLM serving confirmed, Japanese output confirmed
+
+#### Day 2 ✅ Complete
+- ✅ main.py, requirements.txt, db.js, index.js, atoms.ts
+- ✅ App.tsx, Header.tsx, SpeakerCard.tsx, KaraokeText.tsx, RomajiLine.tsx
+- ✅ Tauri window config, opusscript, .env /ws bug fix, server idle timeout fix
+- ✅ Full pipeline end-to-end confirmed (real avatars, <800ms)
+
+#### Day 3 🔨 In Progress
+- ✅ QuickReplyBox.tsx — 500ms debounce, style-aware EN→JP
+- ✅ quickReplyResultAtom, quickReplyLoadingAtom
+- ✅ Server quick_reply handler
+- ✅ google_translate source bug fixed ("source":"ja" hardcode removed)
+- ✅ Suggestion chips — collapse/expand, EN text, refresh pool of 12
+- ✅ Vertical resize handle (LogicalSize API, core:window:allow-set-size)
+- ✅ CallInfoStrip.tsx — guild icon, member avatars, collapsible
+- ✅ callInfoAtom + broadcastCallInfo() + fetchGuildIconBase64()
+- ⬜ SuggestionCard delivery buttons (Bot Speaks / Bot Sends / I'll Speak)
+- ⬜ RomajiPopup.tsx
+- ⬜ QuickReactions.tsx
+- ⬜ Phrasebook.tsx
+- ⬜ StatsPanel.tsx
+- ⬜ Git commit + push
+
+### Completed this session (all AI-implemented, not just guided)
+
+#### QuickReplyBox
+- ✅ Fully rewritten as debounced live EN→JP translator
+- 500ms debounce on input, re-runs on style mode change
+- Send button posts JP to Discord via `{ action: "botSends", text: result.jp }`
+- Escape clears input, spinner animation while translating
+- **Critical bug fixed:** `google_translate()` in server/main.py had hardcoded `"source": "ja"` — EN→JP returned English unchanged. Fixed by removing source field (auto-detect).
+
+#### Suggestion Chips
+- ✅ Collapsed by default (click "REPLY WITH ▸" to expand)
+- ✅ Each chip shows JP (top) + EN (bottom, muted small text) + romaji (right)
+- ✅ Refresh button (↻) — picks 3 new from pool of 12, excludes previously shown
+- ✅ Smooth height animation via Framer Motion AnimatePresence
+- ✅ server/main.py: `SUGGESTION_POOL` (12 entries) + `pick_suggestions(exclude)` function
+- ✅ `refresh_suggestions` packet type: server returns `suggestionsOnly: True` to avoid overwriting JP/EN/romaji
+
+#### Vertical resize handle
+- ✅ Drag bottom edge to resize overlay height
+- ✅ Uses `getCurrentWindow().setSize(new LogicalSize(w, h))` from @tauri-apps/api
+- ✅ `core:window:allow-set-size` added to capabilities/default.json
+- ✅ `minHeight: 260` added to tauri.conf.json
+- ✅ CSS: `height: 100vh` on .overlay-root (was hardcoded 700px)
+
+#### CallInfoStrip (new component)
+- ✅ `src/components/CallInfoStrip.tsx` — collapsible strip showing guild, channel, member list
+- ✅ Collapsed: [guild icon] ServerName · #channel · N in call  ▸
+- ✅ Expanded: animated member list with round avatars + usernames
+- ✅ `callInfoAtom` + `CallInfo` + `CallMember` interfaces added to atoms.ts
+- ✅ App.tsx handles `type: "call_info"` packet → sets/clears callInfoAtom
+- ✅ App.tsx handles `suggestionsOnly: true` on refined packets (only patches suggestions field)
+- ✅ CSS: full `.call-info-*` block in App.css
+
+#### bot/index.js — broadcastCallInfo
+- ✅ `broadcastCallInfo()` — async, fetches guild icon + all VC member avatars in parallel
+- ✅ `fetchGuildIconBase64()` — fetches `cdn.discordapp.com/icons/{id}/{hash}.png`, resize 64×64
+- ✅ Broadcasts `{ type: "call_info", guildName, guildIconB64, channelName, members[] }`
+- ✅ Called on: UI client connect (200ms delay), VoiceConnectionStatus.Ready, on join
+- ✅ Clears with `guildName: ""` on disconnect
+- `guildIconB64` sent on `call_info` packet — shows as rounded-square image in strip
+- Member avatars fetched eagerly for ALL VC members, not just those who have spoken
+
+#### CallInfo types updated
+- `CallInfo.guildIconB64: string | null` added to atoms.ts interface
+- App.tsx passes `guildIconB64` from packet through to atom
+- CallInfoStrip renders `<img>` for guild icon, falls back to ⚡ text
+
+### Bugs encountered & fixed this session
+1. **`attachVoiceReceiver` function body lost its `function` header** — two multi_replace operations corrupted bot/index.js. Fixed by manually re-adding closing `}` to complete function body.
+2. **QuickReply showed no JP output** — server had `"source": "ja"` hardcoded in google_translate(). Fixed: removed source field.
+3. **CallInfoStrip TS error** — stale language server cache after new file creation. File itself is valid; error clears on restart.
+
+### Current state of all components
+| Component | Status |
+|---|---|
+| Header.tsx | ✅ Complete |
+| SpeakerCard.tsx | ✅ Complete (suggestions collapse/refresh) |
+| KaraokeText.tsx | ✅ Complete |
+| RomajiLine.tsx | ✅ Complete |
+| QuickReplyBox.tsx | ✅ Complete |
+| CallInfoStrip.tsx | ✅ Complete |
+| StatsPanel.tsx | ❌ Not started |
+| RomajiPopup.tsx | ❌ Not started |
+| QuickReactions.tsx | ❌ Not started |
+| Phrasebook.tsx | ❌ Not started |
+
+### Day 5 plan (May 8) — Cloud tasks
+- Recreate AMD MI300X droplet ($1.99/hr, ~$83 remaining)
+- Re-download Llama 3.3 70B (263GB, ~1-2hrs)
+- Start vLLM: `nohup vllm serve /app/models/llama3.3-70b --host 0.0.0.0 --port 8000 --max-model-len 8192 > /app/vllm.log 2>&1 &`
+- SSH tunnel: `ssh -i "$HOME\.ssh\miwa_amd" -N -L 8765:localhost:8765 root@<new-ip>`
+- Install WhisperX, Qdrant, CrewAI, XTTS v2 on cloud
+
+### Run commands (current local dev)
+```powershell
+# Terminal 1 — server
+cd server ; .venv\Scripts\python.exe main.py
+
+# Terminal 2 — bot (restart needed after bot changes)
+node bot/index.js
+
+# Terminal 3 — overlay (full rebuild after capability changes)
+npm run tauri dev
+```

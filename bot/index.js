@@ -50,6 +50,8 @@ let serverWs = null;
 let currentVoiceChannelId = null;
 let currentGuildId = null;
 let styleMode = DEFAULT_STYLE;
+let cachedGuildIconB64 = null;
+let cachedGuildIconForId = null; // guild ID the icon was fetched for
 
 /**
  * speakerCache — maps userId → { username, avatarB64, source }
@@ -98,6 +100,9 @@ uiWss.on("connection", (ws, req) => {
   uiClients.add(ws);
   console.log(`[ui-ws] React UI connected (total: ${uiClients.size})`);
 
+  // Send current call state immediately so overlay is up-to-date on reconnect
+  setTimeout(() => broadcastCallInfo(), 200);
+
   ws.on("message", (data) => {
     // Commands FROM the UI: setStyle, botSends, etc.
     try {
@@ -121,6 +126,52 @@ function broadcastToUI(data) {
   for (const ws of uiClients) {
     if (ws.readyState === WebSocket.OPEN) ws.send(json);
   }
+}
+
+async function broadcastCallInfo() {
+  if (!currentGuildId || !currentVoiceChannelId) return;
+  const guild = client.guilds.cache.get(currentGuildId);
+  if (!guild) return;
+  const channel = guild.channels.cache.get(currentVoiceChannelId);
+  if (!channel) return;
+
+  // Fetch guild icon once per guild session
+  if (cachedGuildIconForId !== currentGuildId) {
+    cachedGuildIconForId = currentGuildId;
+    cachedGuildIconB64 = await fetchGuildIconBase64(guild.id, guild.icon);
+  }
+
+  // Fetch avatars for all VC members in parallel (even those who haven't spoken)
+  const memberPromises = [];
+  for (const [memberId, member] of channel.members) {
+    if (member.user.bot) continue;
+    memberPromises.push((async () => {
+      const cached = speakerCache.get(memberId);
+      let avatarB64 = cached?.avatarB64 ?? null;
+      if (!avatarB64) {
+        avatarB64 = await fetchAvatarBase64(memberId, member.user.avatar);
+        if (avatarB64) {
+          const username = member.displayName || member.user.username;
+          saveAvatar(memberId, username, avatarB64);
+          speakerCache.set(memberId, { username, avatarB64, source: cached?.source ?? "unknown" });
+        }
+      }
+      return {
+        userId: memberId,
+        username: member.displayName || member.user.username,
+        avatarB64,
+      };
+    })());
+  }
+  const members = await Promise.all(memberPromises);
+
+  broadcastToUI({
+    type: "call_info",
+    guildName: guild.name,
+    guildIconB64: cachedGuildIconB64,
+    channelName: channel.name,
+    members,
+  });
 }
 
 
@@ -221,6 +272,26 @@ async function fetchAvatarBase64(userId, avatarHash) {
 
 
 
+async function fetchGuildIconBase64(guildId, iconHash) {
+  if (!iconHash) return null;
+  return new Promise((resolve) => {
+    const url = `https://cdn.discordapp.com/icons/${guildId}/${iconHash}.png?size=64`;
+    https.get(url, (res) => {
+      if (res.statusCode !== 200) { res.resume(); return resolve(null); }
+      const chunks = [];
+      res.on("data", (c) => chunks.push(c));
+      res.on("end", async () => {
+        try {
+          const buf = Buffer.concat(chunks);
+          const resized = await sharp(buf).resize(64, 64).png().toBuffer();
+          resolve(`data:image/png;base64,${resized.toString("base64")}`);
+        } catch { resolve(null); }
+      });
+      res.on("error", () => resolve(null));
+    });
+  });
+}
+
 // ─── Voice Audio Pipeline ──────────────────────────────────────────────────
 function attachVoiceReceiver(connection) {
   const receiver = connection.receiver;
@@ -289,6 +360,7 @@ function attachVoiceReceiver(connection) {
     });
   });
 }
+
 
 
 
@@ -366,6 +438,15 @@ function handleUiCommand(msg) {
     });
   }
 
+  if (msg.action === "refreshSuggestions" && msg.userId) {
+    // Request fresh suggestions for a specific speaker
+    sendToServer({
+      type: "refresh_suggestions",
+      userId: msg.userId,
+      style: styleMode,
+    });
+  }
+
   if (msg.action === "botSends" && currentGuildId && msg.text) {
     // Bot types Japanese into the voice channel text chat
     const guild = client.guilds.cache.get(currentGuildId);
@@ -418,6 +499,9 @@ client.on("messageCreate", async (message) => {
           channelName: voiceChannel.name,
         });
 
+        // Broadcast full call info
+        broadcastCallInfo();
+
         attachVoiceReceiver(connection);
       });
 
@@ -425,6 +509,7 @@ client.on("messageCreate", async (message) => {
         currentVoiceChannelId = null;
         currentGuildId = null;
         broadcastToUI({ type: "status", event: "left" });
+        broadcastToUI({ type: "call_info", guildName: "", channelName: "", members: [] });
       });
 
       message

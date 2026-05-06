@@ -23,7 +23,8 @@
         "shadow": false,
         "resizable": true,
         "minWidth": 380,
-        "maxWidth": 500
+        "maxWidth": 500,
+        "minHeight": 260
       }
     ],
     "security": {

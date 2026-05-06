@@ -140,7 +140,7 @@ Primary users: Gamers with international friends, language learners, content str
 | 8 | LLM Primary | Llama 3.3 70B Instruct | latest | Translation refinement, style adaptation, suggestion generation |
 | 9 | LLM Secondary | Qwen2.5-72B-Instruct | latest | Korean and Chinese language paths, Qwen prize eligibility |
 | 10 | LLM Serving | vLLM + ROCm AITER | latest | Serve 70B models with 2.8–4.4x throughput gain on MI300X |
-| 11 | Japanese NLP | MeCab + Janome | latest | Furigana generation and Japanese tokenization |
+| 11 | Japanese NLP | pykakasi | latest | Romaji generation from Japanese text — pure Python, no native deps |
 | 12 | Voice Synthesis | XTTS v2 | latest | High-quality Japanese TTS for bot voice and local preview |
 | 13 | Vector Database | Qdrant | latest | Per-speaker conversation memory with HNSW indexing |
 | 14 | AI Agents | CrewAI | latest | Multi-agent pipeline for suggestion generation |
@@ -205,8 +205,8 @@ Primary users: Gamers with international friends, language learners, content str
 │       │    Refines translation to selected style         │
 │       │    Generates 3 contextual suggestions            │
 │       │                                                  │
-│       ├──▶ MeCab / Janome                                │
-│       │    Generates Romaji + Furigana                   │
+      ├─▶ pykakasi                                        │
+      │    Generates Romaji pronunciation                │
 │       │                                                  │
 │       ├──▶ Qdrant Vector DB                              │
 │       │    Stores conversation history per speaker       │
@@ -232,7 +232,7 @@ Primary users: Gamers with international friends, language learners, content str
 5. Google Translate immediately produces a fast English translation
 6. This fast result is sent back first — translation shows in the overlay immediately
 7. Simultaneously, vLLM refines the translation into the selected style
-8. MeCab generates Romaji pronunciation
+8. pykakasi generates Romaji pronunciation
 9. CrewAI queries Qdrant for Yuki's conversation history, generates 3 suggestions
 10. Final refined result updates the overlay card
 11. Total time: under 800ms from speech end to full card shown
@@ -428,7 +428,7 @@ Primary users: Gamers with international friends, language learners, content str
 | 10:00–11:30 AM | Translation style modes | Formal, Neutral, Casual, Gaming all producing different output |
 | 11:30–12:30 PM | LUNCH | — |
 | 12:30–2:00 PM | Qdrant per-speaker memory | Speaker collections created, history stored and retrieved |
-| 2:00–3:00 PM | MeCab Romaji + Furigana | Japanese text generating pronunciation data |
+| 2:00–3:00 PM | pykakasi Romaji | Japanese text generating pronunciation data |
 | 3:00–3:30 PM | BREAK | — |
 | 3:30–5:30 PM | CrewAI suggestion pipeline | 3 contextual suggestions generating per message |
 | 5:30–6:30 PM | DINNER | — |

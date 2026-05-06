@@ -7,17 +7,20 @@
  * - Framer Motion spring physics for enter/exit
  */
 
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import type { SpeakerState } from "../store/atoms";
 import KaraokeText from "./KaraokeText";
 import RomajiLine from "./RomajiLine";
 
 interface SpeakerCardProps {
   speaker: SpeakerState;
+  sendCommand: (data: unknown) => void;
 }
 
-export default function SpeakerCard({ speaker }: SpeakerCardProps) {
+export default function SpeakerCard({ speaker, sendCommand }: SpeakerCardProps) {
   const {
+    userId,
     username,
     avatarB64,
     jp,
@@ -31,6 +34,16 @@ export default function SpeakerCard({ speaker }: SpeakerCardProps) {
   } = speaker;
 
   const isVoice = source === "voice";
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    sendCommand({ action: "refreshSuggestions", userId });
+    // Clear spinner after 1.5s max (server will update via WS)
+    setTimeout(() => setRefreshing(false), 1500);
+  };
 
   return (
     <motion.div
@@ -92,19 +105,56 @@ export default function SpeakerCard({ speaker }: SpeakerCardProps) {
       {/* ── Suggestions (appear after refined packet) ───────────────────── */}
       {suggestions.length > 0 && (
         <div className="suggestions">
-          <p className="suggestions-label">Reply with</p>
-          {suggestions.map((s, i) => (
-            <div
-              key={i}
-              className="suggestion-chip"
-              role="button"
-              tabIndex={0}
-              title={s.en}
-            >
-              <span className="suggestion-jp">{s.jp}</span>
-              <span className="suggestion-romaji">{s.romaji}</span>
+          <div className="suggestions-header">
+            <p className="suggestions-label">Reply with</p>
+            <div className="suggestions-actions">
+              <button
+                className={`suggestions-refresh${refreshing ? " spinning" : ""}`}
+                onClick={handleRefresh}
+                title="Get new suggestions"
+                disabled={refreshing}
+              >
+                ↻
+              </button>
+              <button
+                className="suggestions-toggle"
+                onClick={() => setSuggestionsOpen((v) => !v)}
+                title={suggestionsOpen ? "Collapse" : "Expand"}
+              >
+                {suggestionsOpen ? "▾" : "▸"}
+              </button>
             </div>
-          ))}
+          </div>
+
+          <AnimatePresence initial={false}>
+            {suggestionsOpen && (
+              <motion.div
+                key="chips"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.18, ease: "easeInOut" }}
+                style={{ overflow: "hidden" }}
+              >
+                <div className="suggestion-chips">
+                  {suggestions.map((s, i) => (
+                    <div
+                      key={i}
+                      className="suggestion-chip"
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <div className="suggestion-left">
+                        <span className="suggestion-jp">{s.jp}</span>
+                        <span className="suggestion-en">{s.en}</span>
+                      </div>
+                      <span className="suggestion-romaji">{s.romaji}</span>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
     </motion.div>

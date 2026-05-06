@@ -92,6 +92,22 @@ export const botStatusAtom = atom<BotStatus>("disconnected");
 /** Name of currently joined voice channel */
 export const channelNameAtom = atom<string>("");
 
+export interface CallMember {
+  userId: string;
+  username: string;
+  avatarB64: string | null;
+}
+
+export interface CallInfo {
+  guildName: string;
+  guildIconB64: string | null;
+  channelName: string;
+  members: CallMember[];
+}
+
+/** Live call info — guild, channel, member list */
+export const callInfoAtom = atom<CallInfo | null>(null);
+
 /** Latency stats for the StatsPanel */
 export const statsAtom = atom<StatsState>({ latencyMs: 0, lastUpdated: 0 });
 
