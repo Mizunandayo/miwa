@@ -838,6 +838,23 @@ button {
   cursor: pointer;
 }
 
+.quick-reply-speaks {
+  font-size: 13px;
+  padding: 3px 7px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: var(--radius-sm);
+  color: #10b981;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+}
+
+.quick-reply-speaks:hover {
+  background: rgba(16, 185, 129, 0.25);
+}
+
 
 
 

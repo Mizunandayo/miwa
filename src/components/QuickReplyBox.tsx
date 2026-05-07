@@ -85,6 +85,14 @@ export default function QuickReplyBox({ sendCommand }: QuickReplyBoxProps) {
     if (inputRef.current) inputRef.current.value = "";
   };
 
+  const handleBotSpeaks = () => {
+    if (!result) return;
+    sendCommand({ action: "botSpeaks", text: result.jp });
+    setResult(null);
+    setInputValue("");
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && result) handleSend();
     if (e.key === "Escape") {
@@ -123,6 +131,9 @@ export default function QuickReplyBox({ sendCommand }: QuickReplyBoxProps) {
             <div className="quick-reply-jp">{result.jp}</div>
             <div className="quick-reply-romaji">{result.romaji}</div>
           </div>
+          <button className="quick-reply-speaks" onClick={handleBotSpeaks} title="Bot speaks in VC">
+            🔊
+          </button>
           <button className="quick-reply-send" onClick={handleSend} title="Enter">
             Send
           </button>
