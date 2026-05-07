@@ -49,7 +49,7 @@ import StatsPanel     from "./components/StatsPanel";
 
 
 const UI_WS_URL = "ws://127.0.0.1:8766";
-const SPEAKER_TIMEOUT_MS = 8_000; // Remove card after 8s of inactivity
+const SPEAKER_TIMEOUT_MS = 6_000; // Remove card after 6s of inactivity
 
 export default function App() {
   const setSpeakers = useSetAtom(speakersAtom);
@@ -216,7 +216,11 @@ export default function App() {
           setStats({ latencyMs: packet.latencyMs, lastUpdated: Date.now() });
         }
 
-        scheduleSpeakerRemoval(userId);
+        // Only reset the removal timer on fast packets — refined arrives 4-6s later
+        // and would otherwise extend the card lifetime to 12-14s total
+        if (type === "fast") {
+          scheduleSpeakerRemoval(userId);
+        }
       }
     },
     [

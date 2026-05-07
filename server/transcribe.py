@@ -124,6 +124,7 @@ def transcribe(pcm_bytes: bytes) -> dict:
                 "低評価", "この動画", "登録お願い", "次の動画",
                 "subscribe", "like and", "thank you for watching",
                 "はじめしゃちょー", "エンディング】", "【はじめ",
+                "ご利用ください", "どうもありがとうございました",
             ]
             HALLUCINATION_EXACT = {
                 "おやすみなさい", "ありがとうございました", "ありがとうございます",
