@@ -328,6 +328,58 @@ def translate_with_style(jp_text: str, en_fast: str, style: str) -> str | None:
     return None
 
 
+_JP_STYLE_DESCRIPTIONS = {
+    "formal":  "polite/formal Japanese using です/ます keigo speech level",
+    "neutral": "standard natural Japanese",
+    "casual":  "friendly casual Japanese using plain/short form",
+    "gaming":  "gamer slang Japanese, use ゲーマー slang and abbreviations where fitting",
+}
+
+
+def translate_en_to_jp_with_style(en_text: str, jp_fast: str, style: str) -> str | None:
+    """
+    Translate English → Japanese with the given style tone.
+    jp_fast is the Google Translate result used as a base reference.
+    Returns None on failure (caller falls back to jp_fast).
+    """
+    style_desc = _JP_STYLE_DESCRIPTIONS.get(style, _JP_STYLE_DESCRIPTIONS["casual"])
+    prompt = (
+        f"Translate this English sentence to Japanese with a {style} tone ({style_desc}).\n"
+        f"English: {en_text}\n"
+        f"Base translation: {jp_fast}\n"
+        f"Output ONLY the Japanese translation. No explanations, no romaji, no labels."
+    )
+    try:
+        import requests as req
+        resp = req.post(
+            f"{VLLM_URL}/chat/completions",
+            json={
+                "model": VLLM_MODEL,
+                "messages": [
+                    {"role": "system", "content": "You are a translator. Reply with ONLY the Japanese translation, nothing else."},
+                    {"role": "user", "content": prompt},
+                ],
+                "max_tokens": 80,
+                "temperature": 0.3,
+                "stop": ["\n\n", "English:", "Note:", "Explanation:"],
+            },
+            timeout=8,
+        )
+        resp.raise_for_status()
+        result = resp.json()["choices"][0]["message"]["content"].strip()
+        # Strip accidental prefixes
+        for prefix in ["Japanese:", "Translation:", "Answer:", "Output:"]:
+            if result.lower().startswith(prefix.lower()):
+                result = result[len(prefix):].strip()
+        result = result.strip('"\'').strip()
+        if result and 2 < len(result) < 500:
+            log.info(f"translate_en_to_jp_with_style ({style}): {result}")
+            return result
+    except Exception as e:
+        log.warning(f"translate_en_to_jp_with_style failed: {e}")
+    return None
+
+
 def get_suggestions(
     jp_text:  str,
     en_text:  str,

@@ -16,7 +16,7 @@ import pykakasi
 # ─── Day 5 module imports ─────────────────────────────────────────────────────
 from transcribe import transcribe
 from memory    import store as memory_store, recall as memory_recall
-from suggest   import get_suggestions, translate_with_style
+from suggest   import get_suggestions, translate_with_style, translate_en_to_jp_with_style
 from tts       import synthesize as tts_synthesize
 from fastapi   import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, status
 from fastapi.responses import Response
@@ -257,11 +257,18 @@ async def websocket_endpoint(websocket: WebSocket):
             # ── Quick reply: EN → JP ───────────────────────────────────────
             if data["type"] == "quick_reply":
                 en_text = data.get("text", "").strip()
+                style   = data.get("style", "casual").lower().strip()
+                if style not in ("formal", "neutral", "casual", "gaming"):
+                    style = "casual"
                 if not en_text:
                     continue
-                jp_result = google_translate(en_text, target="ja")
-                if not jp_result:
-                    jp_result = en_text  # fallback
+                jp_fast = google_translate(en_text, target="ja") or en_text
+                # Style-adjusted JP via vLLM (falls back to jp_fast)
+                loop = asyncio.get_event_loop()
+                jp_styled = await loop.run_in_executor(
+                    None, lambda: translate_en_to_jp_with_style(en_text, jp_fast, style)
+                )
+                jp_result = jp_styled or jp_fast
                 romaji = to_romaji(jp_result)
                 await websocket.send_text(json.dumps({
                     "type": "quick_reply_result",
