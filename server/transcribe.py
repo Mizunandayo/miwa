@@ -73,7 +73,7 @@ def transcribe(pcm_bytes: bytes) -> dict:
         }
     """
     # Sanity check
-    if not pcm_bytes or len(pcm_bytes) < 3200:  # < 0.1s at 16kHz int16
+    if not pcm_bytes or len(pcm_bytes) < 16000:  # < 0.5s at 16kHz int16
         log.warning("Audio too short — skipping transcription")
         return {"text": "", "words": []}
 
@@ -126,13 +126,24 @@ def transcribe(pcm_bytes: bytes) -> dict:
             ]
             HALLUCINATION_EXACT = {
                 "おやすみなさい", "ありがとうございました", "ありがとうございます",
+                "ありがとうございます。", "ありがとうございました。",
                 "よろしくお願いします", "よろしくお願いいたします", "字幕",
                 "以上です", "以上で終わります", "終わります", "終わりです",
+                "以上で終わりです", "以上で終わりです。",
                 "はじめしゃちょー", "終わり", "おわり",
             }
-            stripped = full_text.strip()
-            if stripped in HALLUCINATION_EXACT or any(h in stripped for h in HALLUCINATION_SUBSTRINGS):
+            # Strip trailing punctuation for comparison
+            import re as _re
+            stripped_raw = full_text.strip()
+            stripped = _re.sub(r'[\s。、！？!?,.\-…]+$', '', stripped_raw).strip()
+            if (stripped in HALLUCINATION_EXACT or stripped_raw in HALLUCINATION_EXACT
+                    or any(h in stripped for h in HALLUCINATION_SUBSTRINGS)):
                 log.warning(f"Hallucination filtered: {full_text!r}")
+                return {"text": "", "words": []}
+
+            # ── Skip very short utterances (< 3 chars) — likely noise ─────────
+            if len(stripped) < 3:
+                log.info(f"Utterance too short, skipping: {full_text!r}")
                 return {"text": "", "words": []}
 
             log.info(f"Transcribed: '{full_text}' ({len(words)} words)")
