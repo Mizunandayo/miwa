@@ -368,7 +368,10 @@ function attachVoiceReceiver(connection) {
     const audioStream = receiver.subscribe(userId, {
       end: {
         behavior: EndBehaviorType.AfterSilence,
-        duration: 200, // 200ms of silence marks end of utterance
+        duration: 350, // 350ms silence = end of utterance.
+        // 200ms was too aggressive — clipped trailing word endings (す、ね、よ).
+        // 350ms catches natural sentence-final pauses without adding visible delay
+        // (the pipeline takes ~500ms anyway, so this is free accuracy gain).
       },
     });
 
@@ -396,16 +399,27 @@ function attachVoiceReceiver(connection) {
       const username =
         member?.displayName || user?.username || userId;
 
-      // Fetch and cache avatar
-      let avatarB64 = null;
-      if (user) {
-        avatarB64 = await fetchAvatarBase64(userId, user.avatar);
-        if (avatarB64) saveAvatar(userId, username, avatarB64);
-      }
+      // Use already-cached avatar (from a previous utterance this session or SQLite).
+      // Do NOT await HTTP fetch here — that's 100-300ms of added latency on cold start.
+      // The avatar will be fetched in the background and ready for the next utterance.
+      const existingCache = speakerCache.get(userId);
+      const avatarB64 = existingCache?.avatarB64 ?? null;
 
       // Store in speaker cache so server response can be enriched
       speakerCache.set(userId, { username, avatarB64, source: "voice" });
 
+      // Notify the UI immediately — show the card with "Transcribing…" state
+      // BEFORE the server round-trip completes (~500ms). User sees the card
+      // appear the moment they stop speaking rather than half a second later.
+      broadcastToUI({
+        type: "transcribing",
+        userId,
+        username,
+        avatarB64,
+        source: "voice",
+      });
+
+      // Send audio to server IMMEDIATELY — no blocking I/O in the critical path
       sendToServer({
         type: "audio",
         userId,
@@ -419,6 +433,16 @@ function attachVoiceReceiver(connection) {
       console.log(
         `[bot] Audio → server: ${username} (${pcmBuffer.length} bytes PCM)`
       );
+
+      // Fetch and cache avatar in background — ready for next utterance
+      if (user && !avatarB64) {
+        fetchAvatarBase64(userId, user.avatar).then((b64) => {
+          if (b64) {
+            saveAvatar(userId, username, b64);
+            speakerCache.set(userId, { username, avatarB64: b64, source: "voice" });
+          }
+        }).catch(() => {});
+      }
     });
 
     pcmStream.on("error", (err) => {

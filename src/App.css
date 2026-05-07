@@ -159,6 +159,95 @@ button {
   color: var(--text-secondary);
 }
 
+/* ─── Window Controls (minimize / maximize / close) ─────────────────────── */
+.win-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.win-btn {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  /* Icons drawn via ::before pseudo-elements — revealed on group hover */
+}
+
+/* Show icons only when hovering the win-controls group */
+.win-controls:hover .win-btn::before {
+  opacity: 1;
+}
+
+.win-btn::before {
+  content: "";
+  display: block;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+/* Minimize: horizontal line */
+.win-btn-minimize::before {
+  width: 6px;
+  height: 1.5px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 1px;
+}
+
+/* Maximize: small square outline */
+.win-btn-maximize::before {
+  width: 5px;
+  height: 5px;
+  border: 1.5px solid rgba(0, 0, 0, 0.7);
+  border-radius: 1px;
+  background: transparent;
+}
+
+/* Close: × via box-shadow cross */
+.win-btn-close::before {
+  width: 1.5px;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 1px;
+  transform: rotate(45deg);
+  box-shadow: 0 0 0 0 transparent;
+}
+
+.win-btn-close::after {
+  content: "";
+  position: absolute;
+  width: 1.5px;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 1px;
+  transform: rotate(-45deg);
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.win-controls:hover .win-btn-close::after {
+  opacity: 1;
+}
+
+.win-btn-minimize {
+  background: #f5a623;
+}
+
+.win-btn-maximize {
+  background: #27c840;
+}
+
+.win-btn-close {
+  background: #ff5f57;
+}
+
 /* ─── Style Mode Buttons ──────────────────────────────────────────────────── */
 .style-buttons {
   display: flex;
@@ -307,7 +396,16 @@ button {
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.03),
     0 4px 20px rgba(0, 0, 0, 0.45);
-  will-change: transform, opacity;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* Speaking state — card gets a subtle green border glow */
+.speaker-card.speaking {
+  border-color: rgba(34, 197, 94, 0.35);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 4px 20px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(34, 197, 94, 0.2);
 }
 
 /* ─── Card Header ─────────────────────────────────────────────────────────── */
@@ -349,6 +447,18 @@ button {
 @keyframes speaking-pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50%       { opacity: 0.5; transform: scale(0.75); }
+}
+
+/* Speaking ring — glows around the avatar while the person is talking */
+@keyframes speaking-ring-pulse {
+  0%, 100% { box-shadow: 0 0 0 0   rgba(34, 197, 94, 0.6); }
+  50%       { box-shadow: 0 0 0 3px rgba(34, 197, 94, 0);   }
+}
+
+.speaking .avatar,
+.speaking .avatar-placeholder {
+  animation: speaking-ring-pulse 1.2s ease-in-out infinite;
+  border-color: rgba(34, 197, 94, 0.7);
 }
 
 .speaking-dot {
@@ -433,6 +543,12 @@ button {
 
 .karaoke-word {
   display: inline;
+  color: rgba(255, 255, 255, 0.65);
+  transition: color 0.18s ease;
+}
+
+.karaoke-word--active {
+  color: rgba(255, 255, 255, 1);
 }
 
 .romaji-line {
@@ -447,6 +563,72 @@ button {
   font-size: 13px;
   color: var(--text-secondary);
   line-height: 1.45;
+}
+
+/* ─── Romaji row (romaji + copy button) ───────────────────────────────────── */
+.romaji-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.romaji-copy-btn {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+  padding: 0;
+  line-height: 1;
+}
+
+.speaker-card:hover .romaji-copy-btn {
+  opacity: 1;
+}
+
+.romaji-copy-btn:hover {
+  background: rgba(255,255,255,0.08);
+  color: var(--text-secondary);
+}
+
+.romaji-copy-btn.copied {
+  color: #22c55e;
+  opacity: 1;
+}
+
+/* ─── Transcribing placeholder dots ──────────────────────────────────────── */
+.transcribing-state {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 0 2px;
+  min-height: 28px;
+}
+
+.transcribing-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  animation: transcribing-bounce 1.2s ease-in-out infinite;
+}
+
+.transcribing-dot:nth-child(1) { animation-delay: 0s;    }
+.transcribing-dot:nth-child(2) { animation-delay: 0.2s;  }
+.transcribing-dot:nth-child(3) { animation-delay: 0.4s;  }
+
+@keyframes transcribing-bounce {
+  0%, 80%, 100% { transform: translateY(0);    opacity: 0.35; }
+  40%            { transform: translateY(-4px); opacity: 1;    }
 }
 
 /* ─── Suggestions ─────────────────────────────────────────────────────────── */

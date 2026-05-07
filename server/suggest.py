@@ -23,6 +23,29 @@ log = logging.getLogger("miwa.suggest")
 VLLM_URL   = os.getenv("VLLM_URL", "http://localhost:8000/v1")
 VLLM_MODEL = os.getenv("VLLM_MODEL", "/app/models/llama3.3-70b")
 
+# ── Persistent HTTP session ───────────────────────────────────────────────────
+# Reuses TCP connections to vLLM (keep-alive) — avoids per-call TCP handshake.
+# Lazy-initialized on first use so import stays fast.
+_http_session = None
+
+def _get_session():
+    global _http_session
+    if _http_session is None:
+        try:
+            import requests
+            _http_session = requests.Session()
+            # Keep up to 4 connections alive (translate + suggest can run concurrently)
+            adapter = requests.adapters.HTTPAdapter(
+                pool_connections=4,
+                pool_maxsize=4,
+                max_retries=0,
+            )
+            _http_session.mount("http://", adapter)
+            _http_session.mount("https://", adapter)
+        except ImportError:
+            pass
+    return _http_session
+
 # ── Static fallback pool ──────────────────────────────────────────────────────
 _FALLBACK_POOL = [
     {"jp": "そうですね",        "romaji": "sou desu ne",        "en": "That's right"},
@@ -90,20 +113,39 @@ Respond with ONLY valid JSON in this exact format:
 
 
 def _call_vllm(prompt: str) -> list[dict] | None:
-    """Call vLLM directly via OpenAI-compatible REST API (no CrewAI overhead)."""
+    """Call vLLM directly via OpenAI-compatible REST API (no CrewAI overhead).
+    Uses a system message to enforce JSON-only output — more reliable than
+    putting format instructions in the user message, which can be overridden.
+    """
     try:
-        import requests as req
+        session = _get_session()
+        if session is None:
+            import requests as req
+            session = req  # fallback: module-level (no connection reuse)
 
-        resp = req.post(
+        resp = session.post(
             f"{VLLM_URL}/chat/completions",
             json={
                 "model": VLLM_MODEL,
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 400,
-                "temperature": 0.8,
-                "top_p": 0.95,
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": (
+                            "You output ONLY valid JSON. No prose, no markdown, no explanation. "
+                            "Your entire response is one JSON object conforming to the schema given by the user."
+                        ),
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                "max_tokens": 250,   # was 400 — 3 short suggestions fit in ~150 tokens
+                "temperature": 0.6,  # was 0.8 — tighter sampling, faster convergence
+                "top_p": 0.90,       # was 0.95
+                # Stop as soon as the JSON object is closed — prevents trailing prose.
+                # LLMs tend to add "Note: ..." or explanations after the JSON without this.
+                # Closing brace + newline is the reliable end-of-JSON signal.
+                "stop": ["\n}\n", "\n}\n\n"],
             },
-            timeout=10,
+            timeout=12,
         )
         resp.raise_for_status()
 
@@ -285,7 +327,6 @@ def _call_crewai(
 
 
 def translate_with_style(jp_text: str, en_fast: str, style: str) -> str | None:
-    """
     Use vLLM to produce a style-adjusted English translation.
     Falls back to en_fast (Google Translate) if vLLM is unavailable.
     """
@@ -297,8 +338,11 @@ def translate_with_style(jp_text: str, en_fast: str, style: str) -> str | None:
         f"Output ONLY the English translation. No explanations, no quotes, no labels."
     )
     try:
-        import requests as req
-        resp = req.post(
+        session = _get_session()
+        if session is None:
+            import requests as req
+            session = req
+        resp = session.post(
             f"{VLLM_URL}/chat/completions",
             json={
                 "model": VLLM_MODEL,
@@ -349,8 +393,11 @@ def translate_en_to_jp_with_style(en_text: str, jp_fast: str, style: str) -> str
         f"Output ONLY the Japanese translation. No explanations, no romaji, no labels."
     )
     try:
-        import requests as req
-        resp = req.post(
+        session = _get_session()
+        if session is None:
+            import requests as req
+            session = req
+        resp = session.post(
             f"{VLLM_URL}/chat/completions",
             json={
                 "model": VLLM_MODEL,

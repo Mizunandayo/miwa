@@ -24,7 +24,7 @@ export default function StatsPanel() {
 
     const latencyColor =
         stats.latencyMs < 400 ? "var(--green)"  :
-        stats.latencyMs < 800 ? "var(--ambher)"  :
+        stats.latencyMs < 800 ? "var(--amber)"  :
         "var(--red)";
 
 

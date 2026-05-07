@@ -72,6 +72,22 @@ export default function Header({ sendCommand }: HeaderProps) {
     } catch { /* non-critical */ }
   };
 
+  const handleMinimize = async () => {
+    try { await getCurrentWindow().minimize(); } catch {}
+  };
+
+  const handleMaximize = async () => {
+    try {
+      const win = getCurrentWindow();
+      if (await win.isMaximized()) await win.unmaximize();
+      else await win.maximize();
+    } catch {}
+  };
+
+  const handleClose = async () => {
+    try { await getCurrentWindow().close(); } catch {}
+  };
+
 
 
 
@@ -151,6 +167,12 @@ export default function Header({ sendCommand }: HeaderProps) {
             style={{ background: STATUS_COLOR[botStatus] ?? "#555" }}
           />
           <span className="status-text">{displayStatus}</span>
+        </div>
+
+        <div className="win-controls">
+          <button className="win-btn win-btn-minimize" onClick={() => void handleMinimize()} title="Minimize" aria-label="Minimize" />
+          <button className="win-btn win-btn-maximize" onClick={() => void handleMaximize()} title="Maximize / Restore" aria-label="Maximize" />
+          <button className="win-btn win-btn-close"    onClick={() => void handleClose()}    title="Close" aria-label="Close" />
         </div>
       </div>
 

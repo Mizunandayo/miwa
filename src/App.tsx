@@ -49,7 +49,7 @@ import StatsPanel     from "./components/StatsPanel";
 
 
 const UI_WS_URL = "ws://127.0.0.1:8766";
-const SPEAKER_TIMEOUT_MS = 6_000; // Remove card after 6s of inactivity
+const SPEAKER_TIMEOUT_MS = 12_000; // Remove card after 12s of inactivity
 
 export default function App() {
   const setSpeakers = useSetAtom(speakersAtom);
@@ -149,6 +149,44 @@ export default function App() {
         return;
       }
 
+      // Pre-translation card: shows instantly when speech ends, before server round-trip.
+      // Bot broadcasts this the moment it receives the full audio chunk.
+      if (type === "transcribing") {
+        const userId = packet.userId as string;
+        if (!userId) return;
+        setSpeakers((prev) => {
+          const next = new Map(prev);
+          const existing = next.get(userId);
+          // Create a placeholder card — don't overwrite an active card mid-speech
+          if (!existing) {
+            next.set(userId, {
+              userId,
+              username: (packet.username as string) ?? userId,
+              avatarB64: (packet.avatarB64 as string | null) ?? null,
+              jp: "",
+              en: "",
+              romaji: "",
+              words: [],
+              suggestions: [],
+              translationSource: "google",
+              source: (packet.source as SpeakerState["source"]) ?? "voice",
+              isSpeaking: true,
+              isTranscribing: true,
+              lastUpdated: Date.now(),
+            });
+          } else {
+            // Existing card — just mark as transcribing again
+            next.set(userId, { ...existing, isTranscribing: true, isSpeaking: true });
+          }
+          return next;
+        });
+        setSpeakerOrder((prev) =>
+          prev.includes(userId) ? prev : [...prev, userId]
+        );
+        scheduleSpeakerRemoval(userId);
+        return;
+      }
+
       // Translation packets
       if (type === "fast" || type === "refined") {
         const userId = packet.userId as string;
@@ -199,6 +237,7 @@ export default function App() {
             source:
               (packet.source as SpeakerState["source"]) ?? "voice",
             isSpeaking: type === "fast",
+            isTranscribing: false,  // real text arrived — clear the transcribing state
             lastUpdated: Date.now(),
           };
 
@@ -216,11 +255,10 @@ export default function App() {
           setStats({ latencyMs: packet.latencyMs, lastUpdated: Date.now() });
         }
 
-        // Only reset the removal timer on fast packets — refined arrives 4-6s later
-        // and would otherwise extend the card lifetime to 12-14s total
-        if (type === "fast") {
-          scheduleSpeakerRemoval(userId);
-        }
+        // Reset the removal timer on fast AND refined packets.
+        // fast → starts the 12s clock
+        // refined with suggestions → resets it so user has time to read suggestions
+        scheduleSpeakerRemoval(userId);
       }
     },
     [

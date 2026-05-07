@@ -382,7 +382,14 @@ miwa/
 | Qdrant container | ⬜ NOT YET STARTED (Day 6) |
 | CrewAI on cloud | ⬜ NOT YET INSTALLED (Day 6) |
 | XTTS v2 on cloud | ⬜ NOT YET INSTALLED (Day 6) — TTS 503 until installed |
-| Latest commit | 1912744 — dark UI + latency split |
+| Window controls (minimize/maximize/close) | ✅ DONE — traffic-light buttons in Header.tsx + App.css macOS style |
+| capabilities/default.json window perms | ✅ DONE — allow-minimize, allow-maximize, allow-unmaximize, allow-close, allow-is-maximized |
+| Bot avatar non-blocking | ✅ DONE — audio sent immediately; avatar fetch moved to background Promise |
+| suggest.py persistent HTTP session | ✅ DONE — requests.Session with HTTPAdapter(pool_maxsize=4), reuses TCP to vLLM |
+| suggest.py max_tokens reduction | ✅ DONE — 400 → 250 tokens (~30-40% faster generation) |
+| suggest.py temperature reduction | ✅ DONE — 0.8 → 0.6 (tighter sampling, faster convergence) |
+| main.py separate semaphores | ✅ DONE — _translate_semaphore(2) + _suggest_semaphore(4); translations never blocked by suggestions |
+| Latest commit | 1912744 — dark UI + latency split (pending push for this session's changes) |
 
 ---
 
@@ -415,6 +422,10 @@ miwa/
 - **vLLM GPU util 0.80** — MUST set `--gpu-memory-utilization 0.80` or Whisper gets 0 bytes VRAM
 - **/app is NOT a git repo** — deploy by: `git clone ... /tmp/miwa && cp -r /tmp/miwa/server /app/server`
 - **openai in rocm container** — default version 1.77.0 is too old; vLLM 0.17.1 needs >=1.99.1
+- **Bot avatar non-blocking** — `speakerCache.get(userId)?.avatarB64` used immediately; HTTP fetch deferred to background Promise (saves 100-300ms on first utterance)
+- **Separate vLLM semaphores** — `_translate_semaphore(2)` + `_suggest_semaphore(4)` so translations are never queued behind another speaker's suggestions
+- **Persistent requests.Session** — one TCP connection reused for all vLLM calls; avoids per-call TCP handshake (~20-50ms saved per call)
+- **Window controls: macOS traffic-light style** — amber=minimize, green=maximize, red=close; icon only visible on hover (non-distracting overlay)
 
 ---
 

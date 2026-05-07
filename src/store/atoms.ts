@@ -40,6 +40,9 @@ export interface SpeakerState {
   translationSource: TranslationSource;
   source: MessageSource;
   isSpeaking: boolean;
+  /** True from the moment speech ends until the first fast packet arrives (~500ms).
+   *  Used to show "Transcribing…" animation so the card appears instantly. */
+  isTranscribing: boolean;
   lastUpdated: number;
 }
 

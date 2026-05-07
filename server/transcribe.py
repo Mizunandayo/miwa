@@ -94,6 +94,30 @@ def _load_model():
             return False
 
 
+def warmup() -> bool:
+    """
+    Pre-load Whisper model at server startup so first real request has no cold-start.
+    Also runs a dummy inference pass to warm up GPU kernels.
+    Returns True if model is ready.
+    """
+    import numpy as np
+    if not _load_model():
+        return False
+    # Run a tiny dummy transcription to warm GPU CUDA kernels
+    try:
+        silence = np.zeros(16000, dtype=np.float32)  # 1s of silence
+        if _transcribe_lock.acquire(blocking=True, timeout=30):
+            try:
+                _model.transcribe(silence, language="ja", fp16=_use_fp16, beam_size=1, best_of=1, temperature=0)  # type: ignore
+            finally:
+                _transcribe_lock.release()
+        log.info("[warmup] Whisper GPU kernels warmed ✓")
+        return True
+    except Exception as e:
+        log.warning(f"[warmup] Whisper warmup inference failed: {e}")
+        return _model is not None
+
+
 def _pcm_to_float32(pcm_bytes: bytes) -> "np.ndarray":
     """Convert raw int16 PCM bytes to float32 numpy array (range -1.0 to 1.0)"""
     import numpy as np

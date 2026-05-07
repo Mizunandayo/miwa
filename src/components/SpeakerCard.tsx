@@ -7,7 +7,7 @@
  * - Framer Motion spring physics for enter/exit
  */
 
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { SpeakerState } from "../store/atoms";
 import KaraokeText from "./KaraokeText";
@@ -34,11 +34,26 @@ export default function SpeakerCard({ speaker, sendCommand }: SpeakerCardProps) 
     translationSource,
     source,
     isSpeaking,
+    isTranscribing,
   } = speaker;
 
   const isVoice = source === "voice";
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [romajiCopied, setRomajiCopied] = useState(false);
+  const [prevHadSuggestions, setPrevHadSuggestions] = useState(false);
+
+  // Auto-expand when suggestions arrive for the first time.
+  // Using a prev-state tracker avoids the dep-array trick and is explicit.
+  const hasSuggestions = suggestions.length > 0;
+  useEffect(() => {
+    if (hasSuggestions && !prevHadSuggestions) {
+      setSuggestionsOpen(true);
+      setPrevHadSuggestions(true);
+    } else if (!hasSuggestions) {
+      setPrevHadSuggestions(false);
+    }
+  }, [hasSuggestions, prevHadSuggestions]);
 
   const handleRefresh = () => {
     if (refreshing) return;
@@ -47,6 +62,15 @@ export default function SpeakerCard({ speaker, sendCommand }: SpeakerCardProps) 
     // Clear spinner after 1.5s max (server will update via WS)
     setTimeout(() => setRefreshing(false), 1500);
   };
+
+  const handleCopyRomaji = useCallback(async () => {
+    if (!romaji) return;
+    try {
+      await navigator.clipboard.writeText(romaji);
+      setRomajiCopied(true);
+      setTimeout(() => setRomajiCopied(false), 1500);
+    } catch { /* clipboard not available */ }
+  }, [romaji]);
 
   return (
 
@@ -104,15 +128,38 @@ export default function SpeakerCard({ speaker, sendCommand }: SpeakerCardProps) 
 
       {/* ── Card body ───────────────────────────────────────────────────── */}
       <div className="card-body">
-        {/* Voice: karaoke animated words. Text chat: plain JP text */}
-        {isVoice && words.length > 0 ? (
-          <KaraokeText words={words} isSpeaking={isSpeaking} />
+        {/* Transcribing placeholder — shows while pipeline is running (~0-500ms) */}
+        {isTranscribing && !jp ? (
+          <div className="transcribing-state">
+            <span className="transcribing-dot" />
+            <span className="transcribing-dot" />
+            <span className="transcribing-dot" />
+          </div>
         ) : (
-          <p className="jp-text">{jp}</p>
-        )}
+          <>
+            {/* Voice: karaoke animated words. Text chat: plain JP text */}
+            {isVoice && words.length > 0 ? (
+              <KaraokeText words={words} isSpeaking={isSpeaking} />
+            ) : (
+              <p className="jp-text">{jp}</p>
+            )}
 
-        <RomajiLine romaji={romaji} />
-        <p className="en-text">{en}</p>
+            <div className="romaji-row">
+              <RomajiLine romaji={romaji} />
+              {romaji && (
+                <button
+                  className={`romaji-copy-btn${romajiCopied ? " copied" : ""}`}
+                  onClick={handleCopyRomaji}
+                  title={romajiCopied ? "Copied!" : "Copy romaji"}
+                >
+                  {romajiCopied ? "✓" : "⎘"}
+                </button>
+              )}
+            </div>
+
+            <p className="en-text">{en}</p>
+          </>
+        )}
       </div>
 
       {/* ── Suggestions (appear after refined packet) ───────────────────── */}

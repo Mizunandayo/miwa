@@ -10,6 +10,7 @@ import logging
 import os
 import random
 import time
+from functools import lru_cache
 from typing import Optional
 
 import pykakasi
@@ -25,6 +26,20 @@ from pydantic  import BaseModel
 import requests
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
+
+# ─── Persistent HTTP session for Google Translate ─────────────────────────────
+# Reuses TCP connection — avoids per-call TLS handshake (~20-50ms saved each call)
+_gt_session: Optional[requests.Session] = None
+
+def _get_gt_session() -> requests.Session:
+    global _gt_session
+    if _gt_session is None:
+        _gt_session = requests.Session()
+        adapter = requests.adapters.HTTPAdapter(
+            pool_connections=2, pool_maxsize=2, max_retries=0
+        )
+        _gt_session.mount("https://", adapter)
+    return _gt_session
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))
 
@@ -57,14 +72,55 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Limit concurrent vLLM (translate + suggestions) calls to avoid queue stacking
-# when multiple speakers fire simultaneously.
-# 3 slots: allows each speaker's translate+suggest to run concurrently
-# without completely blocking other speakers.
-_vllm_semaphore = asyncio.Semaphore(3)
+# Separate semaphores so translations are never blocked by a suggestion queue.
+# Translations are the critical path (user sees the card in ~1-2s).
+# Suggestions run concurrently and can tolerate more parallelism.
+_translate_semaphore = asyncio.Semaphore(2)  # fast path — never queued behind suggestions
+_suggest_semaphore   = asyncio.Semaphore(4)  # up to 4 speakers' suggestions concurrently
 
 # Track active connections (userId → WebSocket)
 active_connections: dict[str, WebSocket] = {}
+
+
+# ─── Startup warmup ───────────────────────────────────────────────────────────
+
+@app.on_event("startup")
+async def _startup_warmup() -> None:
+    """
+    Pre-load all models at server start so the first real user utterance
+    has zero cold-start penalty.
+
+    Without warmup:
+      First Whisper call  = 2-5s  (model load + GPU kernel compile)
+      First vLLM call     = 1-3s  (KV-cache alloc + first token)
+
+    With warmup these costs are paid once at startup, not on the first utterance.
+    """
+    loop = asyncio.get_event_loop()
+
+    async def _warm_whisper() -> None:
+        log.info("[warmup] Loading Whisper model in background…")
+        try:
+            from transcribe import warmup as _whisper_warmup
+            ready = await loop.run_in_executor(None, _whisper_warmup)
+            log.info(f"[warmup] Whisper {'ready ✓' if ready else 'FAILED — stub will be used'}")
+        except Exception as exc:
+            log.warning(f"[warmup] Whisper warmup error: {exc}")
+
+    async def _warm_vllm() -> None:
+        log.info("[warmup] Sending dummy request to vLLM to pre-compile CUDA kernels…")
+        try:
+            t0 = time.time()
+            await loop.run_in_executor(
+                None, lambda: translate_with_style("こんにちは", "Hello", "casual")
+            )
+            log.info(f"[warmup] vLLM ready in {round((time.time()-t0)*1000)}ms ✓")
+        except Exception as exc:
+            log.warning(f"[warmup] vLLM warmup error (non-fatal): {exc}")
+
+    # Fire both concurrently — don't await (let startup finish immediately)
+    asyncio.create_task(_warm_whisper())
+    asyncio.create_task(_warm_vllm())
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -146,7 +202,7 @@ def google_translate(text: str, target: str = "en") -> Optional[str]:
         return f"[Translation stub: {text}]"
 
     try:
-        resp = requests.post(
+        resp = _get_gt_session().post(
             "https://translation.googleapis.com/language/translate/v2",
             params={"key": GOOGLE_API_KEY},
             json={
@@ -164,6 +220,16 @@ def google_translate(text: str, target: str = "en") -> Optional[str]:
     except Exception as e:
         log.error(f"Google Translate error: {e}")
         return None
+
+
+@lru_cache(maxsize=512)
+def _cached_translate(text: str) -> Optional[str]:
+    """
+    LRU-cached Google Translate for the fast pass.
+    Common short phrases (はい、うん、草、なるほど) hit cache after first call \u2014 <1ms.
+    Cache key is exact JP text \u2014 safe for repeated utterances.
+    """
+    return google_translate(text)
 
 
 def transcribe_stub(audio_bytes: bytes) -> str:
@@ -230,8 +296,8 @@ async def _process_translation(
         word_tokens = tokenize_words(jp_text)
         romaji = to_romaji(jp_text)
 
-        # ── Google Translate (fast first pass) ──────────────────────────────
-        en_fast = google_translate(jp_text)
+        # ── Google Translate (fast first pass — cached for common phrases) ──────
+        en_fast = _cached_translate(jp_text)
         gt_latency = round((time.time() - start_time) * 1000)
 
         await websocket.send_text(json.dumps({
@@ -266,7 +332,7 @@ async def _process_translation(
             # Only do style translation — fast path.
             # Cancel the memory recall future since we won't use it.
             memory_recall_future.cancel()
-            async with _vllm_semaphore:
+            async with _translate_semaphore:
                 en_refined = await loop.run_in_executor(
                     None,
                     lambda: translate_with_style(jp_text, en_fast or jp_text, style)
@@ -284,20 +350,20 @@ async def _process_translation(
             }))
             log.info(f"[{user_id}] refined packet sent in {refined_latency}ms (no suggestions — short utterance)")
         else:
-            # Run style translation and suggestions CONCURRENTLY.
-            # Both acquire their own semaphore slots simultaneously — wall time is
-            # max(translate_time, suggest_time) instead of sum.
+            # Run style translation and suggestions CONCURRENTLY (both start immediately).
+            # But send two separate packets so the refined EN shows fast (~1-2s)
+            # while suggestions load in the background (~5-6s).
             memories = await memory_recall_future
 
             async def _do_translate():
-                async with _vllm_semaphore:
+                async with _translate_semaphore:
                     return await loop.run_in_executor(
                         None,
                         lambda: translate_with_style(jp_text, en_fast or jp_text, style)
                     )
 
             async def _do_suggest():
-                async with _vllm_semaphore:
+                async with _suggest_semaphore:
                     return await loop.run_in_executor(
                         None,
                         lambda: get_suggestions(
@@ -308,21 +374,37 @@ async def _process_translation(
                         )
                     )
 
-            en_refined, suggestions = await asyncio.gather(_do_translate(), _do_suggest())
+            # Fire both concurrently as independent tasks
+            translate_task = asyncio.create_task(_do_translate())
+            suggest_task   = asyncio.create_task(_do_suggest())
 
+            # Send refined translation as soon as it finishes (~1-2s)
+            en_refined = await translate_task
             en_final = en_refined or en_fast or jp_text
-            total_latency = round((time.time() - start_time) * 1000)
+            refined_latency = round((time.time() - start_time) * 1000)
 
-            # Send refined translation + suggestions together (single round-trip)
             await websocket.send_text(json.dumps({
                 "type": "refined",
                 "userId": user_id,
                 "en": en_final,
-                "suggestions": suggestions,
+                "suggestions": [],
                 "translationSource": "llm",
+                "latencyMs": refined_latency,
+            }))
+            log.info(f"[{user_id}] refined packet sent in {refined_latency}ms")
+
+            # Send suggestions when they finish (~5-6s, already running in background)
+            suggestions = await suggest_task
+            total_latency = round((time.time() - start_time) * 1000)
+
+            await websocket.send_text(json.dumps({
+                "type": "refined",
+                "userId": user_id,
+                "suggestionsOnly": True,
+                "suggestions": suggestions,
                 "latencyMs": total_latency,
             }))
-            log.info(f"[{user_id}] refined+suggestions packet sent in {total_latency}ms")
+            log.info(f"[{user_id}] suggestions packet sent in {total_latency}ms")
 
     except Exception as e:
         log.error(f"[{user_id}] Translation pipeline error: {e}")
