@@ -334,56 +334,63 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
 
-            # ── Style-refined translation + suggestions (parallel) ────────────────
+            # ── Style-refined translation + suggestions ────────────────────
             style = data.get("style", "casual")
 
-            # Store utterance in memory
-            await asyncio.get_event_loop().run_in_executor(
+            # Fire memory_store without awaiting — doesn't affect output
+            asyncio.get_event_loop().run_in_executor(
                 None,
                 lambda: memory_store(user_id, jp_text, en_fast or "", style)
             )
 
-            # Recall past context
-            memories = await asyncio.get_event_loop().run_in_executor(
+            # Run memory_recall and translation IN PARALLEL
+            memory_recall_future = asyncio.get_event_loop().run_in_executor(
                 None,
                 lambda: memory_recall(user_id, jp_text)
             )
-
-            # Run style translation + suggestions concurrently
             en_refined_future = asyncio.get_event_loop().run_in_executor(
                 None,
                 lambda: translate_with_style(jp_text, en_fast or jp_text, style)
             )
-            suggestions_future = asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: get_suggestions(
-                    jp_text=jp_text,
-                    en_text=en_fast or jp_text,
-                    style=style,
-                    memories=memories,
-                )
-            )
 
-            en_refined, suggestions = await asyncio.gather(en_refined_future, suggestions_future)
-
-            # Use refined translation if available, else fall back to Google Translate
+            # Send refined translation as soon as it's ready — don't wait for suggestions
+            en_refined = await en_refined_future
             en_final = en_refined or en_fast or jp_text
-
-            total_latency = round((time.time() - start_time) * 1000)
+            refined_latency = round((time.time() - start_time) * 1000)
 
             await websocket.send_text(json.dumps({
                 "type": "refined",
                 "userId": user_id,
                 "en": en_final,
-                "suggestions": suggestions,
+                "suggestions": [],
                 "translationSource": "llm",
+                "latencyMs": refined_latency,
+            }))
+
+            log.info(f"[{user_id}] refined packet sent in {refined_latency}ms")
+
+            # Now wait for memory recall, then get suggestions and send separately
+            memories = await memory_recall_future
+            suggestions = await asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: get_suggestions(
+                    jp_text=jp_text,
+                    en_text=en_final,
+                    style=style,
+                    memories=memories,
+                )
+            )
+            total_latency = round((time.time() - start_time) * 1000)
+
+            await websocket.send_text(json.dumps({
+                "type": "refined",
+                "userId": user_id,
+                "suggestionsOnly": True,
+                "suggestions": suggestions,
                 "latencyMs": total_latency,
             }))
 
-
-
-
-            log.info(f"[{user_id}] refined packet sent in {total_latency}ms")
+            log.info(f"[{user_id}] suggestions packet sent in {total_latency}ms")
 
     except WebSocketDisconnect:
         log.info(f"WebSocket disconnected: {user_id}")
