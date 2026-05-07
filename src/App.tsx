@@ -429,42 +429,40 @@ export default function App() {
     </div>
   );
 
-  // ── Fullscreen HUD layout (maximized window) ──────────────────────────
+  // ── Fullscreen layout (maximized window) ─────────────────────────────
   if (isMaximized) {
     return (
       <div className="overlay-root fullscreen">
-        {/* Top bar — full-width header */}
+        {/* Top bar */}
         <div className="fs-topbar">
           <Header sendCommand={sendCommand} />
         </div>
 
-        {/* 3-column body: left panel | transparent center | right panel */}
+        {/* Body: main speaker column + sidebar */}
         <div className="fs-body">
-          {/* LEFT: call info + speaker cards */}
-          <div className="fs-panel-left">
+          {/* Main: call info strip + speaker cards */}
+          <div className="fs-main">
             <CallInfoStrip />
             {speakerListJSX}
           </div>
 
-          {/* CENTER: fully transparent — game visible here */}
-          <div className="fs-center" />
-
-          {/* RIGHT: stats + phrasebook */}
-          <div className="fs-panel-right">
+          {/* Sidebar: stats + phrasebook */}
+          <div className="fs-sidebar">
             <StatsPanel />
             <Phrasebook sendCommand={sendCommand} />
           </div>
         </div>
 
-        {/* Bottom bar: quick reactions + quick reply */}
+        {/* Bottom bar */}
         <div className="fs-bottombar">
-          <QuickReactions sendCommand={sendCommand} />
-          <div className="fs-quickreply-wrap">
-            <QuickReplyBox sendCommand={sendCommand} />
+          <div className="fs-bottombar-inner">
+            <QuickReactions sendCommand={sendCommand} />
+            <div className="fs-quickreply-wrap">
+              <QuickReplyBox sendCommand={sendCommand} />
+            </div>
           </div>
         </div>
 
-        {/* Full-screen romaji popup — must be last for z-index */}
         <RomajiPopup />
       </div>
     );
