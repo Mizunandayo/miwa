@@ -448,7 +448,7 @@
     .demo-outer { display: flex; justify-content: center; }
     /* Simulated Tauri window — matches actual app */
     .demo-frame {
-      width: 100%; max-width: 520px;
+      width: 100%; max-width: 720px;
       background: transparent;
       border-radius: 16px;
       overflow: hidden;
@@ -651,7 +651,7 @@
       color: var(--muted2); margin-top: 16px;
     }
     /* 2-col layout for demo section */
-    .demo-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+    .demo-layout { display: grid; grid-template-columns: 2fr 5fr; gap: 48px; align-items: center; }
     @media (max-width: 860px) { .demo-layout { grid-template-columns: 1fr; } }
     .demo-copy { }
     .demo-copy-title { font-size: clamp(1.4rem,2.5vw,2rem); font-weight: 700; letter-spacing: -.03em; line-height: 1.15; margin-bottom: 20px; }
@@ -971,10 +971,10 @@
 
       <!-- Right: mock overlay window (pixel-faithful replica of screenshot) -->
       <div class="demo-outer r" data-d="2">
-        <div class="demo-frame" style="gap:4px;padding:10px">
+        <div class="demo-frame" style="gap:3px;padding:8px">
 
           <!-- ── Header ── -->
-          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 12px;display:flex;flex-direction:column;gap:6px;margin-bottom:0">
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:6px 10px;display:flex;flex-direction:column;gap:4px;margin-bottom:0">
             <!-- Row 1: drag + title + status + win controls -->
             <div style="display:flex;align-items:center;gap:7px">
               <div class="demo-drag-dots"></div>
@@ -1013,14 +1013,14 @@
           </div>
 
           <!-- ── Quick reply ── -->
-          <div style="background:rgba(20,20,20,.9);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:6px 12px">
+          <div style="background:rgba(20,20,20,.9);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:4px 10px">
             <span style="font-size:12px;font-family:var(--mono);color:rgba(255,255,255,.28)">Type English &mdash; translates as Casual&hellip;</span>
           </div>
 
           <!-- ── Call info strip ── -->
           <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden">
             <!-- Top row: guild + channel + member count -->
-            <div style="display:flex;align-items:center;gap:6px;padding:5px 10px">
+            <div style="display:flex;align-items:center;gap:6px;padding:4px 8px">
               <span style="font-size:14px;flex-shrink:0">🍁</span>
               <span style="font-size:11px;font-family:var(--mono);color:#3b9eff;font-weight:600;white-space:nowrap">Valo Tomodachi</span>
               <span style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.28)">🌵</span>
@@ -1032,7 +1032,7 @@
               <span style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.25);margin-left:auto;white-space:nowrap">· 1 in call &#9662;</span>
             </div>
             <!-- Member row -->
-            <div style="display:flex;align-items:center;gap:8px;padding:3px 10px 5px;border-top:1px solid rgba(255,255,255,.05)">
+            <div style="display:flex;align-items:center;gap:8px;padding:2px 8px 4px;border-top:1px solid rgba(255,255,255,.05)">
               <div style="width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#4a5568,#718096);border:1.5px solid rgba(255,255,255,.12);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:10px;color:rgba(255,255,255,.7)">M</div>
               <span style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.6)">`Mizu</span>
             </div>
@@ -1094,7 +1094,7 @@
           </div>
 
           <!-- ── Speaker card ── -->
-          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:9px;display:flex;flex-direction:column;gap:6px">
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:7px;display:flex;flex-direction:column;gap:4px">
             <!-- Card header: avatar + name + badge -->
             <div style="display:flex;align-items:center;gap:10px">
               <div style="position:relative;flex-shrink:0">
@@ -1108,13 +1108,13 @@
               <span style="font-size:9px;font-family:var(--mono);font-weight:700;padding:3px 6px;border-radius:5px;background:rgba(59,158,255,.15);border:1px solid rgba(59,158,255,.3);color:#3b9eff;flex-shrink:0">AI</span>
             </div>
             <!-- JP text -->
-            <div style="display:flex;flex-direction:column;gap:3px">
-              <div style="font-size:16px;font-weight:400;color:#fff;line-height:1.3;font-family:'Noto Sans JP',sans-serif">それは<span style="background:rgba(59,158,255,.2);border-radius:3px;padding:0 2px;color:#fff">面白い</span>ですね</div>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="font-size:15px;font-weight:400;color:#fff;line-height:1.3;font-family:'Noto Sans JP',sans-serif">それは<span style="background:rgba(59,158,255,.2);border-radius:3px;padding:0 2px;color:#fff">面白い</span>ですね</div>
               <div style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.4);letter-spacing:.03em">soreha omoshiroi desune</div>
               <div style="font-size:13px;color:rgba(255,255,255,.75)">That&rsquo;s interesting.</div>
             </div>
             <!-- Suggestions -->
-            <div style="display:flex;flex-direction:column;gap:4px">
+            <div style="display:flex;flex-direction:column;gap:3px">
               <!-- REPLY WITH header -->
               <div style="display:flex;align-items:center;justify-content:space-between;padding:0 1px">
                 <span style="font-size:9px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.3);font-weight:600">Reply With</span>
@@ -1124,12 +1124,11 @@
                 </div>
               </div>
               <!-- Suggestion 1 -->
-              <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:6px 9px;display:flex;flex-direction:column;gap:5px">
+              <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:5px 8px;display:flex;flex-direction:column;gap:4px">
                 <div style="display:flex;align-items:flex-start;gap:6px">
                   <span style="font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:4px;background:rgba(59,158,255,.15);border:1px solid rgba(59,158,255,.25);color:#3b9eff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">1</span>
-                  <div style="flex:1;display:flex;flex-direction:column;gap:2px">
-                    <div style="font-size:14px;color:#fff;font-family:'Noto Sans JP',sans-serif">そうですね</div>
-                    <div style="font-size:10px;font-family:var(--mono);color:rgba(255,255,255,.38)">sou desu ne</div>
+                  <div style="flex:1;display:flex;flex-direction:column;gap:1px">
+                    <div style="font-size:13px;color:#fff;font-family:'Noto Sans JP',sans-serif">そうですね</div>
                     <div style="font-size:11px;color:rgba(255,255,255,.6)">Yes, it is</div>
                   </div>
                   <span style="font-size:12px;color:rgba(255,255,255,.18);flex-shrink:0">📌</span>
@@ -1141,12 +1140,11 @@
                 </div>
               </div>
               <!-- Suggestion 2 -->
-              <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:6px 9px;display:flex;flex-direction:column;gap:5px">
+              <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:5px 8px;display:flex;flex-direction:column;gap:4px">
                 <div style="display:flex;align-items:flex-start;gap:6px">
                   <span style="font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:4px;background:rgba(59,158,255,.15);border:1px solid rgba(59,158,255,.25);color:#3b9eff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">2</span>
-                  <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+                  <div style="flex:1;display:flex;flex-direction:column;gap:1px">
                     <div style="font-size:13px;color:#fff;font-family:'Noto Sans JP',sans-serif">どうして面白いと思ったんですか</div>
-                    <div style="font-size:10px;font-family:var(--mono);color:rgba(255,255,255,.38)">doushite omoshiroi to omottan desu ka</div>
                     <div style="font-size:11px;color:rgba(255,255,255,.6)">Why do you think it&rsquo;s interesting?</div>
                   </div>
                   <span style="font-size:12px;color:rgba(255,255,255,.18);flex-shrink:0">📌</span>
@@ -1158,12 +1156,11 @@
                 </div>
               </div>
               <!-- Suggestion 3 -->
-              <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:6px 9px;display:flex;flex-direction:column;gap:5px">
+              <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:5px 8px;display:flex;flex-direction:column;gap:4px">
                 <div style="display:flex;align-items:flex-start;gap:6px">
                   <span style="font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:4px;background:rgba(59,158,255,.15);border:1px solid rgba(59,158,255,.25);color:#3b9eff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">3</span>
-                  <div style="flex:1;display:flex;flex-direction:column;gap:2px">
-                    <div style="font-size:14px;color:#fff;font-family:'Noto Sans JP',sans-serif">私も興味があります</div>
-                    <div style="font-size:10px;font-family:var(--mono);color:rgba(255,255,255,.38)">watashi mo kyomi ga arimasu</div>
+                  <div style="flex:1;display:flex;flex-direction:column;gap:1px">
+                    <div style="font-size:13px;color:#fff;font-family:'Noto Sans JP',sans-serif">私も興味があります</div>
                     <div style="font-size:11px;color:rgba(255,255,255,.6)">I&rsquo;m interested too</div>
                   </div>
                   <span style="font-size:12px;color:rgba(255,255,255,.18);flex-shrink:0">📌</span>
@@ -1178,18 +1175,13 @@
           </div>
 
           <!-- ── Stats bar ── -->
-          <div style="display:flex;align-items:center;gap:8px;padding:0 3px">
+          <div style="display:flex;align-items:center;gap:8px;padding:1px 3px">
             <span style="font-size:11px;font-family:var(--mono);color:#c7ed31;font-weight:600">&#9889;AT ~150-800ms</span>
             <span style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.2)">·</span>
             <span style="font-size:11px;font-family:var(--mono);color:#f59e0b;font-weight:600">LLM ~400ms</span>
             <span style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.2)">·</span>
             <span style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.3)">WS</span>
             <span style="font-size:11px;font-family:var(--mono);color:#22c55e;font-weight:600">open</span>
-          </div>
-
-          <!-- ── Resize nub ── -->
-          <div style="display:flex;justify-content:center;padding:2px 0">
-            <div style="width:40px;height:3px;border-radius:2px;background:rgba(255,255,255,.2)"></div>
           </div>
 
         </div>
