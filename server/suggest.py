@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 server/suggest.py — CrewAI multi-agent suggestion pipeline
 
@@ -381,7 +382,7 @@ _JP_STYLE_DESCRIPTIONS = {
 
 def translate_en_to_jp_with_style(en_text: str, jp_fast: str, style: str) -> str | None:
     """
-    Translate English → Japanese with the given style tone.
+    Translate English to Japanese with the given style tone.
     jp_fast is the Google Translate result used as a base reference.
     Returns None on failure (caller falls back to jp_fast).
     """
