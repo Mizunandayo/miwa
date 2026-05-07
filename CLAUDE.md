@@ -13,7 +13,7 @@
 | 2 | May 5 | Translation + profile pictures + multi-speaker UI | server/main.py, bot/index.js, bot/db.js, all React components (App.tsx, Header, SpeakerCard, KaraokeText, RomajiLine, atoms.ts), Tauri config, full design system CSS |
 | 3 | May 6 | LLM + Agents + Memory (cloud) | UI polish — QuickReplyBox, SuggestionCard (delivery buttons), RomajiPopup, QuickReactions, Phrasebook (Ctrl+1-9), StatsPanel, CallInfoStrip, resize handle, bug fix: google_translate source hardcode |
 | 4 | May 7 | Suggestions + Quick Reply + Full UX | ✅ Complete — README.md, 1/2/3 shortcuts, Framer Motion spring, snap-to-corner, bot/tts.js stub, hf-space/ (README + animated index.html), git push |
-| 5 | May 8 | Polish + .exe build | ✅ Complete — AMD cloud recreated (IP: 129.212.188.94), full pipeline tested E2E. Bug fixes: hallucination filter, style translation, Bot Speaks TTS wired, quick reply two-pass latency, card timeout, dark UI (quick-reply + reactions), refined packet split (translation immediate, suggestions deferred). Latest commit: 1912744 |
+| 5 | May 8 | Polish + .exe build | ✅ Complete — AMD cloud recreated (IP: 129.212.188.94), full pipeline tested E2E. Bug fixes: hallucination filter, style translation, Bot Speaks TTS wired, quick reply two-pass latency, card timeout, dark UI (quick-reply + reactions), refined packet split (translation immediate, suggestions deferred). Window controls (macOS traffic-light). Latency optimizations (avatar non-blocking, persistent TCP session, max_tokens 400→250, separate semaphores). hf-space overlay iterative resize (3 commits: -30% height+widen, +40% wide/-20% height, -30% width → final 504px max-width grid 1fr 1fr). Latest commit: 8496a85 |
 | 6 | May 9 | GitHub + HF Space + Demo Video | ⬜ Planned |
 | 7 | May 10 | Final Review + SUBMIT | ⬜ Planned |
 
@@ -363,6 +363,7 @@ miwa/
 | src/components/StatsPanel.tsx | ✅ DONE — latency color-coded green/amber/red, WS status |
 | README.md | ✅ DONE — full professional README written |
 | hf-space/ | ✅ DONE — README.md (HF YAML) + index.html (animated hero, demo, pipeline, AMD, features, stack, engineering) |
+| hf-space/index.html overlay sizing | ✅ TUNED — 3 resize iterations: -30% h + widen → +40% wide/-20% h → -30% w. Final: max-width:504px, grid 1fr 1fr (commits fa0c164, af00abf, 8496a85) |
 | bot/tts.js | ✅ DONE — real XTTS wiring (POST /tts → WAV → AudioResource) |
 | server/transcribe.py | ✅ DONE — WhisperX wrapper, lazy-load, hallucination filter |
 | server/memory.py | ✅ DONE — Qdrant vector store, lazy-load, graceful fallback |
@@ -389,7 +390,7 @@ miwa/
 | suggest.py max_tokens reduction | ✅ DONE — 400 → 250 tokens (~30-40% faster generation) |
 | suggest.py temperature reduction | ✅ DONE — 0.8 → 0.6 (tighter sampling, faster convergence) |
 | main.py separate semaphores | ✅ DONE — _translate_semaphore(2) + _suggest_semaphore(4); translations never blocked by suggestions |
-| Latest commit | 1912744 — dark UI + latency split (pending push for this session's changes) |
+| Latest commit | 8496a85 — hf-space demo overlay -30% width (720→504px, grid 1fr 1fr) |
 
 ---
 

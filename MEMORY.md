@@ -1263,3 +1263,63 @@ sleep 2 && tail -f /app/server.log
 7. Qwen2.5-72B alternate model path (Qwen partner prize)
 8. Record demo video
 9. Publish HuggingFace Space
+
+---
+
+## SESSION 13 — May 8, 2026 (Day 5 cont. — HF Space Demo Overlay Resize Iterations)
+
+### What was done this session
+Three iterative resize operations on the demo overlay section of `hf-space/index.html` — all committed and pushed to GitHub.
+
+### Resize Iteration 1 — `-30% height + widen` (commit `fa0c164`)
+- Reduced height of demo overlay ~30% — removed search box (~42px), tightened all paddings, removed romaji from suggestion cards, removed resize nub
+- Widened by increasing `.demo-layout` grid from `1fr 2fr` → `1fr 2fr` + upping `.demo-frame max-width`
+- Commit message: "style: demo overlay -30% height, widen layout"
+
+### Resize Iteration 2 — `+40% wider, -20% height` (commit `af00abf`)
+- Further widened overlay: changed `.demo-layout` grid to `2fr 5fr` (right column gets ~708px on 1120px wrap)
+- `.demo-frame max-width`: set to `720px`
+- Further reduced height: trimmed more paddings, suggestion card gap, reaction card padding
+- Commit message: "style: demo overlay +40% wide, -20% height (grid 2fr/5fr, max-width 720px)"
+
+### Resize Iteration 3 — `-30% width` (commit `8496a85`) ← FINAL
+- Narrowed back: `.demo-frame max-width`: `720px` → `504px`
+- `.demo-layout` grid: `2fr 5fr` → `1fr 1fr` (equal columns, left description gets fair share)
+- Rationale: 720px overlay was too wide relative to description text on left
+- Commit message: "style: demo overlay -30% width (720→504px, grid 1fr 1fr)"
+
+### Final hf-space demo overlay state (commit 8496a85)
+- `max-width: 504px` on `.demo-frame`
+- `grid-template-columns: 1fr 1fr` on `.demo-layout`
+- `gap: 48px` between columns
+- All heights compacted via padding/gap reductions (no hard pixel height set)
+- No search box, no romaji in suggestion cards, no resize nub
+- Full component list present: Header → Quick Reply → Call Info Strip → Reactions → Speaker Card → Stats
+
+### Current State After Session 13
+| Component | Status |
+|---|---|
+| hf-space/index.html overlay | ✅ Sized — max-width:504px, grid 1fr 1fr |
+| Latest commit | `8496a85` — pushed to github.com/Mizunandayo/miwa main |
+| AMD MI300X | ✅ RUNNING — 129.212.188.94 (still active from Day 5) |
+| WhisperX on cloud | ⬜ Not installed (Day 6) |
+| Qdrant container | ⬜ Not started (Day 6) |
+| CrewAI on cloud | ⬜ Not installed (Day 6) |
+| XTTS v2 on cloud | ⬜ Not installed (Day 6) |
+| Demo video | ⬜ Still pending |
+| HuggingFace Space publish | ⬜ Day 6 |
+
+### Day 6 Immediate Priority List (May 9)
+1. SSH into cloud, verify vLLM still running: `curl -s http://localhost:8000/health`
+2. Deploy latest server code: `cd /tmp/miwa && git pull && cp -r /tmp/miwa/server /app/server`
+3. Restart FastAPI server with new optimizations
+4. Install cloud deps inside rocm container:
+   ```bash
+   pip install whisperx qdrant-client sentence-transformers crewai TTS
+   docker run -d --name qdrant -p 6333:6333 qdrant/qdrant
+   ```
+5. Full E2E test with WhisperX transcription (not stub)
+6. Record demo video (local pipeline fine — no cloud required for recording)
+7. Publish `hf-space/` to HuggingFace Space (org: `lablab-ai-amd-developer-hackathon`)
+8. 2 social posts tagging @AIatAMD + @lablab (Ship It challenge)
+9. Submit on lablab.ai before May 11, 3:00 AM PHT
