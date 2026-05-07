@@ -285,6 +285,47 @@ def _call_crewai(
         return None
 
 
+def translate_with_style(jp_text: str, en_fast: str, style: str) -> str | None:
+    """
+    Use vLLM to produce a style-adjusted English translation.
+    Falls back to en_fast (Google Translate) if vLLM is unavailable.
+    """
+    style_desc = _STYLE_DESCRIPTIONS.get(style, _STYLE_DESCRIPTIONS["casual"])
+    prompt = (
+        f"Translate the following Japanese text to English.\n"
+        f"Style: {style} ({style_desc})\n"
+        f"Japanese: {jp_text}\n"
+        f"Base translation: {en_fast}\n\n"
+        f"Rules:\n"
+        f"- Adjust the tone to match the style ({style})\n"
+        f"- Keep the same meaning as the base translation\n"
+        f"- Reply with ONLY the translated English text, nothing else\n"
+        f"- Do not add quotes, explanations, or labels\n"
+        f"Translation:"
+    )
+    try:
+        import requests as req
+        resp = req.post(
+            f"{VLLM_URL}/chat/completions",
+            json={
+                "model": VLLM_MODEL,
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 120,
+                "temperature": 0.4,
+            },
+            timeout=8,
+        )
+        resp.raise_for_status()
+        result = resp.json()["choices"][0]["message"]["content"].strip()
+        # Strip any accidental quotes or labels
+        result = result.strip('"\'').strip()
+        if result and len(result) < 500:
+            return result
+    except Exception as e:
+        log.warning(f"translate_with_style failed: {e}")
+    return None
+
+
 def get_suggestions(
     jp_text:  str,
     en_text:  str,

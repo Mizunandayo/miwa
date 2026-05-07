@@ -16,7 +16,7 @@ import pykakasi
 # ─── Day 5 module imports ─────────────────────────────────────────────────────
 from transcribe import transcribe
 from memory    import store as memory_store, recall as memory_recall
-from suggest   import get_suggestions
+from suggest   import get_suggestions, translate_with_style
 from tts       import synthesize as tts_synthesize
 from fastapi   import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, status
 from fastapi.responses import Response
@@ -312,35 +312,47 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
 
-            # ── Store utterance in memory ──────────────────────────────────────────
+            # ── Style-refined translation + suggestions (parallel) ────────────────
+            style = data.get("style", "casual")
+
+            # Store utterance in memory
             await asyncio.get_event_loop().run_in_executor(
                 None,
-                lambda: memory_store(user_id, jp_text, en_fast or "", data.get("style", "casual"))
+                lambda: memory_store(user_id, jp_text, en_fast or "", style)
             )
 
-            # ── Recall past context for this speaker ──────────────────────────────
+            # Recall past context
             memories = await asyncio.get_event_loop().run_in_executor(
                 None,
                 lambda: memory_recall(user_id, jp_text)
             )
 
-            # ── Get AI suggestions (CrewAI → vLLM → fallback) ────────────────────
-            suggestions = await asyncio.get_event_loop().run_in_executor(
-               None,
+            # Run style translation + suggestions concurrently
+            en_refined_future = asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: translate_with_style(jp_text, en_fast or jp_text, style)
+            )
+            suggestions_future = asyncio.get_event_loop().run_in_executor(
+                None,
                 lambda: get_suggestions(
                     jp_text=jp_text,
                     en_text=en_fast or jp_text,
-                    style=data.get("style", "casual"),
+                    style=style,
                     memories=memories,
                 )
             )
+
+            en_refined, suggestions = await asyncio.gather(en_refined_future, suggestions_future)
+
+            # Use refined translation if available, else fall back to Google Translate
+            en_final = en_refined or en_fast or jp_text
 
             total_latency = round((time.time() - start_time) * 1000)
 
             await websocket.send_text(json.dumps({
                 "type": "refined",
                 "userId": user_id,
-                "en": en_fast or jp_text,
+                "en": en_final,
                 "suggestions": suggestions,
                 "translationSource": "llm",
                 "latencyMs": total_latency,
