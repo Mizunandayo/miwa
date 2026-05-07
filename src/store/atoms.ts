@@ -72,7 +72,7 @@ export const orderedSpeakersAtom = atom((get) => {
 export const styleModeAtom = atom<StyleMode>("casual");
 
 /** Window opacity as percentage (40–100) */
-export const opacityAtom = atom<number>(90);
+export const opacityAtom = atom<number>(100);
 
 /** Compact single-line view */
 export const isMiniModeAtom = atom<boolean>(false);

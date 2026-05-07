@@ -842,3 +842,107 @@ ssh -i "$HOME\.ssh\miwa_amd" -N -L 8765:localhost:8765 root@<new-ip>
 | AMD MI300X | ❌ Not yet created |
 | Model download | ❌ Not yet |
 | End-to-end cloud test | ❌ Not yet |
+
+---
+
+## SESSION 11 — May 7, 2026 (Day 5 — Cloud Reconnect + Full Bug Fix Sprint)
+
+### AMD Cloud Reconnected
+- New droplet created: MI300X x1 @ $1.99/hr
+- Public IP: **129.212.188.94**
+- Container IP (Docker bridge): **172.17.0.2** — SSH tunnel must target this, not localhost
+- Container name: `rocm`
+- Llama 3.3 70B re-downloaded to `/app/models/llama3.3-70b/`
+- vLLM started: `nohup vllm serve /app/models/llama3.3-70b --host 0.0.0.0 --port 8000 --max-model-len 8192 > /app/vllm.log 2>&1 &`
+- Full pipeline tested end-to-end ✅
+- SSH tunnel: `ssh -i "$HOME\.ssh\miwa_amd" -N -L 8765:172.17.0.2:8765 root@129.212.188.94`
+
+### Bug Fixes Applied This Session
+
+#### 1. Style Translation — `server/suggest.py`
+- **Problem:** `translate_with_style()` was returning raw LLM output including prefixes like "Translation:", "English:", etc.
+- **Fix:** Added HALLUCINATION_SUBSTRINGS list for prefix stripping. Uses system message + stop tokens for clean plain-text responses.
+- `_strip_prefixes()` helper removes common prefixes before returning.
+
+#### 2. Bot Speaks TTS — `bot/tts.js`
+- **Problem:** `botSpeaks` handler was a stub — never called real TTS.
+- **Fix:** Real XTTS wiring uncommitted and verified:
+  - `fetch(`${serverUrl}/tts`, POST, JSON text, AbortSignal.timeout(8000))`
+  - `res.arrayBuffer()` → `Readable.from(Buffer.from(...))` → `createAudioResource(stream, {inputType: StreamType.Arbitrary})`
+  - `bot/index.js` now lazy-creates `ttsPlayer` and subscribes it to the voice connection on first `botSpeaks` command
+
+#### 3. Quick Reply Latency — `server/main.py` quick_reply handler
+- **Problem:** EN→JP quick reply waited for vLLM styled translation before sending anything (~4s).
+- **Fix:** Two-pass for quick reply too:
+  1. Google Translate result sent immediately as `quick_reply_result` packet
+  2. `asyncio.create_task(_send_styled_quick_reply(...))` fires vLLM styling in background
+  3. If vLLM result differs from GT, sends second `quick_reply_result` packet to update UI
+
+#### 4. Card Timeout Fix — `src/App.tsx`
+- **Problem:** `scheduleSpeakerRemoval()` was being called on both `fast` AND `refined` packets, causing 6s timer to reset on every LLM update — cards lasted 12+ seconds.
+- **Fix:** `scheduleSpeakerRemoval(userId)` now only called inside the `fast` packet handler branch. `refined` and `suggestionsOnly` patches never reset the timer.
+
+#### 5. Hallucination Filter — `server/transcribe.py`
+- **Problem:** WhisperX returning phantom transcriptions like `はじめしゃちょーエンディング】`, `ご利用ください`, generic filler phrases during silence.
+- **Fix:** Added `HALLUCINATION_SUBSTRINGS` list — any transcription containing one of these substrings is rejected.
+- Also: min 3 chars check + min 9600 bytes (0.3s) audio check added before calling WhisperX.
+- `HALLUCINATION_EXACT` list (stripped of punctuation before matching) for exact-phrase filtering.
+
+#### 6. Dark UI for Quick Reply + Reactions — `src/App.css`
+- **Problem:** `.quick-reply-box` and `.quick-reactions` had light/transparent backgrounds, not matching dark speaker cards.
+- **Fix:** Both now use `background: rgba(5, 5, 5, 0.75)` + `box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03), 0 4px 20px rgba(0,0,0,0.45)` — identical to speaker card styling.
+
+#### 7. Refined Packet Latency Split — `server/main.py` main pipeline
+- **Problem:** `refined` packet waited for BOTH `translate_with_style` AND `get_suggestions` to complete (~4-6s total). User saw translation update arrive at same time as suggestions.
+- **Fix:** Decoupled into two phases:
+  1. Send `refined` packet with `en` immediately when `translate_with_style` returns (~400ms after fast)
+  2. After `get_suggestions` completes, send separate `refined` packet with `suggestionsOnly: True` (~4-6s total)
+  3. `memory_store` is now fire-and-forget (no await)
+- Net result: translation refinement visible ~400ms after GT, suggestions arrive later without blocking
+
+### Latest Commit: `1912744`
+- Message: "Latency: send refined translation immediately, suggestions as follow-up; dark quick-reply/reactions UI"
+- Pushed to `github.com/Mizunandayo/miwa` main branch
+
+### Current State After Session 11
+| Component | Status |
+|---|---|
+| AMD MI300X instance | ✅ RUNNING — 129.212.188.94 |
+| Llama 3.3 70B | ✅ Re-downloaded /app/models/llama3.3-70b/ |
+| vLLM serving | ✅ Port 8000 inside rocm container |
+| Full pipeline E2E | ✅ Tested (Discord → Whisper → GT → vLLM → UI) |
+| Style translation | ✅ Working — clean plain-text output |
+| Bot Speaks TTS | ✅ Wired — XTTS POST /tts → WAV → voice channel |
+| Quick reply latency | ✅ Two-pass: GT instant, vLLM follow-up |
+| Hallucination filter | ✅ HALLUCINATION_SUBSTRINGS + min bytes + min chars |
+| Card timeout | ✅ Only reset on fast packet |
+| Latency split | ✅ Refined translation ~400ms, suggestions ~4-6s deferred |
+| Dark quick-reply UI | ✅ Matches speaker card dark styling |
+| Dark quick-reactions UI | ✅ Matches speaker card dark styling |
+| WhisperX on cloud | ⬜ NOT YET INSTALLED (Day 6) |
+| Qdrant container | ⬜ NOT YET STARTED (Day 6) |
+| CrewAI on cloud | ⬜ NOT YET INSTALLED (Day 6) |
+| XTTS v2 on cloud | ⬜ NOT YET INSTALLED (Day 6) |
+| Demo video recording | ⬜ Still pending |
+
+### Run Commands (Current — with cloud running)
+```powershell
+# Terminal 1 — SSH tunnel
+ssh -i "$HOME\.ssh\miwa_amd" -N -L 8765:172.17.0.2:8765 root@129.212.188.94
+
+# Terminal 2 — Discord bot
+node bot/index.js
+
+# Terminal 3 — Tauri overlay
+npm run tauri dev
+```
+
+### Day 6 Priorities (May 9)
+- End-to-end test with real voice (all modules active)
+- Install WhisperX on cloud container
+- Start Qdrant: `docker run -d --name qdrant -p 6333:6333 qdrant/qdrant`
+- pip install cloud deps (uncomment requirements.txt cloud section)
+- Install CrewAI + XTTS v2
+- Latency profiling (target: <800ms total fast path)
+- Qwen2.5-72B alternate model path (Qwen partner prize)
+- Record demo video

@@ -57,6 +57,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Limit concurrent vLLM (translate + suggestions) calls to avoid queue stacking
+# when multiple speakers fire simultaneously.
+_vllm_semaphore = asyncio.Semaphore(2)
+
 # Track active connections (userId → WebSocket)
 active_connections: dict[str, WebSocket] = {}
 
@@ -192,6 +196,112 @@ def tokenize_words(text: str) -> list[dict]:
         return [{"word": text, "romaji": "", "index": 0}]
 
 
+# ─── Translation Pipeline (runs as concurrent task) ──────────────────────────
+async def _process_translation(
+    data: dict,
+    websocket: WebSocket,
+    user_id: str,
+    start_time: float,
+) -> None:
+    """
+    Full translation pipeline for one audio/text packet.
+    Runs as a concurrent asyncio task so the while loop can immediately
+    process the next speaker's audio — enabling multi-speaker parallelism.
+    """
+    try:
+        loop = asyncio.get_event_loop()
+        style = data.get("style", "casual")
+
+        # ── Transcribe or use provided text ─────────────────────────────────
+        if data["type"] == "text":
+            jp_text = data["text"].strip()
+        else:
+            audio_bytes = base64.b64decode(data["audio"])
+            transcribe_result = await loop.run_in_executor(
+                None, lambda: transcribe(audio_bytes)
+            )
+            jp_text = transcribe_result.get("text", "").strip()
+            if not jp_text:
+                return  # silence / noise — drop silently
+
+        # ── Tokenize + romaji ───────────────────────────────────────────────
+        word_tokens = tokenize_words(jp_text)
+        romaji = to_romaji(jp_text)
+
+        # ── Google Translate (fast first pass) ──────────────────────────────
+        en_fast = google_translate(jp_text)
+        gt_latency = round((time.time() - start_time) * 1000)
+
+        await websocket.send_text(json.dumps({
+            "type": "fast",
+            "userId": user_id,
+            "jp": jp_text,
+            "en": en_fast or jp_text,
+            "romaji": romaji,
+            "words": word_tokens,
+            "translationSource": "google",
+            "latencyMs": gt_latency,
+            "style": style,
+        }))
+        log.info(f"[{user_id}] fast packet sent in {gt_latency}ms")
+
+        # ── Fire memory_store without awaiting ──────────────────────────────
+        loop.run_in_executor(
+            None, lambda: memory_store(user_id, jp_text, en_fast or "", style)
+        )
+
+        # ── Recall memory in background while translation runs ──────────────
+        memory_recall_future = loop.run_in_executor(
+            None, lambda: memory_recall(user_id, jp_text)
+        )
+
+        # ── Style translation (vLLM, under semaphore) ───────────────────────
+        async with _vllm_semaphore:
+            en_refined = await loop.run_in_executor(
+                None,
+                lambda: translate_with_style(jp_text, en_fast or jp_text, style)
+            )
+
+        en_final = en_refined or en_fast or jp_text
+        refined_latency = round((time.time() - start_time) * 1000)
+
+        await websocket.send_text(json.dumps({
+            "type": "refined",
+            "userId": user_id,
+            "en": en_final,
+            "suggestions": [],
+            "translationSource": "llm",
+            "latencyMs": refined_latency,
+        }))
+        log.info(f"[{user_id}] refined packet sent in {refined_latency}ms")
+
+        # ── Suggestions (deferred, vLLM, under semaphore) ───────────────────
+        memories = await memory_recall_future
+        async with _vllm_semaphore:
+            suggestions = await loop.run_in_executor(
+                None,
+                lambda: get_suggestions(
+                    jp_text=jp_text,
+                    en_text=en_final,
+                    style=style,
+                    memories=memories,
+                )
+            )
+        total_latency = round((time.time() - start_time) * 1000)
+
+        await websocket.send_text(json.dumps({
+            "type": "refined",
+            "userId": user_id,
+            "suggestionsOnly": True,
+            "suggestions": suggestions,
+            "latencyMs": total_latency,
+        }))
+        log.info(f"[{user_id}] suggestions packet sent in {total_latency}ms")
+
+    except Exception as e:
+        log.error(f"[{user_id}] Translation pipeline error: {e}")
+
+
 # ─── WebSocket Endpoint ────────────────────────────────────────────────────────
 
 @app.websocket("/ws")
@@ -294,103 +404,10 @@ async def websocket_endpoint(websocket: WebSocket):
                 asyncio.create_task(_send_styled_quick_reply(websocket, en_text, jp_fast, style, time.time()))
                 continue
 
-            # ── Get Japanese text ──────────────────────────────────────────
-            if data["type"] == "text":
-                jp_text = data["text"].strip()
-            else:
-                # Audio path — decode base64 PCM and transcribe
-                audio_bytes = base64.b64decode(data["audio"])
-                transcribe_result = transcribe(audio_bytes)
-                jp_text = transcribe_result.get("text", "").strip()
-                whisper_words = transcribe_result.get("words", [])
-                if not jp_text:
-                    continue  # no speech detected — skip this packet
-
-            # ── Tokenize for karaoke ───────────────────────────────────────
-            word_tokens = tokenize_words(jp_text)
-
-            # ── Romaji ────────────────────────────────────────────────────
-            romaji = to_romaji(jp_text)
-
-            # ── Google Translate (fast first pass) ────────────────────────
-            en_fast = google_translate(jp_text)
-            gt_latency = round((time.time() - start_time) * 1000)
-
-            # Send FAST packet immediately
-            await websocket.send_text(json.dumps({
-                "type": "fast",
-                "userId": user_id,
-                "jp": jp_text,
-                "en": en_fast or jp_text,  # fallback to JP if GT fails
-                "romaji": romaji,
-                "words": word_tokens,
-                "translationSource": "google",
-                "latencyMs": gt_latency,
-                "style": data.get("style", "casual"),
-            }))
-
-            log.info(f"[{user_id}] fast packet sent in {gt_latency}ms")
-
-
-
-
-            # ── Style-refined translation + suggestions ────────────────────
-            style = data.get("style", "casual")
-
-            # Fire memory_store without awaiting — doesn't affect output
-            asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: memory_store(user_id, jp_text, en_fast or "", style)
-            )
-
-            # Run memory_recall and translation IN PARALLEL
-            memory_recall_future = asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: memory_recall(user_id, jp_text)
-            )
-            en_refined_future = asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: translate_with_style(jp_text, en_fast or jp_text, style)
-            )
-
-            # Send refined translation as soon as it's ready — don't wait for suggestions
-            en_refined = await en_refined_future
-            en_final = en_refined or en_fast or jp_text
-            refined_latency = round((time.time() - start_time) * 1000)
-
-            await websocket.send_text(json.dumps({
-                "type": "refined",
-                "userId": user_id,
-                "en": en_final,
-                "suggestions": [],
-                "translationSource": "llm",
-                "latencyMs": refined_latency,
-            }))
-
-            log.info(f"[{user_id}] refined packet sent in {refined_latency}ms")
-
-            # Now wait for memory recall, then get suggestions and send separately
-            memories = await memory_recall_future
-            suggestions = await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: get_suggestions(
-                    jp_text=jp_text,
-                    en_text=en_final,
-                    style=style,
-                    memories=memories,
-                )
-            )
-            total_latency = round((time.time() - start_time) * 1000)
-
-            await websocket.send_text(json.dumps({
-                "type": "refined",
-                "userId": user_id,
-                "suggestionsOnly": True,
-                "suggestions": suggestions,
-                "latencyMs": total_latency,
-            }))
-
-            log.info(f"[{user_id}] suggestions packet sent in {total_latency}ms")
+            # Dispatch full translation pipeline as a concurrent asyncio task.
+            # This immediately frees the while loop to receive the next packet —
+            # essential for handling multiple speakers firing simultaneously.
+            asyncio.create_task(_process_translation(data, websocket, user_id, start_time))
 
     except WebSocketDisconnect:
         log.info(f"WebSocket disconnected: {user_id}")

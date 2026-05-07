@@ -77,6 +77,10 @@ let ttsPlayer = null; // AudioPlayer for Bot Speaks TTS
  */
 const speakerCache = new Map();
 
+// Tracks users currently being recorded — prevents duplicate streams from the same
+// user when speaking.on("start") fires multiple times for one utterance.
+const activeRecording = new Set();
+
 // --- Init DB ---
 initDb();
 
@@ -349,8 +353,10 @@ function attachVoiceReceiver(connection) {
   const receiver = connection.receiver;
 
   receiver.speaking.on("start", async (userId) => {
-    // Avoid duplicate subscriptions if already recording this user
-    if (receiver.subscriptions.has(userId)) return;
+    // Prevent duplicate streams: activeRecording is managed by our own logic,
+    // unlike receiver.subscriptions which has a race condition window.
+    if (activeRecording.has(userId)) return;
+    activeRecording.add(userId);
 
     const audioStream = receiver.subscribe(userId, {
       end: {
@@ -373,6 +379,7 @@ function attachVoiceReceiver(connection) {
     });
 
     pcmStream.on("end", async () => {
+      activeRecording.delete(userId);
       if (chunks.length === 0) return;
 
       const pcmBuffer = Buffer.concat(chunks);
@@ -408,6 +415,7 @@ function attachVoiceReceiver(connection) {
     });
 
     pcmStream.on("error", (err) => {
+      activeRecording.delete(userId);
       console.error(`[bot] PCM stream error for ${userId}:`, err.message);
     });
   });

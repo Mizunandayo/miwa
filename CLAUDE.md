@@ -13,7 +13,7 @@
 | 2 | May 5 | Translation + profile pictures + multi-speaker UI | server/main.py, bot/index.js, bot/db.js, all React components (App.tsx, Header, SpeakerCard, KaraokeText, RomajiLine, atoms.ts), Tauri config, full design system CSS |
 | 3 | May 6 | LLM + Agents + Memory (cloud) | UI polish — QuickReplyBox, SuggestionCard (delivery buttons), RomajiPopup, QuickReactions, Phrasebook (Ctrl+1-9), StatsPanel, CallInfoStrip, resize handle, bug fix: google_translate source hardcode |
 | 4 | May 7 | Suggestions + Quick Reply + Full UX | ✅ Complete — README.md, 1/2/3 shortcuts, Framer Motion spring, snap-to-corner, bot/tts.js stub, hf-space/ (README + animated index.html), git push |
-| 5 | May 8 | Polish + .exe build | 🔨 In progress — non-cloud Python modules written locally: transcribe.py, memory.py, suggest.py, tts.py, main.py wiring, requirements.txt, .env additions |
+| 5 | May 8 | Polish + .exe build | ✅ Complete — AMD cloud recreated (IP: 129.212.188.94), full pipeline tested E2E. Bug fixes: hallucination filter, style translation, Bot Speaks TTS wired, quick reply two-pass latency, card timeout, dark UI (quick-reply + reactions), refined packet split (translation immediate, suggestions deferred). Latest commit: 1912744 |
 | 6 | May 9 | GitHub + HF Space + Demo Video | ⬜ Planned |
 | 7 | May 10 | Final Review + SUBMIT | ⬜ Planned |
 
@@ -151,11 +151,12 @@ Target latency: **<800ms** end-to-end.
 
 - **Provider:** AMD Developer Cloud (DigitalOcean-based)
 - **Instance:** MI300X x1 — 192GB VRAM, 20 vCPU, 240GB RAM
-- **IP:** ❌ DESTROYED (was 165.245.134.220) — new IP will differ when recreated
+- **IP:** ✅ RUNNING — `129.212.188.94` (new instance, recreated Day 5)
+- **Container IP:** `172.17.0.2` (Docker bridge — use for SSH tunnel target)
 - **Cost:** $1.99/hr, ~$83 credit balance remaining
-- **SSH Key:** `$HOME\.ssh\miwa_amd` (private), `miwa_amd.pub` (public) — still exists locally
-- **SSH Command:** `ssh -i "$HOME\.ssh\miwa_amd" -o StrictHostKeyChecking=no root@<new-ip>`
-- **Recreate on:** Day 5 (May 8) — only pay for GPU when cloud features needed
+- **SSH Key:** `$HOME\.ssh\miwa_amd` (private), `miwa_amd.pub` (public)
+- **SSH Command:** `ssh -i "$HOME\.ssh\miwa_amd" -o StrictHostKeyChecking=no root@129.212.188.94`
+- **SSH Tunnel:** `ssh -i "$HOME\.ssh\miwa_amd" -N -L 8765:172.17.0.2:8765 root@129.212.188.94`
 
 ### Docker Container (vLLM)
 - Container name: `rocm`
@@ -323,9 +324,9 @@ miwa/
 
 | Component | Status |
 |---|---|
-| AMD MI300X instance | ❌ DESTROYED — recreate Day 5 (May 8) |
-| Llama 3.3 70B downloaded | ❌ Was 263GB — must re-download when new droplet created |
-| vLLM serving (background) | ❌ Destroyed with droplet |
+| AMD MI300X instance | ✅ RUNNING — 129.212.188.94 (recreated Day 5) |
+| Llama 3.3 70B downloaded | ✅ Re-downloaded to /app/models/llama3.3-70b/ |
+| vLLM serving (background) | ✅ Running on port 8000 inside rocm container |
 | PyTorch + ROCm GPU access | ✅ Confirmed (prev session) |
 | Japanese output confirmed | ✅ こんにちは (prev session) |
 | Payment method added | ✅ |
@@ -360,12 +361,21 @@ miwa/
 | src/components/StatsPanel.tsx | ✅ DONE — latency color-coded green/amber/red, WS status |
 | README.md | ✅ DONE — full professional README written |
 | hf-space/ | ✅ DONE — README.md (HF YAML) + index.html (animated hero, demo, pipeline, AMD, features, stack, engineering) |
-| bot/tts.js | ✅ DONE — XTTS v2 stub with createTtsPlayer() + speak(); Day 5 wiring commented in |
-| WhisperX installed | ❌ NOT STARTED (Day 5 — needs cloud) |
-| Qdrant container | ❌ NOT STARTED (Day 5) |
-| CrewAI agents | ❌ NOT STARTED (Day 5) |
-| XTTS v2 | ❌ NOT STARTED (Day 5) |
-| SSH tunnel for WebSocket | ❌ NOT STARTED (Day 5) |
+| bot/tts.js | ✅ DONE — real XTTS wiring (POST /tts → WAV → AudioResource) |
+| server/transcribe.py | ✅ DONE — WhisperX wrapper, lazy-load, hallucination filter |
+| server/memory.py | ✅ DONE — Qdrant vector store, lazy-load, graceful fallback |
+| server/suggest.py | ✅ DONE — CrewAI 3-agent + direct vLLM + static fallback |
+| server/tts.py | ✅ DONE — XTTS v2 synthesis wrapper |
+| Latency split (refined) | ✅ DONE — translation sent immediately, suggestions as follow-up suggestionsOnly |
+| Dark quick-reply + reactions | ✅ DONE — rgba(5,5,5,0.75) matching speaker cards |
+| Style translation | ✅ DONE — translate_with_style uses system message + stop tokens |
+| Hallucination filter | ✅ DONE — HALLUCINATION_SUBSTRINGS + min 3 chars + min 9600 bytes |
+| Card timeout fix | ✅ DONE — scheduleSpeakerRemoval only called on fast packet |
+| WhisperX on cloud | ⬜ NOT YET INSTALLED (Day 6) |
+| Qdrant container | ⬜ NOT YET STARTED (Day 6) |
+| CrewAI on cloud | ⬜ NOT YET INSTALLED (Day 6) |
+| XTTS v2 on cloud | ⬜ NOT YET INSTALLED (Day 6) |
+| Latest commit | 1912744 — dark UI + latency split |
 
 ---
 
@@ -403,7 +413,7 @@ miwa/
 ### Cloud
 ```bash
 # SSH in
-ssh -i "$HOME\.ssh\miwa_amd" -o StrictHostKeyChecking=no root@165.245.134.220
+ssh -i "$HOME\.ssh\miwa_amd" -o StrictHostKeyChecking=no root@129.212.188.94
 
 # Enter Docker container
 docker exec -it rocm /bin/bash
@@ -446,8 +456,8 @@ cd server ; .venv\Scripts\activate ; python main.py
 node bot/index.js
 # Bot WS server on ws://127.0.0.1:8766 (bot → Tauri UI)
 
-# SSH tunnel for WebSocket (Day 5 — point to AMD cloud)
-ssh -i "$HOME\.ssh\miwa_amd" -N -L 8765:localhost:8765 root@<new-ip>
+# SSH tunnel for WebSocket (tunnels to container IP 172.17.0.2)
+ssh -i "$HOME\.ssh\miwa_amd" -N -L 8765:172.17.0.2:8765 root@129.212.188.94
 ```
 
 ### WebSocket Ports

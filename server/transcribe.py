@@ -17,6 +17,7 @@ Why openai-whisper instead of WhisperX/faster-whisper:
 import logging
 import os
 import struct
+import threading
 
 log = logging.getLogger("miwa.transcribe")
 
@@ -28,6 +29,7 @@ USE_FP16   = DEVICE == "cuda"
 
 #--- Lazy-load openai-whisper ---
 _model = None
+_transcribe_lock = threading.Lock()  # Whisper model is not thread-safe
 
 def _load_model():
     global _model
@@ -91,22 +93,50 @@ def transcribe(pcm_bytes: bytes) -> dict:
             audio = _pcm_to_float32(pcm_bytes)
 
             # Transcribe with word-level timestamps
-            result = _model.transcribe(
-                audio,
-                language="ja",
-                word_timestamps=True,
-                fp16=USE_FP16,
-            )
+            # Key accuracy options:
+            #   beam_size=1           — greedy decoding, fastest + most deterministic
+            #   temperature=0         — no random sampling, fully deterministic
+            #   condition_on_previous_text=False — prevents cascading hallucinations
+            #   compression_ratio_threshold=2.0  — rejects repetitive/looping output
+            #   no_speech_threshold=0.7          — stricter silence rejection
+            with _transcribe_lock:
+                result = _model.transcribe(
+                    audio,
+                    language="ja",
+                    word_timestamps=True,
+                    fp16=USE_FP16,
+                    beam_size=1,
+                    best_of=1,
+                    temperature=0,
+                    condition_on_previous_text=False,
+                    compression_ratio_threshold=2.0,
+                    no_speech_threshold=0.7,
+                )
 
             if not result.get("segments"):
                 return {"text": "", "words": []}
 
-            # Extract full text
-            full_text = result.get("text", "").strip()
+            # Filter segments where the model is uncertain about speech
+            valid_segments = [
+                seg for seg in result["segments"]
+                if seg.get("no_speech_prob", 0.0) < 0.6
+            ]
+            if not valid_segments:
+                log.info("All segments had high no_speech_prob — likely silence/noise")
+                return {"text": "", "words": []}
 
-            # Extract word timestamps from segments
+            # Extract full text from valid (high-confidence) segments only
+            full_text = " ".join(seg.get("text", "") for seg in valid_segments).strip()
+
+            # Reject if utterance is mostly ASCII letters — English speaker in VC
+            ascii_alpha = sum(1 for c in full_text if c.isascii() and c.isalpha())
+            if full_text and len(full_text) > 3 and ascii_alpha / len(full_text) > 0.55:
+                log.info(f"Non-Japanese utterance filtered (mostly ASCII): {full_text!r}")
+                return {"text": "", "words": []}
+
+            # Extract word timestamps from valid segments
             words = []
-            for seg in result.get("segments", []):
+            for seg in valid_segments:
                 for w in seg.get("words", []):
                     word = w.get("word", "").strip()
                     if word:

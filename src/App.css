@@ -8,8 +8,8 @@
 /* ─── Design Tokens ───────────────────────────────────────────────────────── */
 :root {
   --bg:             #050505;
-  --surface:        rgba(255, 255, 255, 0.04);
-  --surface-hover:  rgba(255, 255, 255, 0.07);
+  --surface:        #0f0f0f;
+  --surface-hover:  #191919;
   --border:         rgba(255, 255, 255, 0.08);
   --border-focus:   rgba(59, 158, 255, 0.4);
   --accent:         #3b9eff;
@@ -98,11 +98,9 @@ button {
 
 /* ─── Header ──────────────────────────────────────────────────────────────── */
 .header {
-  background: rgba(5, 5, 5, 0.88);
+  background: #050505;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
   padding: 8px 10px;
   display: flex;
   flex-direction: column;
@@ -302,8 +300,6 @@ button {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   padding: 10px;
   display: flex;
   flex-direction: column;
@@ -575,7 +571,7 @@ button {
 
 /* ─── Call Info Strip ────────────────────────────────────────────────────── */
 .call-info-strip {
-  background: rgba(5, 5, 5, 0.8);
+  background: #050505;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   overflow: hidden;
@@ -595,7 +591,7 @@ button {
 }
 
 .call-info-bar:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .call-info-server {
@@ -732,11 +728,9 @@ button {
 
 /* ─── Quick Reply Box ─────────────────────────────────────────────────────── */
 .quick-reply-box {
-  background: rgba(5, 5, 5, 0.75);
+  background: #050505;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   padding: 8px;
   display: flex;
   flex-direction: column;
@@ -755,7 +749,7 @@ button {
 
 .quick-reply-input {
   flex: 1;
-  background: rgba(0, 0, 0, 0.3);
+  background: #111111;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 6px 10px;
@@ -795,7 +789,7 @@ button {
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
-  background: rgba(255, 255, 255, 0.03);
+  background: #111111;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
 }
@@ -857,7 +851,7 @@ button {
 }
 
 .suggestion-card {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 7px 8px 6px;
@@ -1009,7 +1003,7 @@ button {
 }
 
 .romaji-popup-card {
-  background: rgba(255, 255, 255, 0.045);
+  background: #111111;
   border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: var(--radius-lg);
   padding: 28px 20px 20px;
@@ -1084,11 +1078,9 @@ button {
 
 /* ─── Quick Reactions ─────────────────────────────────────────────────────── */
 .quick-reactions {
-  background: rgba(5, 5, 5, 0.75);
+  background: #050505;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   padding: 8px 10px;
   display: flex;
   gap: 4px;
@@ -1127,7 +1119,7 @@ button {
 
 /* ─── Phrasebook ──────────────────────────────────────────────────────────── */
 .phrasebook {
-  background: rgba(5, 5, 5, 0.75);
+  background: #050505;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -1343,10 +1335,8 @@ button {
 /* ─── Dark Cards Mode ─────────────────────────────────────────────────────── */
 /* Activated by ◐ button in header — solid black bg for readability */
 .dark-cards .speaker-card {
-  background: rgba(0, 0, 0, 0.92);
+  background: #080808;
   border-color: rgba(255, 255, 255, 0.14);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.05),
     0 4px 24px rgba(0, 0, 0, 0.7);
