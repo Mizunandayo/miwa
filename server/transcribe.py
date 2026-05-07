@@ -21,27 +21,27 @@ import threading
 
 log = logging.getLogger("miwa.transcribe")
 
-#--- Config ---
-DEVICE     = os.getenv("WHISPERX_DEVICE", "cpu")
-MODEL_NAME = os.getenv("WHISPERX_MODEL", "large-v2")
-USE_FP16   = DEVICE == "cuda"
-
-
 #--- Lazy-load openai-whisper ---
-_model      = None
-_load_failed = False
-_load_lock   = threading.Lock()   # prevents concurrent load attempts (race → OOM)
+_model        = None
+_load_failed  = False
+_load_lock    = threading.Lock()   # prevents concurrent load attempts (race → OOM)
 _transcribe_lock = threading.Lock()  # Whisper model is not thread-safe
+
+# Active config — set inside _load_model() after env vars are available
+_device: str     = "cpu"
+_model_name: str = "large-v2"
+_use_fp16: bool  = False
 
 
 def _load_model():
     """
-    Thread-safe lazy loader with:
-    - Double-checked locking (fast path avoids acquiring lock once model is loaded)
-    - _load_failed flag: stop retrying after permanent failure
-    - GPU → CPU auto-fallback: if CUDA OOM, retry with 'small' model on CPU
+    Thread-safe lazy loader:
+    - Reads env vars at call time (after dotenv/export, not at import time)
+    - Double-checked locking prevents concurrent load races
+    - _load_failed flag stops retrying after a permanent failure
+    - GPU OOM → auto-fallback to 'small' on CPU
     """
-    global _model, _load_failed, DEVICE, USE_FP16, MODEL_NAME
+    global _model, _load_failed, _device, _model_name, _use_fp16
 
     # Fast path (no lock needed once loaded)
     if _model is not None:
@@ -56,10 +56,15 @@ def _load_model():
         if _load_failed:
             return False
 
+        # Read env vars NOW (after dotenv has loaded)
+        _device     = os.getenv("WHISPERX_DEVICE", "cpu")
+        _model_name = os.getenv("WHISPERX_MODEL", "large-v2")
+        _use_fp16   = _device == "cuda"
+
         try:
             import whisper
-            log.info(f"Loading Whisper model={MODEL_NAME} device={DEVICE} fp16={USE_FP16}")
-            _model = whisper.load_model(MODEL_NAME, device=DEVICE)
+            log.info(f"Loading Whisper model={_model_name} device={_device} fp16={_use_fp16}")
+            _model = whisper.load_model(_model_name, device=_device)
             log.info("Whisper loaded ✓")
             return True
 
@@ -69,16 +74,16 @@ def _load_model():
             return False
 
         except Exception as e:
-            log.error(f"Whisper load failed on {DEVICE}: {e}")
+            log.error(f"Whisper load failed on {_device}: {e}")
 
             # ── GPU OOM → auto-fallback to CPU small model ─────────────────
-            if DEVICE == "cuda":
+            if _device == "cuda":
                 log.warning("GPU OOM — falling back to Whisper 'small' on CPU")
                 try:
                     import whisper as _whisper
-                    DEVICE   = "cpu"
-                    USE_FP16 = False
-                    MODEL_NAME = "small"
+                    _device     = "cpu"
+                    _use_fp16   = False
+                    _model_name = "small"
                     _model = _whisper.load_model("small", device="cpu")
                     log.info("Whisper small loaded on CPU ✓")
                     return True
@@ -144,7 +149,7 @@ def transcribe(pcm_bytes: bytes) -> dict:
                     audio,
                     language="ja",
                     word_timestamps=True,
-                    fp16=USE_FP16,
+                    fp16=_use_fp16,
                     beam_size=1,
                     best_of=1,
                     temperature=0,
