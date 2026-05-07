@@ -390,7 +390,7 @@ async def websocket_endpoint(websocket: WebSocket):
                             loop.run_in_executor(None, lambda: translate_en_to_jp_with_style(_en, _jp_fast, _style)),
                             timeout=6.0,
                         )
-                        if jp_styled and jp_styled != _jp_fast:
+                        if jp_styled:
                             romaji_s = to_romaji(jp_styled)
                             await ws.send_text(json.dumps({
                                 "type": "quick_reply_result",

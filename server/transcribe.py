@@ -144,7 +144,12 @@ def transcribe(pcm_bytes: bytes) -> dict:
             #   condition_on_previous_text=False — prevents cascading hallucinations
             #   compression_ratio_threshold=2.0  — rejects repetitive/looping output
             #   no_speech_threshold=0.7          — stricter silence rejection
-            with _transcribe_lock:
+            # Non-blocking acquire — if Whisper is already running, drop this chunk.
+            # Prevents audio backlog from piling up (each CPU transcription takes ~3-5s).
+            if not _transcribe_lock.acquire(blocking=False):
+                log.info("Whisper busy — dropping audio chunk (backlog prevention)")
+                return {"text": "", "words": []}
+            try:
                 result = _model.transcribe(
                     audio,
                     language="ja",
@@ -157,6 +162,8 @@ def transcribe(pcm_bytes: bytes) -> dict:
                     compression_ratio_threshold=2.0,
                     no_speech_threshold=0.7,
                 )
+            finally:
+                _transcribe_lock.release()
 
             if not result.get("segments"):
                 return {"text": "", "words": []}

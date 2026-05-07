@@ -491,10 +491,11 @@ function handleUiCommand(msg) {
 
   if (msg.action === "quickReply" && msg.text) {
     // Forward EN text to server for EN→JP translation
+    // Use style from UI message (accurate) — fall back to bot's tracked styleMode
     sendToServer({
       type: "quick_reply",
       text: msg.text,
-      style: styleMode,
+      style: msg.style || styleMode,
     });
   }
 
