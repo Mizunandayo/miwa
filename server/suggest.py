@@ -328,6 +328,7 @@ def _call_crewai(
 
 
 def translate_with_style(jp_text: str, en_fast: str, style: str) -> str | None:
+    """
     Use vLLM to produce a style-adjusted English translation.
     Falls back to en_fast (Google Translate) if vLLM is unavailable.
     """
