@@ -1652,6 +1652,21 @@ button {
 /* No resize handle in fullscreen */
 .fullscreen .resize-handle { display: none; }
 
+/* ─── Fullscreen empty state ─────────────────────────────────────────────── */
+.fs-body--empty {
+  align-items: center;
+  justify-content: center;
+}
+
+.fs-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--text-muted);
+}
+
 
 
 /* ─── Speaker Card Polish ─────────────────────────────────────────────────── */

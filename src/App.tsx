@@ -439,18 +439,28 @@ export default function App() {
         </div>
 
         {/* Body: main speaker column + sidebar */}
-        <div className="fs-body">
-          {/* Main: call info strip + speaker cards */}
-          <div className="fs-main">
-            <CallInfoStrip />
-            {speakerListJSX}
-          </div>
+        <div className={`fs-body${orderedSpeakers.length === 0 ? " fs-body--empty" : ""}`}>
+          {orderedSpeakers.length === 0 ? (
+            /* Empty state: centered across full body */
+            <div className="fs-empty-state">
+              <span className="empty-state-icon">🎙️</span>
+              <span className="empty-state-text">type !join in Discord to start</span>
+            </div>
+          ) : (
+            <>
+              {/* Main: call info strip + speaker cards */}
+              <div className="fs-main">
+                <CallInfoStrip />
+                {speakerListJSX}
+              </div>
 
-          {/* Sidebar: stats + phrasebook */}
-          <div className="fs-sidebar">
-            <StatsPanel />
-            <Phrasebook sendCommand={sendCommand} />
-          </div>
+              {/* Sidebar: stats + phrasebook */}
+              <div className="fs-sidebar">
+                <StatsPanel />
+                <Phrasebook sendCommand={sendCommand} />
+              </div>
+            </>
+          )}
         </div>
 
         {/* Bottom bar */}
