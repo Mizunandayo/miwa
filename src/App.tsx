@@ -9,7 +9,7 @@
  * 5. Render Header + AnimatePresence speaker card list
  */
 
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { LogicalSize } from "@tauri-apps/api/dpi";
 import { useAtom, useSetAtom } from "jotai";
@@ -64,6 +64,29 @@ export default function App() {
   const setQuickReplyLoading = useSetAtom(quickReplyLoadingAtom);
   const setPhrasebook = useSetAtom(phrasebookAtom);
   const [darkCards] = useAtom(darkCardsAtom);
+
+  // ── Fullscreen / maximized detection ──────────────────────────────────
+  const [isMaximized, setIsMaximized] = useState(false);
+
+  useEffect(() => {
+    const win = getCurrentWindow();
+    let unlisten: (() => void) | undefined;
+
+    const checkMaximized = async () => {
+      try {
+        const max = await win.isMaximized();
+        setIsMaximized(max);
+      } catch { /* non-critical */ }
+    };
+
+    const setup = async () => {
+      await checkMaximized();
+      unlisten = await win.onResized(() => void checkMaximized());
+    };
+
+    void setup();
+    return () => { unlisten?.(); };
+  }, []);
 
   const wsRef = useRef<WebSocket | null>(null);
   const timeoutRefs = useRef<Map<string, ReturnType<typeof setTimeout>>>(
@@ -386,28 +409,75 @@ export default function App() {
     document.addEventListener("mouseup", onMouseUp);
   }, []);
 
+  // ── Shared speaker list JSX (used in both layouts) ────────────────────
+  const speakerListJSX = (
+    <div className={`speaker-list${darkCards ? " dark-cards" : ""}`}>
+      <AnimatePresence mode="popLayout">
+        {orderedSpeakers.length === 0 ? (
+          <div className="empty-state">
+            <span className="empty-state-icon">🎙️</span>
+            <span className="empty-state-text">
+              type !join in Discord to start
+            </span>
+          </div>
+        ) : (
+          orderedSpeakers.map((speaker) => (
+            <SpeakerCard key={speaker.userId} speaker={speaker} sendCommand={sendCommand} />
+          ))
+        )}
+      </AnimatePresence>
+    </div>
+  );
+
+  // ── Fullscreen HUD layout (maximized window) ──────────────────────────
+  if (isMaximized) {
+    return (
+      <div className="overlay-root fullscreen">
+        {/* Top bar — full-width header */}
+        <div className="fs-topbar">
+          <Header sendCommand={sendCommand} />
+        </div>
+
+        {/* 3-column body: left panel | transparent center | right panel */}
+        <div className="fs-body">
+          {/* LEFT: call info + speaker cards */}
+          <div className="fs-panel-left">
+            <CallInfoStrip />
+            {speakerListJSX}
+          </div>
+
+          {/* CENTER: fully transparent — game visible here */}
+          <div className="fs-center" />
+
+          {/* RIGHT: stats + phrasebook */}
+          <div className="fs-panel-right">
+            <StatsPanel />
+            <Phrasebook sendCommand={sendCommand} />
+          </div>
+        </div>
+
+        {/* Bottom bar: quick reactions + quick reply */}
+        <div className="fs-bottombar">
+          <QuickReactions sendCommand={sendCommand} />
+          <div className="fs-quickreply-wrap">
+            <QuickReplyBox sendCommand={sendCommand} />
+          </div>
+        </div>
+
+        {/* Full-screen romaji popup — must be last for z-index */}
+        <RomajiPopup />
+      </div>
+    );
+  }
+
+  // ── Compact overlay layout (normal windowed mode) ─────────────────────
   return (
     <div className="overlay-root">
       <Header sendCommand={sendCommand} />
       <QuickReplyBox sendCommand={sendCommand} />
       <CallInfoStrip />
       <QuickReactions sendCommand={sendCommand} />
-      <div className={`speaker-list${darkCards ? " dark-cards" : ""}`}>
-        <AnimatePresence mode="popLayout">
-          {orderedSpeakers.length === 0 ? (
-            <div className="empty-state">
-              <span className="empty-state-icon">🎙️</span>
-              <span className="empty-state-text">
-                type !join in Discord to start
-              </span>
-            </div>
-          ) : (
-            orderedSpeakers.map((speaker) => (
-              <SpeakerCard key={speaker.userId} speaker={speaker} sendCommand={sendCommand} />
-            ))
-          )}
-        </AnimatePresence>
-      </div>
+      {speakerListJSX}
       <Phrasebook sendCommand={sendCommand} />
       <StatsPanel />
       {/* Bottom resize grip */}

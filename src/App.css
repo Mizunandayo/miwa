@@ -1514,8 +1514,167 @@ button {
 .stats-ws-closed     { color: var(--red);   }
 
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   FULLSCREEN / MAXIMIZED HUD MODE
+   When the Tauri window is maximized, the overlay fills the entire screen.
+   Content is positioned at edges; the transparent center shows the game.
+   All panels get pointer-events: auto; the base layout is click-through.
+═══════════════════════════════════════════════════════════════════════════ */
 
+.overlay-root.fullscreen {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  pointer-events: none;   /* base layer is click-through */
+  overflow: hidden;
+  padding: 0;
+  gap: 0;
+}
 
+/* ── Top bar ── full-width frosted header */
+.fs-topbar {
+  flex-shrink: 0;
+  pointer-events: auto;
+  background: rgba(5, 5, 5, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  /* override compact header bottom-padding so it sits flush */
+}
+
+/* ── 3-column body ── */
+.fs-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 340px 1fr 300px;
+  min-height: 0;
+  pointer-events: none;
+}
+
+/* ── Center column — fully transparent; game visible here ── */
+.fs-center {
+  pointer-events: none;
+}
+
+/* ── Shared panel base ── */
+.fs-panel-left,
+.fs-panel-right {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  max-height: 100%;
+}
+
+.fs-panel-left::-webkit-scrollbar,
+.fs-panel-right::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Left panel — fades to transparent on the right edge ── */
+.fs-panel-left {
+  background: linear-gradient(
+    to right,
+    rgba(5, 5, 5, 0.82) 75%,
+    transparent 100%
+  );
+  padding-right: 16px;
+}
+
+/* ── Right panel — fades to transparent on the left edge ── */
+.fs-panel-right {
+  background: linear-gradient(
+    to left,
+    rgba(5, 5, 5, 0.82) 75%,
+    transparent 100%
+  );
+  padding-left: 16px;
+}
+
+/* ── Bottom bar — quick reactions + quick reply ── */
+.fs-bottombar {
+  flex-shrink: 0;
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(5, 5, 5, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+}
+
+/* Quick reply stretches to fill remaining bottom-bar space */
+.fs-quickreply-wrap {
+  flex: 1;
+}
+
+/* Remove the bottom border radius from quick-reply so it sits flush */
+.fs-bottombar .quick-reply-box {
+  border-radius: var(--radius-sm);
+}
+
+/* ── Speaker cards in fullscreen — larger, more readable ── */
+.fullscreen .jp-text {
+  font-size: 18px;
+}
+
+.fullscreen .en-text {
+  font-size: 14px;
+}
+
+.fullscreen .username {
+  font-size: 14px;
+}
+
+.fullscreen .avatar,
+.fullscreen .avatar-placeholder {
+  width: 40px;
+  height: 40px;
+}
+
+.fullscreen .avatar-placeholder {
+  font-size: 18px;
+}
+
+.fullscreen .speaking-dot {
+  width: 11px;
+  height: 11px;
+}
+
+/* Speaker list fills all available vertical space in the left panel */
+.fullscreen .speaker-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* No resize handle in fullscreen mode */
+.fullscreen .resize-handle {
+  display: none;
+}
+
+/* Suggestion cards slightly wider in fullscreen */
+.fullscreen .suggestion-card-jp {
+  font-size: 14px;
+}
+
+.fullscreen .suggestion-card-en {
+  font-size: 12px;
+}
+
+/* Quick reactions — slightly more spaced in full-width bottom bar */
+.fs-bottombar .quick-reactions {
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+}
 
 
 
