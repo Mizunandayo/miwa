@@ -252,8 +252,6 @@ def transcribe(pcm_bytes: bytes) -> dict:
                 "ご利用ください", "どうもありがとうございました",
             ]
             HALLUCINATION_EXACT = {
-                "おやすみなさい", "ありがとうございました", "ありがとうございます",
-                "ありがとうございます。", "ありがとうございました。",
                 "よろしくお願いします", "よろしくお願いいたします", "字幕",
                 "以上です", "以上で終わります", "終わります", "終わりです",
                 "以上で終わりです", "以上で終わりです。",
@@ -268,8 +266,8 @@ def transcribe(pcm_bytes: bytes) -> dict:
                 log.warning(f"Hallucination filtered: {full_text!r}")
                 return {"text": "", "words": []}
 
-            # ── Skip very short utterances (< 3 chars) — likely noise ─────────
-            if len(stripped) < 3:
+            # ── Skip very short utterances (< 2 chars) — likely noise ─────────
+            if len(stripped) < 2:
                 log.info(f"Utterance too short, skipping: {full_text!r}")
                 return {"text": "", "words": []}
 
