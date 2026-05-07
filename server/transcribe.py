@@ -251,18 +251,11 @@ def transcribe(pcm_bytes: bytes) -> dict:
                 "はじめしゃちょー", "エンディング】", "【はじめ",
                 "ご利用ください", "どうもありがとうございました",
             ]
-            HALLUCINATION_EXACT = {
-                "よろしくお願いします", "よろしくお願いいたします", "字幕",
-                "以上です", "以上で終わります", "終わります", "終わりです",
-                "以上で終わりです", "以上で終わりです。",
-                "終わり", "おわり",
-            }
             # Strip trailing punctuation for comparison
             import re as _re
             stripped_raw = full_text.strip()
             stripped = _re.sub(r'[\s。、！？!?,.\-…]+$', '', stripped_raw).strip()
-            if (stripped in HALLUCINATION_EXACT or stripped_raw in HALLUCINATION_EXACT
-                    or any(h in stripped for h in HALLUCINATION_SUBSTRINGS)):
+            if any(h in stripped for h in HALLUCINATION_SUBSTRINGS):
                 log.warning(f"Hallucination filtered: {full_text!r}")
                 return {"text": "", "words": []}
 
