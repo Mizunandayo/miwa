@@ -60,26 +60,23 @@ def _build_prompt(
     style: str,
     memories: list[dict],
 ) -> str:
-    """Build the LLM prompt for suggestion generation."""
+    """Build the LLM prompt for suggestion generation.
+    NOTE: memories are intentionally NOT included in the prompt.
+    Suggestions must reflect only what was just said, not past context.
+    Out-of-context memory bleeds incorrect phrases into the suggestions.
+    """
     style_desc = _STYLE_DESCRIPTIONS.get(style, _STYLE_DESCRIPTIONS["casual"])
-    
-    memory_block = ""
-    if memories:
-        recent = memories[:3]
-        lines = [f"- JP: {m['jp']} → EN: {m['en']}" for m in recent]
-        memory_block = "\nRecent context from this speaker:\n" + "\n".join(lines)
 
     return f"""You are an expert Japanese conversation assistant helping a non-Japanese speaker reply to a friend in a Discord voice call.
 
 The friend just said:
 - Japanese: {jp_text}
 - English meaning: {en_text}
-{memory_block}
 
 Reply style: {style} ({style_desc})
 
-Generate exactly 3 short, natural Japanese reply suggestions (5-15 words each).
-Each suggestion must be something the user would actually say in this conversation.
+Generate exactly 3 short, natural Japanese reply suggestions (5-15 words each) that directly respond to what was JUST said.
+Each suggestion must be a direct natural reaction to the specific phrase above.
 Vary the intent: e.g. agreement, question, reaction, continuation.
 
 Respond with ONLY valid JSON in this exact format:
@@ -218,10 +215,9 @@ def _call_crewai(
         task1 = Task(
             description=(
                 f"The user's Japanese friend said: '{jp_text}' (meaning: '{en_text}'). "
-                f"{memory_ctx} "
                 "Identify: 1) the emotion/intent of what was said, "
                 "2) what kind of reply would feel most natural, "
-                "3) any relevant cultural context."
+                "3) any relevant cultural context. Base your analysis ONLY on this single utterance."
             ),
             expected_output="A brief analysis of the conversation context and reply opportunities.",
             agent=analyst,

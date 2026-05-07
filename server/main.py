@@ -59,7 +59,9 @@ app.add_middleware(
 
 # Limit concurrent vLLM (translate + suggestions) calls to avoid queue stacking
 # when multiple speakers fire simultaneously.
-_vllm_semaphore = asyncio.Semaphore(2)
+# 3 slots: allows each speaker's translate+suggest to run concurrently
+# without completely blocking other speakers.
+_vllm_semaphore = asyncio.Semaphore(3)
 
 # Track active connections (userId → WebSocket)
 active_connections: dict[str, WebSocket] = {}
@@ -255,48 +257,72 @@ async def _process_translation(
             None, lambda: memory_recall(user_id, jp_text)
         )
 
-        # ── Style translation (vLLM, under semaphore) ───────────────────────
-        async with _vllm_semaphore:
-            en_refined = await loop.run_in_executor(
-                None,
-                lambda: translate_with_style(jp_text, en_fast or jp_text, style)
-            )
+        # ── Style translation + Suggestions (concurrent under semaphore) ────────
+        # Short utterances (< 8 chars, e.g. www / はい / うん / 草) don't need
+        # suggestions — saves ~6s per throwaway phrase.
+        SUGGEST_MIN_CHARS = 8
 
-        en_final = en_refined or en_fast or jp_text
-        refined_latency = round((time.time() - start_time) * 1000)
-
-        await websocket.send_text(json.dumps({
-            "type": "refined",
-            "userId": user_id,
-            "en": en_final,
-            "suggestions": [],
-            "translationSource": "llm",
-            "latencyMs": refined_latency,
-        }))
-        log.info(f"[{user_id}] refined packet sent in {refined_latency}ms")
-
-        # ── Suggestions (deferred, vLLM, under semaphore) ───────────────────
-        memories = await memory_recall_future
-        async with _vllm_semaphore:
-            suggestions = await loop.run_in_executor(
-                None,
-                lambda: get_suggestions(
-                    jp_text=jp_text,
-                    en_text=en_final,
-                    style=style,
-                    memories=memories,
+        if len(jp_text) < SUGGEST_MIN_CHARS:
+            # Only do style translation — fast path.
+            # Cancel the memory recall future since we won't use it.
+            memory_recall_future.cancel()
+            async with _vllm_semaphore:
+                en_refined = await loop.run_in_executor(
+                    None,
+                    lambda: translate_with_style(jp_text, en_fast or jp_text, style)
                 )
-            )
-        total_latency = round((time.time() - start_time) * 1000)
+            en_final = en_refined or en_fast or jp_text
+            refined_latency = round((time.time() - start_time) * 1000)
 
-        await websocket.send_text(json.dumps({
-            "type": "refined",
-            "userId": user_id,
-            "suggestionsOnly": True,
-            "suggestions": suggestions,
-            "latencyMs": total_latency,
-        }))
-        log.info(f"[{user_id}] suggestions packet sent in {total_latency}ms")
+            await websocket.send_text(json.dumps({
+                "type": "refined",
+                "userId": user_id,
+                "en": en_final,
+                "suggestions": [],
+                "translationSource": "llm",
+                "latencyMs": refined_latency,
+            }))
+            log.info(f"[{user_id}] refined packet sent in {refined_latency}ms (no suggestions — short utterance)")
+        else:
+            # Run style translation and suggestions CONCURRENTLY.
+            # Both acquire their own semaphore slots simultaneously — wall time is
+            # max(translate_time, suggest_time) instead of sum.
+            memories = await memory_recall_future
+
+            async def _do_translate():
+                async with _vllm_semaphore:
+                    return await loop.run_in_executor(
+                        None,
+                        lambda: translate_with_style(jp_text, en_fast or jp_text, style)
+                    )
+
+            async def _do_suggest():
+                async with _vllm_semaphore:
+                    return await loop.run_in_executor(
+                        None,
+                        lambda: get_suggestions(
+                            jp_text=jp_text,
+                            en_text=en_fast or jp_text,
+                            style=style,
+                            memories=memories,
+                        )
+                    )
+
+            en_refined, suggestions = await asyncio.gather(_do_translate(), _do_suggest())
+
+            en_final = en_refined or en_fast or jp_text
+            total_latency = round((time.time() - start_time) * 1000)
+
+            # Send refined translation + suggestions together (single round-trip)
+            await websocket.send_text(json.dumps({
+                "type": "refined",
+                "userId": user_id,
+                "en": en_final,
+                "suggestions": suggestions,
+                "translationSource": "llm",
+                "latencyMs": total_latency,
+            }))
+            log.info(f"[{user_id}] refined+suggestions packet sent in {total_latency}ms")
 
     except Exception as e:
         log.error(f"[{user_id}] Translation pipeline error: {e}")

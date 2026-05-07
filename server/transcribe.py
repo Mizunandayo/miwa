@@ -159,7 +159,7 @@ def transcribe(pcm_bytes: bytes) -> dict:
                     best_of=1,
                     temperature=0,
                     condition_on_previous_text=False,
-                    compression_ratio_threshold=2.0,
+                    compression_ratio_threshold=1.35,
                     no_speech_threshold=0.7,
                 )
             finally:
@@ -185,6 +185,25 @@ def transcribe(pcm_bytes: bytes) -> dict:
             if full_text and len(full_text) > 3 and ascii_alpha / len(full_text) > 0.55:
                 log.info(f"Non-Japanese utterance filtered (mostly ASCII): {full_text!r}")
                 return {"text": "", "words": []}
+
+            # Reject character-level repetition hallucinations (e.g. うっうっうっうっ... 200 chars)
+            # A single kana character appearing >35% of the text = Whisper looping artifact
+            if len(full_text) > 15:
+                from collections import Counter
+                clean = full_text.replace(" ", "")
+                if clean:
+                    top_char, top_count = Counter(clean).most_common(1)[0]
+                    if top_count / len(clean) > 0.35:
+                        log.warning(f"Repetitive hallucination filtered ({top_char!r} × {top_count}): {full_text[:40]!r}...")
+                        return {"text": "", "words": []}
+
+                # Also catch 2-char bigram repetition (うっ repeating, etc.)
+                bigrams = [clean[i:i+2] for i in range(len(clean) - 1)]
+                if bigrams:
+                    top_bg, bg_count = Counter(bigrams).most_common(1)[0]
+                    if bg_count / len(bigrams) > 0.30:
+                        log.warning(f"Bigram repetition hallucination filtered ({top_bg!r} × {bg_count}): {full_text[:40]!r}...")
+                        return {"text": "", "words": []}
 
             # Extract word timestamps from valid segments
             words = []
