@@ -73,7 +73,7 @@ def transcribe(pcm_bytes: bytes) -> dict:
         }
     """
     # Sanity check
-    if not pcm_bytes or len(pcm_bytes) < 16000:  # < 0.5s at 16kHz int16
+    if not pcm_bytes or len(pcm_bytes) < 9600:  # < 0.3s at 16kHz int16
         log.warning("Audio too short — skipping transcription")
         return {"text": "", "words": []}
 
@@ -123,6 +123,7 @@ def transcribe(pcm_bytes: bytes) -> dict:
                 "概要欄", "高評価ボタン", "フォローお願い", "グッドボタン",
                 "低評価", "この動画", "登録お願い", "次の動画",
                 "subscribe", "like and", "thank you for watching",
+                "はじめしゃちょー", "エンディング】", "【はじめ",
             ]
             HALLUCINATION_EXACT = {
                 "おやすみなさい", "ありがとうございました", "ありがとうございます",
@@ -130,7 +131,7 @@ def transcribe(pcm_bytes: bytes) -> dict:
                 "よろしくお願いします", "よろしくお願いいたします", "字幕",
                 "以上です", "以上で終わります", "終わります", "終わりです",
                 "以上で終わりです", "以上で終わりです。",
-                "はじめしゃちょー", "終わり", "おわり",
+                "終わり", "おわり",
             }
             # Strip trailing punctuation for comparison
             import re as _re
