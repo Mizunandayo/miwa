@@ -18,6 +18,13 @@
  */
 
 import "dotenv/config";
+import { createRequire } from "module";
+// Wire up bundled FFmpeg so prism-media can decode MP3 for Bot Speaks TTS
+const _require = createRequire(import.meta.url);
+try {
+  const ffmpegPath = _require("ffmpeg-static");
+  if (ffmpegPath) process.env.FFMPEG_PATH = ffmpegPath;
+} catch { /* ffmpeg-static not installed — TTS playback may not work */ }
 import { Client, GatewayIntentBits } from "discord.js";
 import {
   joinVoiceChannel,

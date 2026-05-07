@@ -118,7 +118,10 @@ def _call_vllm(prompt: str) -> list[dict] | None:
             log.warning(f"No JSON found in vLLM response: {content[:200]}")
             return None
 
-        parsed = json.loads(json_match.group())
+        # Strip control characters that cause json.loads to fail
+        # (LLMs sometimes embed raw \n or other ctrl chars inside string values)
+        json_str = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', json_match.group())
+        parsed = json.loads(json_str)
         suggestions = parsed.get("suggestions", [])
 
         # Validate structure
