@@ -292,16 +292,10 @@ def translate_with_style(jp_text: str, en_fast: str, style: str) -> str | None:
     """
     style_desc = _STYLE_DESCRIPTIONS.get(style, _STYLE_DESCRIPTIONS["casual"])
     prompt = (
-        f"Translate the following Japanese text to English.\n"
-        f"Style: {style} ({style_desc})\n"
+        f"Translate this Japanese text to English with a {style} tone ({style_desc}).\n"
         f"Japanese: {jp_text}\n"
-        f"Base translation: {en_fast}\n\n"
-        f"Rules:\n"
-        f"- Adjust the tone to match the style ({style})\n"
-        f"- Keep the same meaning as the base translation\n"
-        f"- Reply with ONLY the translated English text, nothing else\n"
-        f"- Do not add quotes, explanations, or labels\n"
-        f"Translation:"
+        f"Literal meaning: {en_fast}\n"
+        f"Output ONLY the English translation. No explanations, no quotes, no labels."
     )
     try:
         import requests as req
@@ -309,17 +303,25 @@ def translate_with_style(jp_text: str, en_fast: str, style: str) -> str | None:
             f"{VLLM_URL}/chat/completions",
             json={
                 "model": VLLM_MODEL,
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 120,
-                "temperature": 0.4,
+                "messages": [
+                    {"role": "system", "content": "You are a translator. Reply with ONLY the translated text, nothing else."},
+                    {"role": "user", "content": prompt},
+                ],
+                "max_tokens": 80,
+                "temperature": 0.3,
+                "stop": ["\n\n", "Japanese:", "Note:", "Explanation:"],
             },
             timeout=8,
         )
         resp.raise_for_status()
         result = resp.json()["choices"][0]["message"]["content"].strip()
-        # Strip any accidental quotes or labels
+        # Strip accidental prefixes
+        for prefix in ["Translation:", "English:", "Answer:", "Output:"]:
+            if result.lower().startswith(prefix.lower()):
+                result = result[len(prefix):].strip()
         result = result.strip('"\'').strip()
-        if result and len(result) < 500:
+        if result and 2 < len(result) < 500:
+            log.info(f"translate_with_style ({style}): {result}")
             return result
     except Exception as e:
         log.warning(f"translate_with_style failed: {e}")

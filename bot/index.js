@@ -29,6 +29,7 @@ import prism from "prism-media";
 import { WebSocket, WebSocketServer } from "ws";
 import https from "https";
 import sharp from "sharp";
+import { createTtsPlayer, speak } from "./tts.js";
 import {
   initDb,
   getCachedAvatar,
@@ -67,6 +68,7 @@ let currentGuildId = null;
 let styleMode = DEFAULT_STYLE;
 let cachedGuildIconB64 = null;
 let cachedGuildIconForId = null; // guild ID the icon was fetched for
+let ttsPlayer = null; // AudioPlayer for Bot Speaks TTS
 
 /**
  * speakerCache — maps userId → { username, avatarB64, source }
@@ -520,11 +522,20 @@ function handleUiCommand(msg) {
   }
 
   if (msg.action === "botSpeaks") {
-    // Stub — XTTS v2 wired on Day 5 (server/tts.py + bot/tts.js)
     const text = String(msg.text || "").trim().slice(0, 200);
     if (!text) return;
-    console.log(`[bot] botSpeaks stub (Day 5 — XTTS v2): "${text}"`);
-    // TODO Day 5: const tts = require("./tts.js"); tts.speak(text, getVoiceConnection(currentGuildId));
+    const connection = getVoiceConnection(currentGuildId);
+    if (!connection) {
+      console.warn("[bot] botSpeaks: not in a voice channel");
+      return;
+    }
+    if (!ttsPlayer) {
+      ttsPlayer = createTtsPlayer();
+      connection.subscribe(ttsPlayer);
+    }
+    speak(text, ttsPlayer).catch((err) => {
+      console.error("[bot] botSpeaks failed:", err.message);
+    });
   }
 
   if (msg.action === "savePhrase") {
