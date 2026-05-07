@@ -448,7 +448,7 @@
     .demo-outer { display: flex; justify-content: center; }
     /* Simulated Tauri window — matches actual app */
     .demo-frame {
-      width: 100%; max-width: 720px;
+      width: 100%; max-width: 504px;
       background: transparent;
       border-radius: 16px;
       overflow: hidden;
@@ -651,7 +651,7 @@
       color: var(--muted2); margin-top: 16px;
     }
     /* 2-col layout for demo section */
-    .demo-layout { display: grid; grid-template-columns: 2fr 5fr; gap: 48px; align-items: center; }
+    .demo-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
     @media (max-width: 860px) { .demo-layout { grid-template-columns: 1fr; } }
     .demo-copy { }
     .demo-copy-title { font-size: clamp(1.4rem,2.5vw,2rem); font-weight: 700; letter-spacing: -.03em; line-height: 1.15; margin-bottom: 20px; }
@@ -1185,7 +1185,6 @@
           </div>
 
         </div>
-        <div class="demo-caption">Simulated overlay &mdash; actual app runs as a transparent Tauri window</div>
       </div>
 
     </div>
