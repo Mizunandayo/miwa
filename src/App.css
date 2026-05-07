@@ -84,16 +84,15 @@ button {
   left: 50%;
   top: 1px;
   transform: translateX(-50%);
-  width: 32px;
+  width: 40px;
   height: 3px;
   border-radius: 2px;
-  background: var(--border);
-  opacity: 0;
-  transition: opacity 0.2s ease;
+  background: rgba(255,255,255,0.30);
+  transition: background 0.2s ease;
 }
 
 .resize-handle:hover::after {
-  opacity: 1;
+  background: rgba(59,158,255,0.75);
 }
 
 /* ─── Header ──────────────────────────────────────────────────────────────── */
@@ -369,7 +368,149 @@ button {
   border-color: var(--border-focus);
 }
 
-/* ─── Speaker List ────────────────────────────────────────────────────────── */
+/* ─── Help / Shortcuts Modal ──────────────────────────────────────────────── */
+.help-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 56px; /* clear the header */
+}
+
+.help-modal__box {
+  background: #0f0f0f;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--radius-lg);
+  width: calc(100% - 24px);
+  max-width: 400px;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding: 14px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+}
+
+.help-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.help-modal__title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.help-modal__close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.help-modal__close:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.help-modal__section-label {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 10px;
+  margin-bottom: 2px;
+}
+
+.help-modal__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.help-modal__row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  padding: 2px 0;
+}
+
+.help-modal__row span {
+  color: var(--text-secondary);
+}
+
+.help-modal__note {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 6px;
+  background: #1a1a1a;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-style: normal;
+  color: var(--text-primary);
+  white-space: nowrap;
+  line-height: 1.6;
+  flex-shrink: 0;
+}
+
+.help-modal__footer {
+  font-size: 9px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 10px;
+  font-style: italic;
+}
+
+
+/* --- Speakers Section Header -------------------------------------------- */
+.speakers-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 2px 2px 4px;
+  flex-shrink: 0;
+}
+
+.speakers-section-label {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.speakers-toggle {
+  font-size: 11px;
+  line-height: 1;
+  padding: 1px 6px;
+}
+
 .speaker-list {
   flex: 1;
   display: flex;
@@ -881,19 +1022,21 @@ button {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  color: var(--text-muted);
+  gap: 10px;
+  color: var(--text-secondary);
+  padding: 24px 0;
 }
 
 .empty-state-icon {
-  font-size: 28px;
-  opacity: 0.4;
+  font-size: 32px;
+  opacity: 0.7;
 }
 
 .empty-state-text {
   font-size: 12px;
   font-family: var(--font-mono);
   letter-spacing: 0.04em;
+  color: var(--text-secondary);
 }
 
 /* ─── WS Status Banner ────────────────────────────────────────────────────── */
@@ -1280,40 +1423,198 @@ button {
   background: #050505;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 8px 10px;
+  padding: 7px 8px;
   display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 6px;
   flex-shrink: 0;
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.03),
     0 4px 20px rgba(0, 0, 0, 0.45);
 }
 
-.reaction-btn {
-  padding: 4px 11px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-secondary);
+/* ─── Search input ───────────────────────────────────────────────────────── */
+.reaction-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.reaction-search {
+  width: 100%;
+  padding: 4px 24px 4px 8px;
+  font-size: 11px;
+  font-family: var(--font-mono);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 20px;
-  cursor: pointer;
-  transition: all 0.14s ease;
-  white-space: nowrap;
-  line-height: 1.5;
-}
-
-.reaction-btn:hover {
-  background: var(--surface-hover);
+  border-radius: var(--radius-sm);
   color: var(--text-primary);
-  border-color: var(--accent);
-  cursor: pointer;
+  outline: none;
+  transition: border-color 0.14s ease;
 }
 
-.reaction-btn:active {
-  transform: scale(0.95);
+.reaction-search::placeholder {
+  color: var(--text-muted);
+}
+
+.reaction-search:focus {
+  border-color: var(--border-focus);
+}
+
+.reaction-search__clear {
+  position: absolute;
+  right: 5px;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 2px;
+  transition: color 0.12s ease;
+}
+
+.reaction-search__clear:hover {
+  color: var(--text-primary);
+}
+
+/* ─── Card scroll row ────────────────────────────────────────────────────── */
+.reaction-cards {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 5px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  min-height: 0;
+}
+
+.reaction-cards::-webkit-scrollbar { display: none; }
+
+.reaction-no-results {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  padding: 4px 2px;
+  white-space: nowrap;
+}
+
+/* ─── Reaction card ─────────────────────────────────────────────────────── */
+.reaction-card {
+  min-width: 72px;
+  flex-shrink: 0;
+  padding: 6px 7px 5px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: border-color 0.14s ease, background 0.14s ease;
+}
+
+.reaction-card:hover {
+  background: var(--surface-hover);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+/* Text stack */
+.reaction-card__text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.reaction-card__en {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
+}
+
+.reaction-card__romaji {
+  font-size: 9.5px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
+}
+
+.reaction-card__jp {
+  font-size: 9px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
+}
+
+/* Action buttons row */
+.reaction-card__actions {
+  display: flex;
+  gap: 3px;
+}
+
+.reaction-card__btn {
+  flex: 1;
+  padding: 2px 0;
+  font-size: 11px;
+  line-height: 1;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.reaction-card__btn--send:hover {
   background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.reaction-card__btn--speak:hover {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: var(--green);
+  color: var(--green);
+}
+
+/* Flash on action fire */
+@keyframes flash-send-anim {
+  0%   { background: var(--accent-dim); border-color: var(--accent); }
+  100% { background: rgba(255, 255, 255, 0.04); border-color: var(--border); }
+}
+
+@keyframes flash-speak-anim {
+  0%   { background: rgba(34, 197, 94, 0.2); border-color: var(--green); }
+  100% { background: rgba(255, 255, 255, 0.04); border-color: var(--border); }
+}
+
+.reaction-card__btn.flash-send {
+  animation: flash-send-anim 0.5s ease forwards;
+}
+
+.reaction-card__btn.flash-speak {
+  animation: flash-speak-anim 0.5s ease forwards;
+}
+
+
+
+.reaction-card__btn.flash-send {
+  animation: flash-send-anim 0.5s ease forwards;
+}
+
+.reaction-card__btn.flash-speak {
+  animation: flash-speak-anim 0.5s ease forwards;
 }
 
 /* ─── Phrasebook ──────────────────────────────────────────────────────────── */

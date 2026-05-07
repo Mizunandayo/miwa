@@ -963,7 +963,7 @@
             <div class="demo-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div>
             <div class="demo-feat-body">
               <div class="demo-feat-title">Reply with one key</div>
-              <div class="demo-feat-desc">Press <strong>1</strong> for Bot Speaks in VC, <strong>2</strong> for Bot Sends to chat, <strong>3</strong> for a fullscreen romaji popup so you can say it yourself.</div>
+              <div class="demo-feat-desc">Press <strong>1</strong>, <strong>2</strong>, or <strong>3</strong> to instantly send that suggestion to Discord chat. Each card also has individual buttons &mdash; Bot Speaks in VC, Bot Sends in text, or I&rsquo;ll Speak (opens fullscreen romaji).</div>
             </div>
           </div>
         </div>
@@ -975,14 +975,20 @@
 
           <!-- Header (matches real .header) -->
           <div class="demo-header">
-            <!-- Drag row: dots + app name + status -->
+            <!-- Drag row: win controls + dots + app name + status + ? -->
             <div class="demo-drag-row">
+              <div style="display:flex;gap:5px;flex-shrink:0;margin-right:6px">
+                <span style="width:9px;height:9px;border-radius:50%;background:#febc2e;display:block"></span>
+                <span style="width:9px;height:9px;border-radius:50%;background:#28c840;display:block"></span>
+                <span style="width:9px;height:9px;border-radius:50%;background:#ff5f57;display:block"></span>
+              </div>
               <div class="demo-drag-dots"></div>
               <span class="demo-app-name">Miwa</span>
               <div class="demo-status">
                 <div class="demo-status-dot"></div>
                 <span class="demo-status-text">connected</span>
               </div>
+              <span style="margin-left:auto;width:22px;height:22px;border-radius:5px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:11px;color:rgba(255,255,255,.45);flex-shrink:0">?</span>
             </div>
             <!-- Style mode buttons -->
             <div class="demo-style-row">
@@ -1040,7 +1046,7 @@
                 <div class="demo-sug-btns">
                   <span class="demo-sug-btn speak">🔊 Bot Speaks</span>
                   <span class="demo-sug-btn send">💬 Bot Sends</span>
-                  <span class="demo-sug-btn say">👤 I'll Say</span>
+                  <span class="demo-sug-btn say">👤 I'll Speak</span>
                 </div>
               </div>
               <div class="demo-sug">
@@ -1074,14 +1080,35 @@
             </div>
           </div>
 
-          <!-- Quick reactions -->
-          <div class="demo-reactions">
-            <span class="demo-react">草</span>
-            <span class="demo-react">えー</span>
-            <span class="demo-react">マジ?</span>
-            <span class="demo-react">gg</span>
-            <span class="demo-react">もう一回</span>
-            <span class="demo-react">待って</span>
+          <!-- Quick reactions: EN-first cards, style-aware (20/style) -->
+          <div style="display:flex;gap:5px;overflow-x:hidden;padding:2px 0">
+            <div style="flex-shrink:0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:7px 10px;display:flex;flex-direction:column;gap:2px;min-width:92px">
+              <span style="font-size:11px;font-weight:600;color:#fff">Good game</span>
+              <span style="font-size:9px;font-family:var(--mono);color:rgba(255,255,255,.35)">gg</span>
+              <span style="font-size:9px;color:rgba(255,255,255,.28)">gg</span>
+              <div style="display:flex;gap:4px;margin-top:4px">
+                <span style="flex:1;text-align:center;font-size:9px;padding:3px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:4px;color:rgba(255,255,255,.4)">💬</span>
+                <span style="flex:1;text-align:center;font-size:9px;padding:3px;background:rgba(59,158,255,.08);border:1px solid rgba(59,158,255,.2);border-radius:4px;color:#3b9eff">🔊</span>
+              </div>
+            </div>
+            <div style="flex-shrink:0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:7px 10px;display:flex;flex-direction:column;gap:2px;min-width:92px">
+              <span style="font-size:11px;font-weight:600;color:#fff">Let&rsquo;s go!</span>
+              <span style="font-size:9px;font-family:var(--mono);color:rgba(255,255,255,.35)">iku zo!</span>
+              <span style="font-size:9px;color:rgba(255,255,255,.28)">行くぞ！</span>
+              <div style="display:flex;gap:4px;margin-top:4px">
+                <span style="flex:1;text-align:center;font-size:9px;padding:3px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:4px;color:rgba(255,255,255,.4)">💬</span>
+                <span style="flex:1;text-align:center;font-size:9px;padding:3px;background:rgba(59,158,255,.08);border:1px solid rgba(59,158,255,.2);border-radius:4px;color:#3b9eff">🔊</span>
+              </div>
+            </div>
+            <div style="flex-shrink:0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:7px 10px;display:flex;flex-direction:column;gap:2px;min-width:92px">
+              <span style="font-size:11px;font-weight:600;color:#fff">Roger!</span>
+              <span style="font-size:9px;font-family:var(--mono);color:rgba(255,255,255,.35)">ryoukai!</span>
+              <span style="font-size:9px;color:rgba(255,255,255,.28)">了解！</span>
+              <div style="display:flex;gap:4px;margin-top:4px">
+                <span style="flex:1;text-align:center;font-size:9px;padding:3px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:4px;color:rgba(255,255,255,.4)">💬</span>
+                <span style="flex:1;text-align:center;font-size:9px;padding:3px;background:rgba(59,158,255,.08);border:1px solid rgba(59,158,255,.2);border-radius:4px;color:#3b9eff">🔊</span>
+              </div>
+            </div>
           </div>
 
           <!-- Quick reply box -->
@@ -1091,7 +1118,7 @@
           </div>
 
           <!-- Resize nub -->
-          <div class="demo-nub"><div class="demo-nub-line"></div></div>
+          <div class="demo-nub"><div class="demo-nub-line" style="background:rgba(255,255,255,.3);width:40px"></div></div>
 
         </div>
         <div class="demo-caption">Simulated overlay &mdash; actual app runs as a transparent Tauri window</div>
@@ -1356,23 +1383,30 @@
       </div>
       <div class="bc bc-d r" data-d="2">
         <div class="bc-lbl">Shortcuts</div>
-        <div class="bc-title">Reply in one key</div>
+        <div class="bc-title">Keyboard-first workflow</div>
         <div class="kbd-row">
-          <kbd>1</kbd><span class="kbd-sep">Bot speaks</span>
-          <kbd>2</kbd><span class="kbd-sep">Bot sends</span>
-          <kbd>3</kbd><span class="kbd-sep">I'll speak</span>
+          <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><span class="kbd-sep">Send suggestion to chat</span>
+        </div>
+        <div class="kbd-row">
+          <kbd>Ctrl+1&ndash;9</kbd><span class="kbd-sep">Phrasebook slots</span>
+        </div>
+        <div class="kbd-row">
+          <kbd>?</kbd><span class="kbd-sep">Show all shortcuts</span>
+        </div>
+        <div class="kbd-row">
+          <kbd>Esc</kbd><span class="kbd-sep">Close romaji popup</span>
         </div>
       </div>
       <div class="bc bc-e r" data-d="3">
         <div class="bc-lbl">Quick Reactions</div>
-        <div class="bc-title">One-click Japanese</div>
+        <div class="bc-title">80 reactions, style-aware &amp; searchable</div>
+        <div class="bc-desc" style="margin-bottom:12px">20 reactions per style mode (Formal / Neutral / Casual / Gaming). Each card shows English, romaji, and Japanese. Type to search. Send via 💬 Bot Sends or 🔊 Bot Speaks instantly.</div>
         <div class="rx-chips">
+          <span class="rx-chip">gg</span>
+          <span class="rx-chip">行くぞ！</span>
+          <span class="rx-chip">了解！</span>
           <span class="rx-chip">草</span>
           <span class="rx-chip">えー</span>
-          <span class="rx-chip">マジ?</span>
-          <span class="rx-chip">gg</span>
-          <span class="rx-chip">もう一回</span>
-          <span class="rx-chip">待って</span>
         </div>
       </div>
       <div class="bc bc-f r" data-d="1">
@@ -1413,7 +1447,7 @@
         <span class="si-feat-pill">192GB VRAM</span>
         <span class="si-feat-pill">FP16</span>
         <span class="si-feat-pill">ROCm 7.2</span>
-        <span class="si-feat-pill">1.3 TB/s</span>
+        <span class="si-feat-pill">5.3 TB/s</span>
         <span class="si-feat-pill">vLLM 0.17.1</span>
       </div>
     </div>

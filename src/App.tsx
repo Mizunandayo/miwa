@@ -25,7 +25,6 @@ import {
   wsStatusAtom,
   quickReplyResultAtom,
   quickReplyLoadingAtom,
-  romajiPopupAtom,
   phrasebookAtom,
   darkCardsAtom,
   type PhrasebookEntry,
@@ -67,6 +66,7 @@ export default function App() {
 
   // ── Fullscreen / maximized detection ──────────────────────────────────
   const [isMaximized, setIsMaximized] = useState(false);
+  const [speakersCollapsed, setSpeakersCollapsed] = useState(false);
 
   useEffect(() => {
     const win = getCurrentWindow();
@@ -411,22 +411,36 @@ export default function App() {
 
   // ── Shared speaker list JSX (used in both layouts) ────────────────────
   const speakerListJSX = (
-    <div className={`speaker-list${darkCards ? " dark-cards" : ""}`}>
-      <AnimatePresence mode="popLayout">
-        {orderedSpeakers.length === 0 ? (
-          <div className="empty-state">
-            <span className="empty-state-icon">🎙️</span>
-            <span className="empty-state-text">
-              type !join in Discord to start
-            </span>
-          </div>
-        ) : (
-          orderedSpeakers.map((speaker) => (
-            <SpeakerCard key={speaker.userId} speaker={speaker} sendCommand={sendCommand} />
-          ))
-        )}
-      </AnimatePresence>
-    </div>
+    <>
+      <div className="speakers-section-header">
+        <span className="speakers-section-label">Speakers</span>
+        <button
+          className={`icon-btn speakers-toggle${speakersCollapsed ? " active" : ""}`}
+          onClick={() => setSpeakersCollapsed(c => !c)}
+          title={speakersCollapsed ? "Show speakers" : "Hide speakers"}
+        >
+          {speakersCollapsed ? "▸" : "▾"}
+        </button>
+      </div>
+      {!speakersCollapsed && (
+        <div className={`speaker-list${darkCards ? " dark-cards" : ""}`}>
+          <AnimatePresence mode="popLayout">
+            {orderedSpeakers.length === 0 ? (
+              <div className="empty-state">
+                <span className="empty-state-icon">🎙️</span>
+                <span className="empty-state-text">
+                  type !join in Discord to start
+                </span>
+              </div>
+            ) : (
+              orderedSpeakers.map((speaker) => (
+                <SpeakerCard key={speaker.userId} speaker={speaker} sendCommand={sendCommand} />
+              ))
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+    </>
   );
 
   // ── Fullscreen layout (maximized window) ─────────────────────────────

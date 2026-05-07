@@ -10,7 +10,8 @@
  * - Bot status indicator with color coding
  */
 
-import { useAtom, useSetAtom } from "jotai";
+import { useState } from "react";
+import { useAtom } from "jotai";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { LogicalPosition } from "@tauri-apps/api/dpi";
 import {
@@ -52,6 +53,7 @@ export default function Header({ sendCommand }: HeaderProps) {
   const [botStatus]    = useAtom(botStatusAtom);
   const [channelName]  = useAtom(channelNameAtom);
   const [wsStatus]     = useAtom(wsStatusAtom);
+  const [showHelp, setShowHelp] = useState(false);
 
   const handleStyleChange = (mode: StyleMode) => {
     setStyleMode(mode);
@@ -230,8 +232,67 @@ export default function Header({ sendCommand }: HeaderProps) {
           >
             ⊙
           </button>
+          <button
+            className={`icon-btn${showHelp ? " active" : ""}`}
+            title="Keyboard shortcuts"
+            onClick={() => setShowHelp(!showHelp)}
+          >
+            ?
+          </button>
         </div>
       </div>
+
+      {/* ── Shortcuts modal ─────────────────────────────────────────── */}
+      {showHelp && (
+        <div className="help-modal" onClick={() => setShowHelp(false)}>
+          <div className="help-modal__box" onClick={(e) => e.stopPropagation()}>
+            <div className="help-modal__header">
+              <span className="help-modal__title">Keyboard Shortcuts</span>
+              <button className="help-modal__close" onClick={() => setShowHelp(false)}>✕</button>
+            </div>
+
+            <div className="help-modal__section-label">Suggestions</div>
+            <div className="help-modal__rows">
+              <div className="help-modal__row"><kbd>1</kbd><span>Send suggestion #1 to Discord chat</span></div>
+              <div className="help-modal__row"><kbd>2</kbd><span>Send suggestion #2 to Discord chat</span></div>
+              <div className="help-modal__row"><kbd>3</kbd><span>Send suggestion #3 to Discord chat</span></div>
+            </div>
+
+            <div className="help-modal__section-label">Phrasebook</div>
+            <div className="help-modal__rows">
+              <div className="help-modal__row"><kbd>Ctrl</kbd><span>+</span><kbd>1</kbd><span>Send saved phrase slot 1</span></div>
+              <div className="help-modal__row"><kbd>Ctrl</kbd><span>+</span><kbd>2–9</kbd><span>Send saved phrase slots 2–9</span></div>
+            </div>
+
+            <div className="help-modal__section-label">Romaji Popup</div>
+            <div className="help-modal__rows">
+              <div className="help-modal__row"><kbd>Esc</kbd><span>Close fullscreen romaji overlay</span></div>
+            </div>
+
+            <div className="help-modal__section-label">Window</div>
+            <div className="help-modal__rows">
+              <div className="help-modal__row"><kbd>Dbl-click</kbd><span>header — snap to nearest corner</span></div>
+            </div>
+
+            <div className="help-modal__section-label">Quick Reactions</div>
+            <div className="help-modal__rows">
+              <div className="help-modal__row"><kbd>💬</kbd><span>Send JP text to Discord chat</span></div>
+              <div className="help-modal__row"><kbd>🔊</kbd><span>Bot speaks JP text aloud in VC</span></div>
+              <div className="help-modal__row"><span className="help-modal__note">Mouse-wheel over cards scrolls horizontally</span></div>
+            </div>
+
+            <div className="help-modal__section-label">Suggestions (on card)</div>
+            <div className="help-modal__rows">
+              <div className="help-modal__row"><kbd>Bot Speaks</kbd><span>TTS reads reply in voice channel</span></div>
+              <div className="help-modal__row"><kbd>Bot Sends</kbd><span>Posts reply to channel text chat</span></div>
+              <div className="help-modal__row"><kbd>I'll Speak</kbd><span>Opens fullscreen romaji to read aloud yourself</span></div>
+              <div className="help-modal__row"><kbd>📌</kbd><span>Save phrase to phrasebook</span></div>
+            </div>
+
+            <p className="help-modal__footer">Click anywhere outside to close</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
