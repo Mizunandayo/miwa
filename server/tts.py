@@ -1,95 +1,80 @@
 """
-server/tts.py — XTTS v2 text-to-speech synthesis
+server/tts.py — Microsoft Edge TTS synthesis (edge-tts)
 
 POST /tts  { "text": "日本語テキスト" }
-           → audio/wav bytes
+           → audio/mpeg bytes (MP3)
+
+No GPU required. No model download. Uses Microsoft Edge TTS service.
+Install: pip install edge-tts
 
 Environment variables:
-  TTS_DEVICE    = "cuda" | "cpu"        (default: cpu)
-  TTS_MODEL     = "tts_models/ja/..."   (default: XTTS v2)
-  TTS_SPEAKER   = "Claribel Dervla"     (XTTS speaker voice)
+  TTS_VOICE = "ja-JP-NanamiNeural"  (default — natural Japanese female voice)
+              Other JP options: ja-JP-KeitaNeural (male)
 """
 
+import asyncio
 import logging
 import os
 
 log = logging.getLogger("miwa.tts")
 
-TTS_DEVICE  = os.getenv("TTS_DEVICE", "cpu")
-TTS_MODEL   = os.getenv("TTS_MODEL", "tts_models/multilingual/multi-dataset/xtts_v2")
-TTS_SPEAKER = os.getenv("TTS_SPEAKER", "Claribel Dervla")
+TTS_VOICE    = os.getenv("TTS_VOICE", "ja-JP-NanamiNeural")
+MAX_TEXT_LEN = 200
 
-MAX_TEXT_LEN = 200  # XTTS works best under 200 chars
-
-# ── Lazy-load TTS ─────────────────────────────────────────────────────────────
-_tts = None
+# Cache availability check result
+_edge_available: bool | None = None
 
 
-def _load() -> bool:
-    global _tts
-    if _tts is not None:
-        return True
+def _check_edge_tts() -> bool:
+    global _edge_available
+    if _edge_available is not None:
+        return _edge_available
     try:
-        from TTS.api import TTS as CoquiTTS
-        log.info(f"Loading XTTS v2 model on {TTS_DEVICE}...")
-        _tts = CoquiTTS(TTS_MODEL).to(TTS_DEVICE)
-        log.info("XTTS v2 loaded ✓")
-        return True
+        import edge_tts  # noqa: F401
+        _edge_available = True
+        log.info("edge-tts available ✓")
     except ImportError:
-        log.warning("TTS package not installed — tts disabled")
-        return False
+        log.warning("edge-tts not installed — tts disabled. Run: pip install edge-tts")
+        _edge_available = False
+    return _edge_available
+
+
+async def _synthesize_async(text: str) -> bytes | None:
+    """Async edge-tts synthesis — returns raw MP3 bytes."""
+    try:
+        import edge_tts
+        communicate = edge_tts.Communicate(text, TTS_VOICE)
+        chunks: list[bytes] = []
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                chunks.append(chunk["data"])
+        if not chunks:
+            log.warning("edge-tts returned no audio chunks")
+            return None
+        result = b"".join(chunks)
+        log.info(f"TTS synthesized {len(text)} chars → {len(result)} bytes MP3")
+        return result
     except Exception as e:
-        log.error(f"TTS load failed: {e}")
-        return False
+        log.error(f"edge-tts synthesis failed: {e}")
+        return None
 
 
 def synthesize(text: str) -> bytes | None:
     """
-    Synthesize Japanese text to WAV audio bytes.
+    Synthesize Japanese text to MP3 audio bytes.
 
-    Args:
-        text: Japanese text (max 200 chars)
-
-    Returns:
-        Raw WAV bytes, or None if TTS is unavailable.
+    Blocking wrapper — safe to call from asyncio.run_in_executor().
+    Returns MP3 bytes, or None if edge-tts is unavailable.
     """
-    # Validate input
     if not text or not isinstance(text, str):
         return None
-
-    # Strip and cap length — XTTS degrades on very long inputs
     text = text.strip()[:MAX_TEXT_LEN]
     if not text:
         return None
-
-    if not _load():
+    if not _check_edge_tts():
         return None
-
     try:
-        import io
-        import wave
-        import numpy as np
-
-        # Synthesize to numpy array
-        wav_array = _tts.tts(
-            text=text,
-            speaker=TTS_SPEAKER,
-            language="ja",
-        )
-
-        # Convert numpy float32 → WAV bytes
-        buf = io.BytesIO()
-        with wave.open(buf, "wb") as wf:
-            wf.setnchannels(1)
-            wf.setsampwidth(2)       # 16-bit
-            wf.setframerate(22050)   # XTTS native sample rate
-            samples = (np.array(wav_array) * 32767).astype(np.int16)
-            wf.writeframes(samples.tobytes())
-
-        wav_bytes = buf.getvalue()
-        log.info(f"TTS synthesized {len(text)} chars → {len(wav_bytes)} bytes WAV")
-        return wav_bytes
-
+        return asyncio.run(_synthesize_async(text))
     except Exception as e:
-        log.error(f"TTS synthesis failed: {e}")
+        log.error(f"TTS synthesize error: {e}")
         return None

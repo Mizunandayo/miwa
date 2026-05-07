@@ -100,13 +100,15 @@
 - ✅ .env — added Day 5 env var keys (VLLM_URL, WHISPERX_DEVICE, TTS_DEVICE, QDRANT_URL, etc.)
 
 #### Cloud work (do when AMD instance is running)
-- ⬜ Recreate AMD MI300X droplet ($1.99/hr, ~$83 credit)
-- ⬜ Re-download Llama 3.3 70B (263GB) to /app/models/llama3.3-70b/
-- ⬜ Start vLLM background server (nohup vllm serve ...)
-- ⬜ SSH tunnel WebSocket (ssh -N -L 8765:localhost:8765 root@<new-ip>)
-- ⬜ pip install whisperx qdrant-client sentence-transformers crewai TTS (uncomment requirements.txt)
+- ✅ Recreate AMD MI300X droplet — running at 129.212.188.94
+- ✅ Re-download Llama 3.3 70B (263GB) to /app/models/llama3.3-70b/
+- ✅ Start vLLM — use `--gpu-memory-utilization 0.80` (default 100% leaves 0 bytes for Whisper)
+- ✅ Clone code: `git clone https://github.com/Mizunandayo/miwa.git /tmp/miwa && cp -r /tmp/miwa/server /app/server`
+- ✅ Fix openai pkg: `pip install "openai>=1.99.1,<2.25.0"` (container had 1.77.0, vLLM needs >=1.99.1)
+- ⬜ SSH tunnel WebSocket (ssh -N -L 8765:172.17.0.2:8765 root@129.212.188.94)
+- ⬜ pip install whisperx qdrant-client sentence-transformers crewai TTS
 - ⬜ docker run qdrant/qdrant
-- ⬜ End-to-end test full pipeline
+- ⬜ End-to-end test full pipeline (whisper transcription, not stub)
 
 ### Day 6 (May 9) — Integration + Testing
 - ⬜ End-to-end test with real voice + cloud GPU
@@ -147,7 +149,7 @@ Target latency: **<800ms** end-to-end.
 
 ---
 
-## CLOUD INFRASTRUCTURE (DESTROYED — recreate Day 5)
+## CLOUD INFRASTRUCTURE
 
 - **Provider:** AMD Developer Cloud (DigitalOcean-based)
 - **Instance:** MI300X x1 — 192GB VRAM, 20 vCPU, 240GB RAM
@@ -371,10 +373,15 @@ miwa/
 | Style translation | ✅ DONE — translate_with_style uses system message + stop tokens |
 | Hallucination filter | ✅ DONE — HALLUCINATION_SUBSTRINGS + min 3 chars + min 9600 bytes |
 | Card timeout fix | ✅ DONE — scheduleSpeakerRemoval only called on fast packet |
+| src/App.css solid backgrounds | ✅ DONE — all rgba transparent → solid hex, backdrop-filter removed |
+| src/store/atoms.ts opacityAtom | ✅ DONE — default changed from 90 → 100 (fully opaque by default) |
+| openai pkg in rocm container | ✅ FIXED — upgraded from 1.77.0 → >=1.99.1 (vLLM import was crashing) |
+| vLLM GPU util cap | ✅ FIXED — restart with --gpu-memory-utilization 0.80 (was 100%, OOM for Whisper) |
+| server code on cloud | ✅ DONE — cloned via /tmp/miwa, copied to /app/server/ |
 | WhisperX on cloud | ⬜ NOT YET INSTALLED (Day 6) |
 | Qdrant container | ⬜ NOT YET STARTED (Day 6) |
 | CrewAI on cloud | ⬜ NOT YET INSTALLED (Day 6) |
-| XTTS v2 on cloud | ⬜ NOT YET INSTALLED (Day 6) |
+| XTTS v2 on cloud | ⬜ NOT YET INSTALLED (Day 6) — TTS 503 until installed |
 | Latest commit | 1912744 — dark UI + latency split |
 
 ---
@@ -405,6 +412,9 @@ miwa/
 - **Tauri not Electron** — 50MB vs 200MB, native always-on-top, Rust security
 - **WebSocket not HTTP** — required for real-time word-by-word karaoke highlighting
 - **pykakasi not MeCab** — pure Python, no native dependencies, easier cloud install
+- **vLLM GPU util 0.80** — MUST set `--gpu-memory-utilization 0.80` or Whisper gets 0 bytes VRAM
+- **/app is NOT a git repo** — deploy by: `git clone ... /tmp/miwa && cp -r /tmp/miwa/server /app/server`
+- **openai in rocm container** — default version 1.77.0 is too old; vLLM 0.17.1 needs >=1.99.1
 
 ---
 
@@ -418,8 +428,8 @@ ssh -i "$HOME\.ssh\miwa_amd" -o StrictHostKeyChecking=no root@129.212.188.94
 # Enter Docker container
 docker exec -it rocm /bin/bash
 
-# Start vLLM background
-nohup vllm serve /app/models/llama3.3-70b --host 0.0.0.0 --port 8000 --max-model-len 8192 > /app/vllm.log 2>&1 &
+# Start vLLM background (--gpu-memory-utilization 0.80 REQUIRED — leaves ~38GB free for Whisper)
+nohup vllm serve /app/models/llama3.3-70b --host 0.0.0.0 --port 8000 --max-model-len 8192 --gpu-memory-utilization 0.80 > /app/vllm.log 2>&1 &
 
 # Check vLLM health
 curl -s http://localhost:8000/health

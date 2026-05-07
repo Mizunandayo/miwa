@@ -698,6 +698,162 @@ overlay-root
 **Key decisions made this session:**
 - Section reorder done via PowerShell `[System.IO.File]::WriteAllText` (bypasses VS Code file lock that blocked `Set-Content`)
 - Nav links and hero CTA updated to match new section order
+
+---
+
+## SESSION 10 — May 7, 2026 (Day 5/6 — Cloud Pipeline Testing + UI Solid Backgrounds)
+
+### UI Changes (local — applied by agent this session)
+
+#### src/App.css — all solid backgrounds (13 replacements)
+- `--surface` token: `rgba(255,255,255,0.04)` → `#0f0f0f`
+- `--surface-hover` token: `rgba(255,255,255,0.07)` → `#191919`
+- `.header` background: `rgba(5,5,5,0.88)` → `#050505`; removed `backdrop-filter: blur(24px)`
+- `.speaker-card`: removed `backdrop-filter: blur(20px)`
+- `.dark-cards .speaker-card`: `rgba(0,0,0,0.92)` → `#080808`; removed `backdrop-filter: none`
+- `.call-info-strip`: `rgba(5,5,5,0.8)` → `#050505`
+- `.call-info-bar:hover`: `rgba(255,255,255,0.03)` → `rgba(255,255,255,0.05)`
+- `.quick-reply-box`: `rgba(5,5,5,0.75)` → `#050505`; removed `backdrop-filter: blur(20px)`
+- `.quick-reply-input`: `rgba(0,0,0,0.3)` → `#111111`
+- `.quick-reply-preview`: `rgba(255,255,255,0.03)` → `#111111`
+- `.suggestion-card`: `rgba(255,255,255,0.03)` → `var(--surface)` = `#0f0f0f`
+- `.quick-reactions`: `rgba(5,5,5,0.75)` → `#050505`; removed `backdrop-filter: blur(20px)`
+- `.phrasebook`: `rgba(5,5,5,0.75)` → `#050505`
+- `.romaji-popup-card`: `rgba(255,255,255,0.045)` → `#111111`
+- `.romaji-popup-overlay` left at `rgba(5,5,5,0.90)` + blur — intentional (fullscreen dim)
+
+#### src/store/atoms.ts — opacityAtom default
+- `opacityAtom` changed from `atom<number>(90)` → `atom<number>(100)`
+- Overlay now starts fully opaque (100%); opacity slider still works 40–100
+
+### Cloud Work Done This Session
+
+#### Cloud IP / Instance
+- NEW IP: `129.212.188.94` (recreated — old 134.199.206.165 was a different dead instance)
+- Container hostname: `ed7cb9e26993`
+- Container IP (Docker bridge): `172.17.0.2`
+
+#### vLLM Status
+- vLLM process (PID 248) was running since 06:23 but returning empty `curl /health` — NOT dead
+- Empty curl output = HTTP 200 with no body (normal for vLLM health endpoint)
+- `health` confirmed by log: `"GET /health HTTP/1.1" 200 OK` ✅
+- Previous crashed attempt was PID 2100 (RuntimeError in log) — ignore, that's from earlier failed restart
+
+#### Critical Bugs Found & Fixed
+
+**Bug 1: vLLM uses 100% GPU by default → Whisper gets 0 bytes VRAM**
+- Error: `HIP out of memory. GPU 0 has a total capacity of 191.69 GiB of which 0 bytes is free`
+- Root cause: vLLM default `--gpu-memory-utilization 1.0` allocates ALL VRAM (~192GB) for KV cache
+- Fix: kill vLLM, restart with `--gpu-memory-utilization 0.80` (leaves ~38GB for Whisper)
+- Command: `nohup vllm serve /app/models/llama3.3-70b --host 0.0.0.0 --port 8000 --max-model-len 8192 --gpu-memory-utilization 0.80 > /app/vllm.log 2>&1 &`
+- Status as of session end: vLLM restarting, waiting for "Application startup complete"
+
+**Bug 2: openai package in rocm container too old**
+- Error: `ImportError: cannot import name 'ChatCompletionFunctionToolParam' from 'openai.types.chat'`
+- Root cause: Container had `openai==1.77.0`; vLLM 0.17.1 requires `openai>=1.99.1,<2.25.0`
+- Fix: `pip install "openai>=1.99.1,<2.25.0" -q`
+- This was causing vLLM itself to crash on import — CRITICAL fix
+
+**Bug 3: /app is not a git repo**
+- Error: `fatal: not a git repository (or any of the parent directories): .git`
+- Root cause: /app was set up manually by the AMD image, not cloned from git
+- Fix: `git clone https://github.com/Mizunandayo/miwa.git /tmp/miwa && cp -r /tmp/miwa/server /app/server`
+- Confirmed files: `main.py memory.py requirements.txt suggest.py transcribe.py tts.py`
+
+**Bug 4: Port 8765 already in use**
+- Error: `[Errno 98] address already in use`
+- Root cause: Background server from `nohup python ...` was still running
+- Fix: `pkill -f 'python.*main.py' || true` before each server restart
+
+**Bug 5: TTS 503 Service Unavailable**
+- Error: `WARNING: TTS package not installed — tts disabled`
+- Root cause: TTS (XTTS v2) not installed in rocm container
+- Status: Not yet fixed (Day 6 task) — needs `pip install TTS`
+
+#### Server Deployed to Cloud
+- FastAPI server started successfully with `python /app/server/main.py`
+- Confirmed via: `{"detail":"Not Found"}` response to HTTP GET (correct — FastAPI returns 404 for non-WS HTTP requests)
+- Environment vars used:
+  ```
+  WHISPERX_DEVICE=cuda
+  WHISPERX_MODEL=large-v2
+  GOOGLE_TRANSLATE_API_KEY=AIzaSyDk2K3aItd8zKZTbwTYyAWUqjNWhdWjPME
+  VLLM_URL=http://localhost:8000/v1
+  ```
+
+#### Pipeline Test Results (before vLLM GPU fix)
+- UI overlay: ✅ Working, solid backgrounds, WS connected, speaker cards showed
+- Fast packet (GT): ⚠️ Sent but with 60s+ latency (Whisper falling back to stub due to OOM)
+- Refined packet (vLLM): ⚠️ 25s latency (openai pkg mismatch causing slow fallback path)
+- Suggestions: ✅ Returned from vLLM direct path (3 suggestions)
+- Bot Speaks: ❌ TTS 503 (package not installed)
+- Translation shown in overlay: ✅ "おはようございます" → "good morning" displayed correctly
+- Suggestion cards: ✅ おはよう / 今日も疲れるね / 寝不足? shown with romaji + EN
+
+### Current Cloud State (end of session)
+| Component | Status |
+|---|---|
+| AMD MI300X | ✅ RUNNING — 129.212.188.94 |
+| vLLM | ⚠️ RESTARTING — killed for GPU util fix, loading 263GB model again (~5-10 min) |
+| FastAPI server | ✅ Running on port 8765 inside container |
+| openai package | ✅ Fixed — upgraded to >=1.99.1 |
+| Whisper on GPU | ⚠️ Will work after vLLM restarts with 0.80 util |
+| TTS (XTTS v2) | ❌ Not installed — Bot Speaks returns 503 |
+| Qdrant | ❌ Not started — memory disabled |
+| CrewAI | ❌ Not installed — falls back to direct vLLM |
+| SSH tunnel | ⬜ Need to start each session |
+
+### Startup Commands (complete sequence for next session)
+```bash
+# 1. SSH in
+ssh -i "$HOME\.ssh\miwa_amd" -o StrictHostKeyChecking=no root@129.212.188.94
+
+# 2. Enter container
+docker exec -it rocm /bin/bash
+
+# 3. Check vLLM (should be running after restart)
+curl -s http://localhost:8000/health
+# If empty = healthy (200 OK with no body)
+# If no response = still loading, watch: tail -f /app/vllm.log
+
+# 4. If vLLM dead, restart with GPU cap
+nohup vllm serve /app/models/llama3.3-70b --host 0.0.0.0 --port 8000 \
+  --max-model-len 8192 --gpu-memory-utilization 0.80 > /app/vllm.log 2>&1 &
+
+# 5. Pull latest code (use /tmp/miwa clone method)
+git clone https://github.com/Mizunandayo/miwa.git /tmp/miwa 2>/dev/null || \
+  (cd /tmp/miwa && git pull)
+cp -r /tmp/miwa/server /app/server
+
+# 6. Kill old server
+pkill -f 'python.*main.py' || true
+
+# 7. Start FastAPI server (foreground for logs)
+export WHISPERX_DEVICE=cuda WHISPERX_MODEL=large-v2
+export GOOGLE_TRANSLATE_API_KEY=AIzaSyDk2K3aItd8zKZTbwTYyAWUqjNWhdWjPME
+export VLLM_URL=http://localhost:8000/v1
+python /app/server/main.py
+```
+
+```powershell
+# Local Terminal A — SSH tunnel (keep open)
+ssh -i "$HOME\.ssh\miwa_amd" -N -o StrictHostKeyChecking=no -L 8765:172.17.0.2:8765 root@129.212.188.94
+
+# Local Terminal B — Discord bot
+cd C:\Users\trist\Desktop\Programming\miwa ; node bot/index.js
+
+# Local Terminal C — Tauri UI
+cd C:\Users\trist\Desktop\Programming\miwa ; npm run tauri dev
+```
+
+### Day 6 Priority (May 8 / May 9)
+1. Verify vLLM started with 0.80 GPU util → Whisper loads on GPU
+2. `pip install TTS` inside container → fix Bot Speaks 503
+3. Full E2E test: voice → whisper → GT fast → vLLM refined → suggestions → bot speaks
+4. Latency target: fast packet <800ms, refined <3s
+5. Publish HuggingFace Space
+6. Record demo video
+7. 2 social posts (@AIatAMD + @lablab)
 - Font sizes bumped from 9-11px → 11-15px; opacity from 28% → 60-85% for readability
 - Demo overlay CSS reads actual design tokens from `src/App.css` (--bg, --accent, --green, --amber)
 

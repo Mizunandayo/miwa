@@ -447,7 +447,7 @@ async def tts_endpoint(req: TtsRequest):
     if len(wav_bytes) > 10 * 1024 * 1024:
         raise HTTPException(status_code=500, detail="TTS output too large")
 
-    return Response(content=wav_bytes, media_type="audio/wav")
+    return Response(content=wav_bytes, media_type="audio/mpeg")
 
 
 # ─── Entry Point ──────────────────────────────────────────────────────────────

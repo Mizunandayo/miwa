@@ -28,25 +28,65 @@ USE_FP16   = DEVICE == "cuda"
 
 
 #--- Lazy-load openai-whisper ---
-_model = None
+_model      = None
+_load_failed = False
+_load_lock   = threading.Lock()   # prevents concurrent load attempts (race → OOM)
 _transcribe_lock = threading.Lock()  # Whisper model is not thread-safe
 
+
 def _load_model():
-    global _model
+    """
+    Thread-safe lazy loader with:
+    - Double-checked locking (fast path avoids acquiring lock once model is loaded)
+    - _load_failed flag: stop retrying after permanent failure
+    - GPU → CPU auto-fallback: if CUDA OOM, retry with 'small' model on CPU
+    """
+    global _model, _load_failed, DEVICE, USE_FP16, MODEL_NAME
+
+    # Fast path (no lock needed once loaded)
     if _model is not None:
         return True
-    try:
-        import whisper
-        log.info(f"Loading Whisper model={MODEL_NAME} device={DEVICE} fp16={USE_FP16}")
-        _model = whisper.load_model(MODEL_NAME, device=DEVICE)
-        log.info("Whisper loaded")
-        return True
-    except ImportError:
-        log.warning("openai-whisper not installed — using transcribe stub")
+    if _load_failed:
         return False
-    except Exception as e:
-        log.error(f"Whisper load failed: {e}")
-        return False
+
+    with _load_lock:
+        # Double-check inside lock
+        if _model is not None:
+            return True
+        if _load_failed:
+            return False
+
+        try:
+            import whisper
+            log.info(f"Loading Whisper model={MODEL_NAME} device={DEVICE} fp16={USE_FP16}")
+            _model = whisper.load_model(MODEL_NAME, device=DEVICE)
+            log.info("Whisper loaded ✓")
+            return True
+
+        except ImportError:
+            log.warning("openai-whisper not installed — using transcribe stub")
+            _load_failed = True
+            return False
+
+        except Exception as e:
+            log.error(f"Whisper load failed on {DEVICE}: {e}")
+
+            # ── GPU OOM → auto-fallback to CPU small model ─────────────────
+            if DEVICE == "cuda":
+                log.warning("GPU OOM — falling back to Whisper 'small' on CPU")
+                try:
+                    import whisper as _whisper
+                    DEVICE   = "cpu"
+                    USE_FP16 = False
+                    MODEL_NAME = "small"
+                    _model = _whisper.load_model("small", device="cpu")
+                    log.info("Whisper small loaded on CPU ✓")
+                    return True
+                except Exception as e2:
+                    log.error(f"CPU fallback also failed: {e2}")
+
+            _load_failed = True
+            return False
 
 
 def _pcm_to_float32(pcm_bytes: bytes) -> "np.ndarray":
