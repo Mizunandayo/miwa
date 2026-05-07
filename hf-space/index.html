@@ -971,11 +971,10 @@
 
       <!-- Right: mock overlay window (matches actual app layout & design) -->
       <div class="demo-outer r" data-d="2">
-        <div class="demo-frame">
+        <div class="demo-frame" style="gap:6px">
 
-          <!-- ── Header (3 rows: drag / style / controls) ── -->
-          <div class="demo-header">
-            <!-- Row 1: drag dots + app name + status + win controls -->
+          <!-- ── Header ── -->
+          <div class="demo-header" style="gap:7px;padding:9px 12px">
             <div class="demo-drag-row">
               <div class="demo-drag-dots"></div>
               <span class="demo-app-name">Miwa</span>
@@ -983,122 +982,83 @@
                 <div class="demo-status-dot"></div>
                 <span class="demo-status-text">connected</span>
               </div>
-              <div style="display:flex;gap:5px;flex-shrink:0;margin-left:8px">
-                <span style="width:9px;height:9px;border-radius:50%;background:#febc2e;display:block"></span>
-                <span style="width:9px;height:9px;border-radius:50%;background:#28c840;display:block"></span>
-                <span style="width:9px;height:9px;border-radius:50%;background:#ff5f57;display:block"></span>
+              <div style="display:flex;gap:4px;flex-shrink:0;margin-left:8px">
+                <span style="width:8px;height:8px;border-radius:50%;background:#febc2e;display:block"></span>
+                <span style="width:8px;height:8px;border-radius:50%;background:#28c840;display:block"></span>
+                <span style="width:8px;height:8px;border-radius:50%;background:#ff5f57;display:block"></span>
               </div>
             </div>
-            <!-- Row 2: style mode buttons -->
             <div class="demo-style-row">
               <span class="demo-sb">Formal</span>
               <span class="demo-sb">Neutral</span>
               <span class="demo-sb active">Casual</span>
               <span class="demo-sb">Gaming</span>
             </div>
-            <!-- Row 3: opacity slider + icon buttons -->
-            <div style="display:flex;align-items:center;gap:6px">
-              <span style="font-size:10px;font-family:var(--mono);color:rgba(255,255,255,.32);white-space:nowrap">Opacity</span>
-              <div style="flex:1;height:3px;background:rgba(255,255,255,.12);border-radius:2px;position:relative;min-width:40px">
-                <div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(59,158,255,.45) 100%,transparent 100%);border-radius:2px"></div>
-                <div style="position:absolute;right:-6px;top:50%;transform:translateY(-50%);width:12px;height:12px;border-radius:50%;background:#3b9eff;box-shadow:0 0 0 2px rgba(59,158,255,.25)"></div>
+            <div style="display:flex;align-items:center;gap:5px">
+              <span style="font-size:9px;font-family:var(--mono);color:rgba(255,255,255,.3);white-space:nowrap">Opacity</span>
+              <div style="flex:1;height:2px;background:rgba(255,255,255,.1);border-radius:2px;position:relative;min-width:30px">
+                <div style="position:absolute;right:-5px;top:50%;transform:translateY(-50%);width:10px;height:10px;border-radius:50%;background:#3b9eff"></div>
               </div>
-              <span style="font-size:10px;font-family:var(--mono);color:rgba(255,255,255,.38);min-width:30px">100%</span>
-              <div style="display:flex;gap:3px;flex-shrink:0">
-                <span style="width:20px;height:20px;border-radius:5px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:rgba(255,255,255,.38)">◑</span>
-                <span style="width:20px;height:20px;border-radius:5px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:rgba(255,255,255,.38)">−</span>
-                <span style="width:20px;height:20px;border-radius:5px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);display:inline-flex;align-items:center;justify-content:center;font-size:9px;color:rgba(255,255,255,.38);font-family:var(--mono)">□</span>
-                <span style="width:20px;height:20px;border-radius:5px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:rgba(255,255,255,.38)">?</span>
+              <span style="font-size:9px;font-family:var(--mono);color:rgba(255,255,255,.32);min-width:26px">100%</span>
+              <div style="display:flex;gap:2px;flex-shrink:0">
+                <span style="width:18px;height:18px;border-radius:4px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:rgba(255,255,255,.32)">◑</span>
+                <span style="width:18px;height:18px;border-radius:4px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:rgba(255,255,255,.32)">−</span>
+                <span style="width:18px;height:18px;border-radius:4px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);display:inline-flex;align-items:center;justify-content:center;font-size:8px;color:rgba(255,255,255,.32);font-family:var(--mono)">□</span>
+                <span style="width:18px;height:18px;border-radius:4px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:rgba(255,255,255,.32)">?</span>
               </div>
             </div>
           </div>
 
-          <!-- ── Quick reply box (above call info) ── -->
-          <div style="background:rgba(5,5,5,.8);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 14px">
-            <span style="font-size:12px;font-family:var(--mono);color:rgba(255,255,255,.28)">Type English &mdash; translates as Casual&hellip;</span>
+          <!-- ── Quick reply ── -->
+          <div style="background:rgba(5,5,5,.8);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:8px 12px">
+            <span style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.26)">Type English &mdash; translates as Casual&hellip;</span>
           </div>
 
           <!-- ── Call info strip ── -->
-          <div class="demo-call-strip" style="gap:5px">
-            <span style="font-size:12px;flex-shrink:0">🍁</span>
-            <span style="font-size:10px;font-family:var(--mono);color:#3b9eff;white-space:nowrap">Valo Tomodachi</span>
-            <span style="font-size:10px;font-family:var(--mono);color:rgba(255,255,255,.28)">🌵 &middot;</span>
-            <span style="font-size:10px;color:rgba(59,158,255,.5);flex-shrink:0">#🔥</span>
-            <span style="font-size:10px;font-family:var(--mono);color:rgba(255,255,255,.38)">|</span>
-            <span style="font-size:10px;font-family:var(--mono);color:rgba(255,255,255,.55)">ざつだん</span>
-            <span style="font-size:10px;font-family:var(--mono);color:rgba(255,255,255,.25)">🍁_ &middot;</span>
-            <span style="font-size:10px;font-family:var(--mono);color:rgba(255,255,255,.28);margin-left:auto;white-space:nowrap">1 in call</span>
-            <span style="font-size:10px;color:rgba(255,255,255,.25);flex-shrink:0">&#9662;</span>
+          <div class="demo-call-strip" style="gap:4px;padding:6px 10px">
+            <span style="font-size:11px;flex-shrink:0">🍁</span>
+            <span style="font-size:10px;font-family:var(--mono);color:#3b9eff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px">Valo Tomodachi</span>
+            <span style="font-size:10px;font-family:var(--mono);color:rgba(255,255,255,.25)">🌵 &middot; #🔥 |</span>
+            <span style="font-size:10px;font-family:var(--mono);color:rgba(255,255,255,.5)">ざつだん</span>
+            <span style="font-size:10px;font-family:var(--mono);color:rgba(255,255,255,.25);margin-left:auto;white-space:nowrap">1 in call &#9662;</span>
           </div>
 
-          <!-- ── Member row ── -->
-          <div style="display:flex;align-items:center;gap:8px;padding:2px 4px">
-            <div style="width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#5865f2,#7289da);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;border:1.5px solid rgba(255,255,255,.08)">M</div>
-            <span style="font-size:12px;font-family:var(--mono);color:rgba(255,255,255,.55)">`Mizu</span>
-          </div>
-
-          <!-- ── Quick reactions search ── -->
-          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:7px 12px">
-            <span style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.22)">Search casual&hellip;</span>
-          </div>
-
-          <!-- ── Quick reaction cards (2-col grid, EN-first) ── -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
-            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:2px">
-              <span style="font-size:11px;font-weight:700;color:#fff">lol</span>
-              <span style="font-size:9px;font-family:var(--mono);color:rgba(255,255,255,.32)">kusa</span>
-              <span style="font-size:9px;color:rgba(255,255,255,.22)">草w</span>
-              <div style="display:flex;gap:4px;margin-top:3px">
-                <span style="flex:1;text-align:center;font-size:9px;padding:3px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:4px;color:rgba(255,255,255,.38)">💬</span>
-                <span style="flex:1;text-align:center;font-size:9px;padding:3px;background:rgba(59,158,255,.08);border:1px solid rgba(59,158,255,.2);border-radius:4px;color:#3b9eff">🔊</span>
+          <!-- ── Reaction chips (horizontal scroll) ── -->
+          <div style="display:flex;gap:5px;overflow:hidden">
+            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:7px;padding:6px 9px;display:flex;flex-direction:column;gap:1px;min-width:0;flex:1">
+              <span style="font-size:11px;font-weight:700;color:#fff;white-space:nowrap">lol</span>
+              <span style="font-size:9px;font-family:var(--mono);color:rgba(255,255,255,.3)">kusa · 草w</span>
+              <div style="display:flex;gap:3px;margin-top:3px">
+                <span style="flex:1;text-align:center;font-size:9px;padding:2px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:3px;color:rgba(255,255,255,.35)">💬</span>
+                <span style="flex:1;text-align:center;font-size:9px;padding:2px;background:rgba(59,158,255,.08);border:1px solid rgba(59,158,255,.2);border-radius:3px;color:#3b9eff">🔊</span>
               </div>
             </div>
-            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:2px">
-              <span style="font-size:11px;font-weight:700;color:#fff">Ehh?!</span>
-              <span style="font-size:9px;font-family:var(--mono);color:rgba(255,255,255,.32)">ee~</span>
-              <span style="font-size:9px;color:rgba(255,255,255,.22)">えー！</span>
-              <div style="display:flex;gap:4px;margin-top:3px">
-                <span style="flex:1;text-align:center;font-size:9px;padding:3px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:4px;color:rgba(255,255,255,.38)">💬</span>
-                <span style="flex:1;text-align:center;font-size:9px;padding:3px;background:rgba(59,158,255,.08);border:1px solid rgba(59,158,255,.2);border-radius:4px;color:#3b9eff">🔊</span>
+            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:7px;padding:6px 9px;display:flex;flex-direction:column;gap:1px;min-width:0;flex:1">
+              <span style="font-size:11px;font-weight:700;color:#fff;white-space:nowrap">Ehh?!</span>
+              <span style="font-size:9px;font-family:var(--mono);color:rgba(255,255,255,.3)">ee~ · えー！</span>
+              <div style="display:flex;gap:3px;margin-top:3px">
+                <span style="flex:1;text-align:center;font-size:9px;padding:2px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:3px;color:rgba(255,255,255,.35)">💬</span>
+                <span style="flex:1;text-align:center;font-size:9px;padding:2px;background:rgba(59,158,255,.08);border:1px solid rgba(59,158,255,.2);border-radius:3px;color:#3b9eff">🔊</span>
               </div>
             </div>
-            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:2px">
-              <span style="font-size:11px;font-weight:700;color:#fff">Seriously?</span>
-              <span style="font-size:9px;font-family:var(--mono);color:rgba(255,255,255,.32)">maji de?</span>
-              <span style="font-size:9px;color:rgba(255,255,255,.22)">マジで？</span>
-              <div style="display:flex;gap:4px;margin-top:3px">
-                <span style="flex:1;text-align:center;font-size:9px;padding:3px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:4px;color:rgba(255,255,255,.38)">💬</span>
-                <span style="flex:1;text-align:center;font-size:9px;padding:3px;background:rgba(59,158,255,.08);border:1px solid rgba(59,158,255,.2);border-radius:4px;color:#3b9eff">🔊</span>
-              </div>
-            </div>
-            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:2px">
-              <span style="font-size:11px;font-weight:700;color:#fff">Insane!</span>
-              <span style="font-size:9px;font-family:var(--mono);color:rgba(255,255,255,.32)">yabai!</span>
-              <span style="font-size:9px;color:rgba(255,255,255,.22)">やばい！</span>
-              <div style="display:flex;gap:4px;margin-top:3px">
-                <span style="flex:1;text-align:center;font-size:9px;padding:3px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:4px;color:rgba(255,255,255,.38)">💬</span>
-                <span style="flex:1;text-align:center;font-size:9px;padding:3px;background:rgba(59,158,255,.08);border:1px solid rgba(59,158,255,.2);border-radius:4px;color:#3b9eff">🔊</span>
-              </div>
-            </div>
-            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:2px">
-              <span style="font-size:11px;font-weight:700;color:#fff">Nice one!</span>
-              <span style="font-size:9px;font-family:var(--mono);color:rgba(255,255,255,.32)">ii ne!</span>
-              <span style="font-size:9px;color:rgba(255,255,255,.22)">いいね！</span>
-              <div style="display:flex;gap:4px;margin-top:3px">
-                <span style="flex:1;text-align:center;font-size:9px;padding:3px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:4px;color:rgba(255,255,255,.38)">💬</span>
-                <span style="flex:1;text-align:center;font-size:9px;padding:3px;background:rgba(59,158,255,.08);border:1px solid rgba(59,158,255,.2);border-radius:4px;color:#3b9eff">🔊</span>
+            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:7px;padding:6px 9px;display:flex;flex-direction:column;gap:1px;min-width:0;flex:1">
+              <span style="font-size:11px;font-weight:700;color:#fff;white-space:nowrap">Insane!</span>
+              <span style="font-size:9px;font-family:var(--mono);color:rgba(255,255,255,.3)">yabai! · やばい！</span>
+              <div style="display:flex;gap:3px;margin-top:3px">
+                <span style="flex:1;text-align:center;font-size:9px;padding:2px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:3px;color:rgba(255,255,255,.35)">💬</span>
+                <span style="flex:1;text-align:center;font-size:9px;padding:2px;background:rgba(59,158,255,.08);border:1px solid rgba(59,158,255,.2);border-radius:3px;color:#3b9eff">🔊</span>
               </div>
             </div>
           </div>
 
-          <!-- ── Speakers section header ── -->
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 4px 0">
-            <span style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.28);font-weight:600">Speakers</span>
-            <span style="width:22px;height:22px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:rgba(255,255,255,.28)">&#9662;</span>
+          <!-- ── Speakers header ── -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:0 2px">
+            <span style="font-size:9px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.25);font-weight:600">Speakers</span>
+            <span style="font-size:9px;color:rgba(255,255,255,.22)">&#9662;</span>
           </div>
 
-          <!-- ── Speaker card (`Mizu) ── -->
-          <div class="demo-speaker">
+          <!-- ── Speaker card ── -->
+          <div class="demo-speaker" style="gap:8px;padding:12px">
             <div class="demo-card-head">
               <div class="demo-avatar-wrap">
                 <div class="demo-avatar" style="background:linear-gradient(135deg,#5865f2,#7289da)">M</div>
@@ -1110,21 +1070,17 @@
               </div>
               <span class="demo-badge demo-badge-ai">AI</span>
             </div>
-            <div class="demo-card-body">
+            <div class="demo-card-body" style="gap:4px">
               <div class="demo-jp">それは <span class="hl">面白い</span> ですね</div>
               <div class="demo-romaji">soreha omoshiroi desune</div>
               <div class="demo-en">That&rsquo;s interesting.</div>
             </div>
-            <div class="demo-sugs">
-              <div class="demo-sugs-header">
+            <div class="demo-sugs" style="gap:5px;padding-top:8px">
+              <div class="demo-sugs-header" style="margin-bottom:2px">
                 <span class="demo-sugs-lbl">Reply With</span>
-                <div style="display:flex;align-items:center;gap:6px">
-                  <span class="demo-sugs-refresh">↻</span>
-                  <span style="font-size:10px;color:rgba(255,255,255,.22)">&#9662;</span>
-                </div>
+                <div style="display:flex;gap:5px"><span class="demo-sugs-refresh">↻</span><span style="font-size:10px;color:rgba(255,255,255,.2)">&#9662;</span></div>
               </div>
-              <!-- Suggestion 1 -->
-              <div class="demo-sug">
+              <div class="demo-sug" style="padding:8px 9px 7px;gap:6px">
                 <div class="demo-sug-top">
                   <div class="demo-sug-num">1</div>
                   <div class="demo-sug-text">
@@ -1132,7 +1088,7 @@
                     <div class="demo-sug-romaji">sou desu ne</div>
                     <div class="demo-sug-en">Yes, it is</div>
                   </div>
-                  <span style="font-size:11px;color:rgba(255,255,255,.18);flex-shrink:0;margin-left:4px;align-self:flex-start">📌</span>
+                  <span style="font-size:10px;color:rgba(255,255,255,.15);flex-shrink:0;margin-left:4px">📌</span>
                 </div>
                 <div class="demo-sug-btns">
                   <span class="demo-sug-btn speak">🔊 Bot Speaks</span>
@@ -1140,8 +1096,7 @@
                   <span class="demo-sug-btn say">👤 I&rsquo;ll Speak</span>
                 </div>
               </div>
-              <!-- Suggestion 2 -->
-              <div class="demo-sug">
+              <div class="demo-sug" style="padding:8px 9px 7px;gap:6px">
                 <div class="demo-sug-top">
                   <div class="demo-sug-num">2</div>
                   <div class="demo-sug-text">
@@ -1149,7 +1104,7 @@
                     <div class="demo-sug-romaji">doushite omoshiroi to omottan desu ka</div>
                     <div class="demo-sug-en">Why do you think it&rsquo;s interesting?</div>
                   </div>
-                  <span style="font-size:11px;color:rgba(255,255,255,.18);flex-shrink:0;margin-left:4px;align-self:flex-start">📌</span>
+                  <span style="font-size:10px;color:rgba(255,255,255,.15);flex-shrink:0;margin-left:4px">📌</span>
                 </div>
                 <div class="demo-sug-btns">
                   <span class="demo-sug-btn speak">🔊 Bot Speaks</span>
@@ -1157,8 +1112,7 @@
                   <span class="demo-sug-btn say">👤 I&rsquo;ll Speak</span>
                 </div>
               </div>
-              <!-- Suggestion 3 -->
-              <div class="demo-sug">
+              <div class="demo-sug" style="padding:8px 9px 7px;gap:6px">
                 <div class="demo-sug-top">
                   <div class="demo-sug-num">3</div>
                   <div class="demo-sug-text">
@@ -1166,7 +1120,7 @@
                     <div class="demo-sug-romaji">watashi mo kyomi ga arimasu</div>
                     <div class="demo-sug-en">I&rsquo;m interested too</div>
                   </div>
-                  <span style="font-size:11px;color:rgba(255,255,255,.18);flex-shrink:0;margin-left:4px;align-self:flex-start">📌</span>
+                  <span style="font-size:10px;color:rgba(255,255,255,.15);flex-shrink:0;margin-left:4px">📌</span>
                 </div>
                 <div class="demo-sug-btns">
                   <span class="demo-sug-btn speak">🔊 Bot Speaks</span>
@@ -1177,15 +1131,18 @@
             </div>
           </div>
 
-          <!-- ── Stats panel ── -->
-          <div style="display:flex;align-items:center;gap:8px;padding:2px 4px">
-            <span style="font-size:10px;font-family:var(--mono);color:#ef4444;font-weight:600">&#9889; 5112ms</span>
+          <!-- ── Stats: real measured range ── -->
+          <div style="display:flex;align-items:center;gap:6px;padding:0 3px">
+            <span style="font-size:10px;font-family:var(--mono);color:#22c55e;font-weight:600">&#9889; GT ~150ms</span>
+            <span style="font-size:10px;font-family:var(--mono);color:rgba(255,255,255,.2)">·</span>
+            <span style="font-size:10px;font-family:var(--mono);color:#f59e0b;font-weight:600">LLM ~400ms</span>
+            <span style="font-size:10px;font-family:var(--mono);color:rgba(255,255,255,.2)">·</span>
             <span style="font-size:10px;font-family:var(--mono);color:rgba(255,255,255,.28)">WS</span>
             <span style="font-size:10px;font-family:var(--mono);color:#22c55e;font-weight:600">open</span>
           </div>
 
           <!-- ── Resize nub ── -->
-          <div class="demo-nub"><div class="demo-nub-line" style="background:rgba(255,255,255,.3);width:40px"></div></div>
+          <div class="demo-nub"><div class="demo-nub-line" style="background:rgba(255,255,255,.25);width:36px"></div></div>
 
         </div>
         <div class="demo-caption">Simulated overlay &mdash; actual app runs as a transparent Tauri window</div>
