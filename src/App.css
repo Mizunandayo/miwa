@@ -1327,3 +1327,15 @@ button {
 .speaker-card.speaking {
   animation: speaking-glow 2s ease-in-out infinite;
 }
+
+/* ─── Dark Cards Mode ─────────────────────────────────────────────────────── */
+/* Activated by ◐ button in header — solid black bg for readability */
+.dark-cards .speaker-card {
+  background: rgba(0, 0, 0, 0.92);
+  border-color: rgba(255, 255, 255, 0.14);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 4px 24px rgba(0, 0, 0, 0.7);
+}

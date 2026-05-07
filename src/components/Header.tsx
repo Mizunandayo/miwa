@@ -21,6 +21,7 @@ import {
   botStatusAtom,
   channelNameAtom,
   wsStatusAtom,
+  darkCardsAtom,
   type StyleMode,
 } from "../store/atoms";
 
@@ -47,6 +48,7 @@ export default function Header({ sendCommand }: HeaderProps) {
   const [opacity, setOpacity]     = useAtom(opacityAtom);
   const [isMiniMode, setIsMiniMode]       = useAtom(isMiniModeAtom);
   const [isClickThrough, setIsClickThrough] = useAtom(isClickThroughAtom);
+  const [darkCards, setDarkCards] = useAtom(darkCardsAtom);
   const [botStatus]    = useAtom(botStatusAtom);
   const [channelName]  = useAtom(channelNameAtom);
   const [wsStatus]     = useAtom(wsStatusAtom);
@@ -185,6 +187,13 @@ export default function Header({ sendCommand }: HeaderProps) {
         )}
 
         <div className="header-actions">
+          <button
+            className={`icon-btn${darkCards ? " active" : ""}`}
+            title="Dark cards (solid black background)"
+            onClick={() => setDarkCards(!darkCards)}
+          >
+            ◐
+          </button>
           <button
             className={`icon-btn${isMiniMode ? " active" : ""}`}
             title="Mini mode"

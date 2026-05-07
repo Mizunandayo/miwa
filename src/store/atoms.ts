@@ -151,3 +151,6 @@ export const phrasebookAtom = atom<PhrasebookEntry[]>([]);
 
 /** Whether the Phrasebook panel is expanded */
 export const phrasebookOpenAtom = atom<boolean>(false);
+
+/** Dark card mode — solid black background on speaker cards */
+export const darkCardsAtom = atom<boolean>(true);

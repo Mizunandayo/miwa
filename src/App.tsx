@@ -27,6 +27,7 @@ import {
   quickReplyLoadingAtom,
   romajiPopupAtom,
   phrasebookAtom,
+  darkCardsAtom,
   type PhrasebookEntry,
   type SpeakerState,
   type CallInfo,
@@ -62,6 +63,7 @@ export default function App() {
   const setQuickReplyResult = useSetAtom(quickReplyResultAtom);
   const setQuickReplyLoading = useSetAtom(quickReplyLoadingAtom);
   const setPhrasebook = useSetAtom(phrasebookAtom);
+  const [darkCards] = useAtom(darkCardsAtom);
 
   const wsRef = useRef<WebSocket | null>(null);
   const timeoutRefs = useRef<Map<string, ReturnType<typeof setTimeout>>>(
@@ -348,7 +350,7 @@ export default function App() {
       <QuickReplyBox sendCommand={sendCommand} />
       <CallInfoStrip />
       <QuickReactions sendCommand={sendCommand} />
-      <div className="speaker-list">
+      <div className={`speaker-list${darkCards ? " dark-cards" : ""}`}>
         <AnimatePresence mode="popLayout">
           {orderedSpeakers.length === 0 ? (
             <div className="empty-state">
