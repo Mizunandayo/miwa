@@ -262,21 +262,36 @@ async def websocket_endpoint(websocket: WebSocket):
                     style = "casual"
                 if not en_text:
                     continue
+                # Send GT result immediately (fast)
                 jp_fast = google_translate(en_text, target="ja") or en_text
-                # Style-adjusted JP via vLLM (falls back to jp_fast)
-                loop = asyncio.get_event_loop()
-                jp_styled = await loop.run_in_executor(
-                    None, lambda: translate_en_to_jp_with_style(en_text, jp_fast, style)
-                )
-                jp_result = jp_styled or jp_fast
-                romaji = to_romaji(jp_result)
+                romaji_fast = to_romaji(jp_fast)
                 await websocket.send_text(json.dumps({
                     "type": "quick_reply_result",
-                    "jp": jp_result,
-                    "romaji": romaji,
+                    "jp": jp_fast,
+                    "romaji": romaji_fast,
                     "en": en_text,
                     "latencyMs": round((time.time() - start_time) * 1000),
                 }))
+                # Fire vLLM style update in background (non-blocking)
+                async def _send_styled_quick_reply(ws, _en, _jp_fast, _style, _t0):
+                    try:
+                        loop = asyncio.get_event_loop()
+                        jp_styled = await asyncio.wait_for(
+                            loop.run_in_executor(None, lambda: translate_en_to_jp_with_style(_en, _jp_fast, _style)),
+                            timeout=6.0,
+                        )
+                        if jp_styled and jp_styled != _jp_fast:
+                            romaji_s = to_romaji(jp_styled)
+                            await ws.send_text(json.dumps({
+                                "type": "quick_reply_result",
+                                "jp": jp_styled,
+                                "romaji": romaji_s,
+                                "en": _en,
+                                "latencyMs": round((asyncio.get_event_loop().time() - _t0) * 1000),
+                            }))
+                    except Exception:
+                        pass  # silently fall back to already-sent GT result
+                asyncio.create_task(_send_styled_quick_reply(websocket, en_text, jp_fast, style, time.time()))
                 continue
 
             # ── Get Japanese text ──────────────────────────────────────────

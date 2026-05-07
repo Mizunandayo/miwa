@@ -120,10 +120,15 @@ def transcribe(pcm_bytes: bytes) -> dict:
             HALLUCINATION_SUBSTRINGS = [
                 "ご視聴ありがとう", "チャンネル登録", "字幕は自動生成",
                 "ご視聴いただき", "高評価", "チャンネル登",
+                "概要欄", "高評価ボタン", "フォローお願い", "グッドボタン",
+                "低評価", "この動画", "登録お願い", "次の動画",
+                "subscribe", "like and", "thank you for watching",
             ]
             HALLUCINATION_EXACT = {
                 "おやすみなさい", "ありがとうございました", "ありがとうございます",
                 "よろしくお願いします", "よろしくお願いいたします", "字幕",
+                "以上です", "以上で終わります", "終わります", "終わりです",
+                "はじめしゃちょー", "終わり", "おわり",
             }
             stripped = full_text.strip()
             if stripped in HALLUCINATION_EXACT or any(h in stripped for h in HALLUCINATION_SUBSTRINGS):
