@@ -14,7 +14,7 @@
 | 3 | May 6 | LLM + Agents + Memory (cloud) | UI polish — QuickReplyBox, SuggestionCard (delivery buttons), RomajiPopup, QuickReactions, Phrasebook (Ctrl+1-9), StatsPanel, CallInfoStrip, resize handle, bug fix: google_translate source hardcode |
 | 4 | May 7 | Suggestions + Quick Reply + Full UX | ✅ Complete — README.md, 1/2/3 shortcuts, Framer Motion spring, snap-to-corner, bot/tts.js stub, hf-space/ (README + animated index.html), git push |
 | 5 | May 8 | Polish + .exe build | ✅ Complete — AMD cloud recreated (IP: 129.212.188.94), full pipeline tested E2E. Bug fixes: hallucination filter, style translation, Bot Speaks TTS wired, quick reply two-pass latency, card timeout, dark UI (quick-reply + reactions), refined packet split (translation immediate, suggestions deferred). Window controls (macOS traffic-light). Latency optimizations (avatar non-blocking, persistent TCP session, max_tokens 400→250, separate semaphores). hf-space overlay iterative resize (3 commits: -30% height+widen, +40% wide/-20% height, -30% width → final 504px max-width grid 1fr 1fr). Latest commit: 8496a85 |
-| 6 | May 9 | GitHub + HF Space + Demo Video | ✅ In Progress — TTS latency reduced: pre-synthesis cache (server) + StreamingResponse + Readable.fromWeb streaming (bot). Suggestions now take ~0ms (cache hit) vs 2-3s. Cache misses stream first byte in ~300ms. hf-space accuracy patches, docs/ GitHub Pages, mobile CSS. |
+| 6 | May 9 | GitHub + HF Space + Demo Video | ✅ In Progress — TTS latency reduced: pre-synthesis cache (server) + StreamingResponse + Readable.fromWeb streaming (bot). Suggestions now take ~0ms (cache hit) vs 2-3s. Cache misses stream first byte in ~300ms. hf-space accuracy patches, docs/ GitHub Pages, mobile CSS. HF Space polish: accuracy audit (WhisperX→openai-whisper, XTTS v2→edge-tts), SVG icons replacing emojis in pipeline + arch nodes, 3-step journey architecture section, 5 content improvements: hero business value tagline, impact strip (200M+ / <800ms / $0), video placeholder section, HF likes CTA button, Qwen2.5 72B in stack, "6 quick reactions" fix. Both hf-space/ and docs/ kept in sync. |
 | 7 | May 10 | Final Review + SUBMIT | ⬜ Planned |
 
 **Note:** Cloud (MI300X) was destroyed after Day 1 to stop billing (~$83 remaining). All Day 2–3 work done locally with stub server. Cloud will be recreated Day 5 (May 8).
@@ -155,7 +155,7 @@ Target latency: **<800ms** end-to-end.
 - **Instance:** MI300X x1 — 192GB VRAM, 20 vCPU, 240GB RAM
 - **IP:** ❌ DESTROYED (May 8) — recreate when ready for final testing
 - **Container IP:** `172.17.0.2` (Docker bridge — use for SSH tunnel target)
-- **Cost:** $1.99/hr, ~$83 credit balance remaining
+- **Cost:** $1.99/hr, ~$39.63 credit balance remaining (~19.9hrs)
 - **SSH Key:** `$HOME\.ssh\miwa_amd` (private), `miwa_amd.pub` (public)
 - **SSH Command:** `ssh -i "$HOME\.ssh\miwa_amd" -o StrictHostKeyChecking=no root@129.212.188.94`
 - **SSH Tunnel:** `ssh -i "$HOME\.ssh\miwa_amd" -N -L 8765:172.17.0.2:8765 root@129.212.188.94`
@@ -243,7 +243,7 @@ Discord Voice Channel
       → pykakasi: romaji generation
       → Qdrant: vector memory per speaker (keyed by Discord user ID)
       → CrewAI: multi-agent suggestion pipeline
-      → XTTS v2: TTS audio for "Hear It" and "Bot Speaks"
+      → edge-tts (Microsoft Neural TTS): TTS audio for "Bot Speaks"
     → JSON packets → WebSocket → Tauri Rust backend
       → React UI (speaker cards, suggestion cards, overlay controls)
 ```
@@ -270,7 +270,7 @@ miwa/
 │   ├── suggest.py        # CrewAI suggestion agent pipeline
 │   ├── romaji.py         # pykakasi romaji generator
 │   ├── memory.py         # Qdrant vector store per speaker
-│   └── tts.py            # XTTS v2 synthesis
+│   └── tts.py            # edge-tts synthesis (Microsoft Neural TTS, no GPU required)
 ├── src/
 │   ├── App.tsx           # Root component (TypeScript)
 │   ├── main.tsx          # Entry point (TypeScript)
@@ -383,7 +383,7 @@ miwa/
 | WhisperX on cloud | ⬜ NOT YET INSTALLED (Day 6) |
 | Qdrant container | ⬜ NOT YET STARTED (Day 6) |
 | CrewAI on cloud | ⬜ NOT YET INSTALLED (Day 6) |
-| XTTS v2 on cloud | ⬜ NOT YET INSTALLED (Day 6) — TTS 503 until installed |
+| edge-tts on cloud | ⬜ NOT YET INSTALLED (Day 6) — `pip install edge-tts` |
 | Window controls (minimize/maximize/close) | ✅ DONE — traffic-light buttons in Header.tsx + App.css macOS style |
 | capabilities/default.json window perms | ✅ DONE — allow-minimize, allow-maximize, allow-unmaximize, allow-close, allow-is-maximized |
 | Bot avatar non-blocking | ✅ DONE — audio sent immediately; avatar fetch moved to background Promise |
@@ -391,7 +391,17 @@ miwa/
 | suggest.py max_tokens reduction | ✅ DONE — 400 → 250 tokens (~30-40% faster generation) |
 | suggest.py temperature reduction | ✅ DONE — 0.8 → 0.6 (tighter sampling, faster convergence) |
 | main.py separate semaphores | ✅ DONE — _translate_semaphore(2) + _suggest_semaphore(4); translations never blocked by suggestions |
-| Latest commit | 8496a85 — hf-space demo overlay -30% width (720→504px, grid 1fr 1fr) |
+| Latest commit | (post-session) — hf-space/docs: impact strip, video section, HF CTA, Qwen stack, 6 quick reactions fix, hero business value, SVG icons, arch 3-step journey |
+| hf-space accuracy audit | ✅ DONE — WhisperX→openai-whisper, XTTS v2→edge-tts corrected in landing page |
+| hf-space SVG icons | ✅ DONE — all emoji icons in pipeline nodes + arch nodes replaced with Lucide-style SVGs |
+| hf-space arch section redesign | ✅ DONE — 3-step journey layout (.arch-journey): step 01 Discord/Node.js, step 02 AMD AI pipeline detail, step 03 Tauri overlay |
+| hf-space impact strip | ✅ DONE — 3-stat strip between hero and demo: 200M+ Discord users, <800ms latency, $0 new hardware |
+| hf-space video section | ✅ DONE — placeholder #video section with play button + recording-in-progress notice; nav link added |
+| hf-space HF likes CTA | ✅ DONE — heart SVG button in hero-ctas linking to HF Space URL |
+| hf-space Qwen2.5 72B | ✅ DONE — Alt. LLM card added to Stack Layer 2 (AI & Agents) with cube icon |
+| hf-space quick reactions fix | ✅ DONE — "80 reactions" → "6 quick reactions, always in reach" with accurate description |
+| hf-space hero subtitle | ✅ DONE — business value opening sentence added ("Language barriers cost gaming communities...") |
+| docs/ sync | ✅ DONE — docs/index.html kept identical to hf-space/index.html for all changes |
 
 ---
 

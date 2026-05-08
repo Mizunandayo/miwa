@@ -1372,3 +1372,89 @@ Root causes diagnosed:
 7. Publish `hf-space/` to HuggingFace Space (org: `lablab-ai-amd-developer-hackathon`)
 8. 2 social posts tagging @AIatAMD + @lablab (Ship It challenge)
 9. Submit on lablab.ai before May 11, 3:00 AM PHT
+
+
+---
+
+## SESSION 15 -- May 8, 2026 (Day 6 -- HF Space Content Polish: 9 Improvements)
+
+### What was done this session
+All 9 changes applied to both hf-space/index.html AND docs/index.html simultaneously.
+
+---
+
+### 1. Accuracy Audit -- WhisperX to openai-whisper, XTTS v2 to edge-tts
+- STT label: "WhisperX (faster-whisper)" -> "openai-whisper" (CTranslate2 has no ROCm support)
+- TTS: "XTTS v2" -> "edge-tts" (Microsoft Neural TTS, no GPU required)
+- Both hf-space/ and docs/ updated identically
+
+### 2. SVG Icons Replacing All Emojis
+- Pipeline stage nodes: replaced emoji icons with Lucide-style SVG elements
+- Architecture diagram nodes: same replacement
+- CSS: font-size:28px -> width/height:28px on .pn-ico and .an-ico
+- Reason: SVG renders consistently across OS/browser; emojis do not
+
+### 3. Architecture Section -- 3-Step Journey Layout
+- Replaced old 4-node diagram with .arch-journey section:
+  - Step 01: Discord voice -> Node.js -> per-speaker PCM (yellow .an-js)
+  - Step 02: AMD AI pipeline zoom-in (5 sub-nodes: STT/GT/vLLM/Suggest/TTS) (green .an-py)
+  - Step 03: Tauri overlay -> React UI -> karaoke/suggestions/delivery (blue .an-ts)
+- Color-coded by tech layer: yellow=JS, green=Python, blue=TS/Rust
+
+### 4. Hero Subtitle -- Business Value Tagline
+Before: "Per-speaker Discord voice translation with romaji..."
+After: "Language barriers cost gaming communities millions of shared moments every day. Miwa eliminates the gap -- per-speaker Discord voice translation with romaji, AI reply suggestions, and style-matched LLM refinement targeting under 800ms on AMD MI300X."
+
+### 5. Impact Strip (New Section after Hero)
+- 3-column stat grid (.impact-strip):
+  - 200M+ Monthly Discord users
+  - <800ms End-to-end latency target
+  - $0 New hardware required
+- Responsive: collapses to 1-column at <=660px
+
+### 6. Video Placeholder Section (New Section #video)
+- Inserted between Pipeline and AMD sections; nav link added
+- .video-placeholder div with play button SVG + "Demo video -- recording in progress"
+- Replace the div with YouTube/Loom iframe when video is ready
+
+### 7. HF Likes CTA Button (Hero)
+- Third button in .hero-ctas: heart SVG + "Like on HF Spaces"
+- Links to https://huggingface.co/spaces/lablab-ai-amd-developer-hackathon/miwa
+- Targets Space likes prize -- visible above the fold
+
+### 8. Qwen2.5 72B Stack Card
+- New .si card in Stack Layer 2 "AI & Agents" after Llama 3.3 70B:
+  - Role: "Alt. LLM", Name: "Qwen2.5 72B", Icon: cube SVG
+- Supports Qwen partner prize path
+
+### 9. "6 quick reactions" Fix (Features Bento)
+- .bc-title: "80 reactions, style-aware & searchable" -> "6 quick reactions, always in reach"
+- .bc-desc: accurately describes the 6 visible buttons (kusa / ee / maji / gg / mouikkai / matte)
+- The 80-total count (20 x 4 styles) was misleading -- users see 6 at a time
+
+### Current HF Space State
+| Change | hf-space/ | docs/ |
+|---|---|---|
+| openai-whisper / edge-tts | done | done |
+| SVG icons (pipeline + arch) | done | done |
+| 3-step journey arch | done | done |
+| Hero business value subtitle | done | done |
+| Impact strip | done | done |
+| Video placeholder section | done | done |
+| HF Likes CTA button | done | done |
+| Qwen2.5 72B stack card | done | done |
+| 6 quick reactions fix | done | done |
+
+### Remaining Before Submission (Day 7 -- May 10)
+- Record demo video -> replace video placeholder with real YouTube/Loom embed
+- Publish hf-space/ to HuggingFace Space (org: lablab-ai-amd-developer-hackathon)
+- GitHub Pages live (repo Settings -> Pages -> /docs branch=main)
+- AMD cloud E2E test (WhisperX + Qdrant + CrewAI + edge-tts)
+- 2 social posts tagging @AIatAMD + @lablab
+- Submit on lablab.ai before May 11, 3:00 AM PHT
+
+### Credits and Time Remaining
+- Balance: ~$39.63 (~19.9hrs at $1.99/hr)
+- Deadline: May 11, 3:00 AM PHT (~2 days from now)
+- Cloud IP: DESTROYED -- recreate when ready for E2E test
+- SSH key: miwa_amd (still exists locally)

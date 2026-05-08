@@ -225,7 +225,8 @@
     .pipe-stage.active .pipe-node::after { border-color: rgba(59,158,255,.25); }
     .pipe-stage.passed .pipe-node { border-color: rgba(74,222,128,.5); background: rgba(74,222,128,.08); }
 
-    .pipe-node-ico { font-size: 13px; line-height: 1; }
+    .pipe-node-ico { width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; }
+    .pipe-node-ico svg { width: 14px; height: 14px; display: block; }
     .pipe-num { font-size: 10px; font-family: var(--mono); color: rgba(255,255,255,.35); font-weight: 700; letter-spacing: .04em; }
     .pipe-stage.active .pipe-num { color: #3b9eff; }
     .pipe-stage.passed .pipe-num { color: rgba(74,222,128,.7); }
@@ -747,7 +748,8 @@
       transition: border-color 160ms;
     }
     .arch-node:hover { border-color: rgba(255,255,255,.28); }
-    .arch-node-ico { font-size: 26px; line-height: 1; margin-bottom: 12px; display: block; }
+    .arch-node-ico { width: 26px; height: 26px; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; }
+    .arch-node-ico svg { width: 26px; height: 26px; display: block; }
     .arch-node-name { font-size: 15px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 4px; }
     .arch-node-rt {
       display: inline-block; margin-top: 10px;
@@ -788,6 +790,18 @@
     .cb-ssh  { background: rgba(250,204,21,.15);  border: 1px solid rgba(250,204,21,.35);  color: rgba(250,204,21,.95); }
     .cb-ws   { background: rgba(96,165,250,.13);  border: 1px solid rgba(96,165,250,.35);   color: rgba(96,165,250,.95); }
     .cb-ipc  { background: rgba(222,165,132,.13); border: 1px solid rgba(222,165,132,.35);  color: rgba(222,165,132,.95); }
+    /* Journey — 3-step accessible flow */
+    .arch-journey { display: flex; flex-direction: column; gap: 0; }
+    .arch-jstep { display: grid; grid-template-columns: 52px 1fr; gap: 0 20px; border-radius: 10px; padding: 22px 20px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04); transition: border-color 160ms; }
+    .arch-jstep:hover { border-color: rgba(255,255,255,.22); }
+    .arch-jstep-num { font-size: 36px; font-family: var(--mono); font-weight: 800; color: rgba(255,255,255,.12); line-height: 1; padding-top: 3px; }
+    .arch-jstep-headline { font-size: 16px; font-weight: 700; letter-spacing: -.025em; margin-bottom: 8px; line-height: 1.3; }
+    .arch-jstep-desc { font-size: 13px; color: rgba(255,255,255,.75); line-height: 1.7; margin-bottom: 10px; }
+    .arch-jstep-tech { font-size: 11px; font-family: var(--mono); color: rgba(255,255,255,.35); line-height: 1.6; }
+    .arch-jconn { display: flex; align-items: center; gap: 14px; padding: 4px 20px; }
+    .arch-jconn-track { display: flex; flex-direction: column; align-items: center; width: 52px; flex-shrink: 0; }
+    .arch-jconn-vline { width: 1px; height: 14px; background: rgba(255,255,255,.14); }
+    .arch-jconn-arr { font-size: 11px; color: rgba(255,255,255,.25); line-height: 1; padding: 1px 0; }
     /* AI pipeline internals zoom */
     .arch-zoom-wrap {
       margin-top: 24px;
@@ -916,6 +930,23 @@
       /* AMD adv cards */
       .amd-adv { padding: 16px 14px; }
     }
+    /* Impact strip */
+    .impact-strip { background: linear-gradient(135deg, rgba(59,158,255,.06) 0%, rgba(254,188,46,.04) 100%); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 56px 0; }
+    .impact-cols { display: grid; grid-template-columns: repeat(3,1fr); gap: 40px; }
+    .impact-num { font-size: 44px; font-weight: 800; font-family: var(--mono); color: #3b9eff; line-height: 1; margin-bottom: 8px; }
+    .impact-label { font-size: 11px; font-weight: 700; color: var(--text); margin-bottom: 7px; text-transform: uppercase; letter-spacing: .08em; }
+    .impact-sub { font-size: 13px; color: var(--muted); line-height: 1.65; }
+    /* Video section */
+    .video-wrap { max-width: 800px; margin: 0 auto; }
+    .video-placeholder { border-radius: 14px; overflow: hidden; border: 1px solid var(--border); background: var(--surface); aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; text-align: center; }
+    .video-placeholder-inner { padding: 32px; }
+    .video-play-btn { width: 72px; height: 72px; border-radius: 50%; background: rgba(59,158,255,.12); border: 1px solid rgba(59,158,255,.28); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; color: #3b9eff; }
+    .video-ph-title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 10px; }
+    .video-ph-sub { font-size: 14px; color: var(--muted); max-width: 440px; margin: 0 auto; line-height: 1.65; }
+    @media(max-width:660px) {
+      .impact-cols { grid-template-columns: 1fr; gap: 24px; }
+      .impact-num { font-size: 32px; }
+    }
   </style>
 </head>
 <body>
@@ -927,6 +958,7 @@
     <div class="nav-links">
       <a class="nav-link" href="#demo">Demo</a>
       <a class="nav-link" href="#pipeline">Pipeline</a>
+      <a class="nav-link" href="#video">Video</a>
       <a class="nav-link" href="#amd">MI300X</a>
       <a class="nav-link" href="#features">Features</a>
       <a class="nav-link" href="#stack">Stack</a>
@@ -955,7 +987,7 @@
 
     <!-- Subtitle -->
     <p class="hero-sub">
-      Per-speaker Discord voice translation with romaji, AI reply suggestions, and style-matched LLM refinement &mdash; targeting under 800ms end-to-end.
+      Language barriers cost gaming communities millions of shared moments every day. Miwa eliminates the gap &mdash; per-speaker Discord voice translation with romaji, AI reply suggestions, and style-matched LLM refinement targeting under 800ms on AMD MI300X.
     </p>
 
     <!-- Author + hackathon -->
@@ -971,6 +1003,10 @@
         View on GitHub
       </a>
       <a class="btn-ghost" href="#demo">See how it works</a>
+      <a class="btn-ghost" href="https://huggingface.co/spaces/lablab-ai-amd-developer-hackathon/miwa" target="_blank" rel="noopener">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        Like on HF Spaces
+      </a>
     </div>
 
     <!-- Stats -->
@@ -995,6 +1031,29 @@
   </div>
 </section>
 
+<!-- ─── IMPACT STRIP ─── -->
+<section class="impact-strip">
+  <div class="wrap">
+    <div class="impact-cols">
+      <div class="r" data-d="1">
+        <div class="impact-num">200M+</div>
+        <div class="impact-label">Monthly Discord users</div>
+        <div class="impact-sub">Millions in cross-language gaming servers with no real-time translation &mdash; an untapped opportunity for the right tool</div>
+      </div>
+      <div class="r" data-d="2">
+        <div class="impact-num">&lt;800ms</div>
+        <div class="impact-label">End-to-end latency target</div>
+        <div class="impact-sub">Fast enough to follow the conversation as it happens &mdash; no awkward lag, no interrupting the flow of the call</div>
+      </div>
+      <div class="r" data-d="3">
+        <div class="impact-num">$0</div>
+        <div class="impact-label">New hardware required</div>
+        <div class="impact-sub">Pure software overlay &mdash; runs on any PC already running Discord, no special headsets or upgrades needed</div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ─── DEMO PREVIEW ─── -->
 <section id="demo">
   <div class="wrap">
@@ -1010,7 +1069,7 @@
             <div class="demo-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 12 5 12 5 8 8 8 8 16 11 16 11 4 14 4 14 20 17 20 17 9 20 9 20 12 22 12"/></svg></div>
             <div class="demo-feat-body">
               <div class="demo-feat-title">Word-by-word karaoke highlight</div>
-              <div class="demo-feat-desc">Each word lights up in sync with the speaker's voice as WhisperX emits word-level timestamps.</div>
+              <div class="demo-feat-desc">Each word lights up in sync with the speaker's voice as openai-whisper emits word-level timestamps.</div>
             </div>
           </div>
           <div class="demo-feat">
@@ -1264,7 +1323,7 @@
       <div class="pipe-stages-row">
 
         <div class="pipe-stage" data-i="0">
-          <div class="pipe-node"><span class="pipe-node-ico">🎤</span></div>
+          <div class="pipe-node"><span class="pipe-node-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg></span></div>
           <div class="pipe-num">01</div>
           <div class="pipe-sname">Audio<br>Capture</div>
           <div class="pipe-stime">&lt;5ms</div>
@@ -1273,16 +1332,16 @@
         <div class="pipe-cseg"><div></div></div>
 
         <div class="pipe-stage" data-i="1">
-          <div class="pipe-node"><span class="pipe-node-ico">📝</span></div>
+          <div class="pipe-node"><span class="pipe-node-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 12 5 12 5 8 8 8 8 16 11 16 11 4 14 4 14 20 17 20 17 9 20 9 20 12 22 12"/></svg></span></div>
           <div class="pipe-num">02</div>
-          <div class="pipe-sname">WhisperX<br>STT</div>
+          <div class="pipe-sname">openai-whisper<br>STT</div>
           <div class="pipe-stime">~150ms</div>
         </div>
 
         <div class="pipe-cseg"><div></div></div>
 
         <div class="pipe-stage" data-i="2">
-          <div class="pipe-node"><span class="pipe-node-ico">⚡</span></div>
+          <div class="pipe-node"><span class="pipe-node-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span></div>
           <div class="pipe-num">03</div>
           <div class="pipe-sname">Google<br>Translate</div>
           <div class="pipe-stime">&lt;100ms</div>
@@ -1291,7 +1350,7 @@
         <div class="pipe-cseg"><div></div></div>
 
         <div class="pipe-stage" data-i="3">
-          <div class="pipe-node"><span class="pipe-node-ico">🧠</span></div>
+          <div class="pipe-node"><span class="pipe-node-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="15" x2="4" y2="15"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="15" x2="23" y2="15"/></svg></span></div>
           <div class="pipe-num">04</div>
           <div class="pipe-sname">Llama 3.3<br>70B FP16</div>
           <div class="pipe-stime">~500ms</div>
@@ -1300,7 +1359,7 @@
         <div class="pipe-cseg"><div></div></div>
 
         <div class="pipe-stage" data-i="4">
-          <div class="pipe-node"><span class="pipe-node-ico">🤖</span></div>
+          <div class="pipe-node"><span class="pipe-node-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></span></div>
           <div class="pipe-num">05</div>
           <div class="pipe-sname">CrewAI<br>Agents</div>
           <div class="pipe-stime">~300ms*</div>
@@ -1309,7 +1368,7 @@
         <div class="pipe-cseg"><div></div></div>
 
         <div class="pipe-stage" data-i="5">
-          <div class="pipe-node"><span class="pipe-node-ico">🪟</span></div>
+          <div class="pipe-node"><span class="pipe-node-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span></div>
           <div class="pipe-num">06</div>
           <div class="pipe-sname">Tauri<br>Overlay</div>
           <div class="pipe-stime">&lt;20ms</div>
@@ -1371,6 +1430,26 @@
       </div>
     </div>
 
+  </div>
+</section>
+
+<!-- ─── DEMO VIDEO ─── -->
+<section id="video">
+  <div class="wrap">
+    <div class="s-label r">Video</div>
+    <h2 class="s-h2 r" data-d="1">Watch it <em>in a live call</em></h2>
+    <p class="r" data-d="2" style="color:var(--muted);font-size:15px;line-height:1.75;max-width:580px;margin:0 auto 32px;text-align:center">Real Japanese speech &rarr; karaoke highlight &rarr; LLM reply suggestions &rarr; one-key delivery to Discord, all under 800ms on AMD MI300X.</p>
+    <div class="video-wrap r" data-d="3">
+      <div class="video-placeholder">
+        <div class="video-placeholder-inner">
+          <div class="video-play-btn">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          </div>
+          <div class="video-ph-title">Demo video &mdash; recording in progress</div>
+          <div class="video-ph-sub">Full end-to-end walkthrough: voice input &rarr; karaoke highlight &rarr; AI reply suggestions &rarr; delivery via bot, running live on AMD MI300X</div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -1468,12 +1547,12 @@
       <div class="amd-adv">
         <div class="amd-adv-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="15" x2="4" y2="15"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="15" x2="23" y2="15"/></svg></div>
         <div class="amd-adv-title">ROCm open ecosystem</div>
-        <div class="amd-adv-desc">WhisperX, vLLM 0.17.1, PyTorch 2.6.0, and XTTS v2 all run on ROCm 7.2 — the same code that runs on CUDA runs here with a single env flag.</div>
+        <div class="amd-adv-desc">openai-whisper, vLLM 0.17.1, and PyTorch 2.6.0 all run on ROCm 7.2 — the same PyTorch code that runs on CUDA runs here with a single env flag.</div>
       </div>
       <div class="amd-adv">
         <div class="amd-adv-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
         <div class="amd-adv-title">Multi-speaker concurrency</div>
-        <div class="amd-adv-desc">Discord voice channels can have 10+ speakers. The MI300X handles concurrent WhisperX transcription and vLLM inference requests without GPU contention.</div>
+        <div class="amd-adv-desc">Discord voice channels can have 10+ speakers. The MI300X handles concurrent openai-whisper transcription and vLLM inference requests without GPU contention.</div>
       </div>
     </div>
   </div>
@@ -1523,8 +1602,8 @@
       </div>
       <div class="bc bc-e r" data-d="3">
         <div class="bc-lbl">Quick Reactions</div>
-        <div class="bc-title">80 reactions, style-aware &amp; searchable</div>
-        <div class="bc-desc" style="margin-bottom:12px">20 reactions per style mode (Formal / Neutral / Casual / Gaming). Each card shows English, romaji, and Japanese. Type to search. Send via 💬 Bot Sends or 🔊 Bot Speaks instantly.</div>
+        <div class="bc-title">6 quick reactions, always in reach</div>
+        <div class="bc-desc" style="margin-bottom:12px">草 えー マジ? gg もう一回 待って &mdash; the 6 most-used responses shown as one-click buttons. Style-adaptive across Casual, Gaming, Formal, and Neutral modes. Send instantly via Bot Sends or Bot Speaks.</div>
         <div class="rx-chips">
           <span class="rx-chip">gg</span>
           <span class="rx-chip">行くぞ！</span>
@@ -1592,7 +1671,7 @@
             <div class="si-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 12 5 12 5 8 8 8 8 16 11 16 11 4 14 4 14 20 17 20 17 9 20 9 20 12 22 12"/></svg>
             </div>
-            <div class="si-text"><div class="si-role">STT</div><div class="si-name">WhisperX</div></div>
+            <div class="si-text"><div class="si-role">STT</div><div class="si-name">openai-whisper</div></div>
           </div>
         </div>
       </div>
@@ -1603,6 +1682,12 @@
         <div class="sl-cards">
           <div class="si" data-icon="meta">
             <div class="si-text"><div class="si-role">LLM</div><div class="si-name">Llama 3.3 70B</div></div>
+          </div>
+          <div class="si">
+            <div class="si-icon" style="opacity:.85">
+              <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            </div>
+            <div class="si-text"><div class="si-role">Alt. LLM</div><div class="si-name">Qwen2.5 72B</div></div>
           </div>
           <div class="si">
             <div class="si-icon">
@@ -1632,7 +1717,7 @@
             <div class="si-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
             </div>
-            <div class="si-text"><div class="si-role">TTS</div><div class="si-name">XTTS v2</div></div>
+            <div class="si-text"><div class="si-role">TTS</div><div class="si-name">edge-tts</div></div>
           </div>
           <div class="si" data-icon="google">
             <div class="si-text"><div class="si-role">Translation</div><div class="si-name">Google Translate</div></div>
@@ -1709,81 +1794,64 @@
     <div class="arch-wrap r" data-d="2">
       <div class="arch-label">System architecture &mdash; data flow</div>
 
-      <!-- Top: main 4-node flow -->
-      <div class="arch-flow">
+      <!-- 3-step journey: plain-language overview -->
+      <div class="arch-journey">
 
-        <!-- Node 1: Discord -->
-        <div class="arch-node an-js">
-          <span class="arch-node-ico">🎤</span>
-          <div class="arch-node-name">Discord Voice</div>
-          <div style="font-size:12px;font-family:var(--mono);color:rgba(255,255,255,.8);line-height:1.55;margin-top:8px">Per-speaker Opus stream &middot; VoiceReceiver API &middot; PCM decode</div>
-          <span class="arch-node-rt">Node.js 18 &middot; discord.js v14</span>
-        </div>
-
-        <!-- Conn 1: WS over SSH -->
-        <div class="arch-conn">
-          <div class="arch-conn-line">
-            <div class="arch-conn-dash"></div>
-            <div class="arch-conn-dash"></div>
-            <div class="arch-conn-arrow">&rarr;</div>
+        <!-- Step 01: Discord audio capture -->
+        <div class="arch-jstep an-js">
+          <div class="arch-jstep-num">01</div>
+          <div>
+            <div class="arch-jstep-headline">A friend speaks Japanese in Discord</div>
+            <div class="arch-jstep-desc">Each person&rsquo;s voice is captured as a separate stream &mdash; not mixed with others. Miwa listens only to the Discord call and forwards the audio over an encrypted connection to AMD&rsquo;s AI cloud for processing.</div>
+            <div class="arch-jstep-tech">Node.js 18 &middot; discord.js v14 &middot; @discordjs/voice &middot; per-speaker Opus stream &middot; SSH tunnel</div>
           </div>
-          <span class="arch-conn-badge cb-ssh">SSH tunnel</span>
-          <div class="arch-conn-lbl">WebSocket<br>8765 via SSH</div>
         </div>
 
-        <!-- Node 2: AMD MI300X FastAPI -->
-        <div class="arch-node an-py">
-          <span class="arch-node-ico">⚡</span>
-          <div class="arch-node-name">FastAPI Server</div>
-          <div style="font-size:12px;font-family:var(--mono);color:rgba(255,255,255,.8);line-height:1.55;margin-top:8px">AI pipeline &middot; STT &rarr; LLM &rarr; romaji &rarr; suggestions</div>
-          <span class="arch-node-rt">AMD MI300X &middot; ROCm 7.2</span>
-        </div>
-
-        <!-- Conn 2: WS back -->
-        <div class="arch-conn">
-          <div class="arch-conn-line">
-            <div class="arch-conn-dash"></div>
-            <div class="arch-conn-dash"></div>
-            <div class="arch-conn-arrow">&rarr;</div>
+        <div class="arch-jconn">
+          <div class="arch-jconn-track">
+            <div class="arch-jconn-vline"></div>
+            <div class="arch-jconn-arr">&#x2193;</div>
+            <div class="arch-jconn-vline"></div>
           </div>
-          <span class="arch-conn-badge cb-ws">WebSocket</span>
-          <div class="arch-conn-lbl">JSON packets<br>typed events</div>
+          <span class="arch-conn-badge cb-ssh">Encrypted SSH tunnel &rarr; AMD AI cloud</span>
         </div>
 
-        <!-- Node 3: Tauri Rust -->
-        <div class="arch-node an-rs">
-          <span class="arch-node-ico">🦀</span>
-          <div class="arch-node-name">Tauri Backend</div>
-          <div style="font-size:12px;font-family:var(--mono);color:rgba(255,255,255,.8);line-height:1.55;margin-top:8px">WS bridge &middot; always-on-top window &middot; transparent overlay</div>
-          <span class="arch-node-rt">Rust &middot; Tauri v2 &middot; 50 MB</span>
-        </div>
-
-        <!-- Conn 3: IPC -->
-        <div class="arch-conn">
-          <div class="arch-conn-line">
-            <div class="arch-conn-dash"></div>
-            <div class="arch-conn-dash"></div>
-            <div class="arch-conn-arrow">&rarr;</div>
+        <!-- Step 02: AI processing on AMD MI300X -->
+        <div class="arch-jstep an-py">
+          <div class="arch-jstep-num">02</div>
+          <div>
+            <div class="arch-jstep-headline">The AI cloud converts speech and translates it</div>
+            <div class="arch-jstep-desc">Speech recognition converts the audio to Japanese text. Google Translate returns an English result in under 100ms &mdash; shown to you immediately. A large language model then refines the translation to match your chosen style (formal, casual, or gaming slang). Three context-aware reply suggestions are generated based on the conversation.</div>
+            <div class="arch-jstep-tech">AMD MI300X &middot; 192 GB HBM3 &middot; openai-whisper STT &middot; Llama 3.3 70B FP16 &middot; vLLM 0.17.1 &middot; Google Translate &middot; CrewAI agents &middot; Qdrant memory</div>
           </div>
-          <span class="arch-conn-badge cb-ipc">Tauri IPC</span>
-          <div class="arch-conn-lbl">typed cmds<br>event bridge</div>
         </div>
 
-        <!-- Node 4: React UI -->
-        <div class="arch-node an-ts">
-          <span class="arch-node-ico">⛛️</span>
-          <div class="arch-node-name">React Overlay</div>
-          <div style="font-size:12px;font-family:var(--mono);color:rgba(255,255,255,.8);line-height:1.55;margin-top:8px">Speaker cards &middot; karaoke &middot; suggestions &middot; phrasebook</div>
-          <span class="arch-node-rt">React 19 &middot; TypeScript strict</span>
+        <div class="arch-jconn">
+          <div class="arch-jconn-track">
+            <div class="arch-jconn-vline"></div>
+            <div class="arch-jconn-arr">&#x2193;</div>
+            <div class="arch-jconn-vline"></div>
+          </div>
+          <span class="arch-conn-badge cb-ws">WebSocket JSON &rarr; local machine &middot; total &lt;800ms</span>
+        </div>
+
+        <!-- Step 03: Tauri overlay display -->
+        <div class="arch-jstep an-ts">
+          <div class="arch-jstep-num">03</div>
+          <div>
+            <div class="arch-jstep-headline">You see the translation floating above Discord</div>
+            <div class="arch-jstep-desc">A transparent window stays on top of your screen without covering Discord. You see the Japanese text, a romaji pronunciation guide so you can read it aloud, and the English translation. Select a suggested reply and the Discord bot delivers it &mdash; or tap &ldquo;I&rsquo;ll Speak&rdquo; to say it yourself using the phonetic guide.</div>
+            <div class="arch-jstep-tech">Tauri v2 &middot; Rust &middot; React 19 &middot; TypeScript strict &middot; Jotai &middot; Framer Motion &middot; transparent always-on-top window</div>
+          </div>
         </div>
 
       </div>
 
-      <!-- Bottom: AI pipeline zoom -->
-      <div class="arch-zoom-wrap">
+      <!-- AI pipeline detail — technical breakdown of step 02 -->
+      <div class="arch-zoom-wrap" style="margin-top:28px">
         <div class="arch-zoom-header">
-          <div class="arch-zoom-tag">↓ zoom &mdash; AI pipeline</div>
-          <div class="arch-zoom-name">FastAPI Server &mdash; AMD MI300X &middot; 192 GB HBM3</div>
+          <div class="arch-zoom-tag">Step 02 in detail</div>
+          <div class="arch-zoom-name">Inside the AI cloud &mdash; AMD MI300X &middot; 192 GB HBM3</div>
           <div class="arch-zoom-sub">Python &middot; ROCm 7.2 &middot; vLLM 0.17.1 &middot; PyTorch 2.6.0</div>
         </div>
         <div class="arch-zoom-body">
@@ -1791,7 +1859,7 @@
 
             <div class="arch-step">
               <div class="arch-step-num">STT</div>
-              <div class="arch-step-name">WhisperX</div>
+              <div class="arch-step-name">openai-whisper</div>
               <div class="arch-step-detail">PCM &rarr; Japanese text + word-level timestamps for karaoke</div>
               <span class="arch-step-time">&lt;150ms</span>
             </div>
@@ -1876,7 +1944,7 @@
       <div class="eng-dec">
         <div class="eng-dec-num">04</div>
         <div class="eng-dec-title">Per-speaker, not mixed audio</div>
-        <div class="eng-dec-body">Discord&rsquo;s VoiceReceiver provides separate Opus streams per user ID. Mixing destroys speaker identity before transcription. Each stream gets its own WhisperX task, enabling per-speaker karaoke cards and context-aware reply suggestions.</div>
+        <div class="eng-dec-body">Discord&rsquo;s VoiceReceiver provides separate Opus streams per user ID. Mixing destroys speaker identity before transcription. Each stream gets its own openai-whisper task, enabling per-speaker karaoke cards and context-aware reply suggestions.</div>
       </div>
 
       <div class="eng-dec">
@@ -1888,7 +1956,7 @@
       <div class="eng-dec">
         <div class="eng-dec-num">06</div>
         <div class="eng-dec-title">WebSocket streaming, not polling</div>
-        <div class="eng-dec-body">Karaoke word-by-word highlight needs word timestamps from WhisperX to stream in real-time. HTTP polling adds 100&ndash;500ms latency per word and cannot achieve sub-frame accuracy. WebSocket is the only correct architecture for this feature.</div>
+        <div class="eng-dec-body">Karaoke word-by-word highlight needs word timestamps from openai-whisper to stream in real-time. HTTP polling adds 100&ndash;500ms latency per word and cannot achieve sub-frame accuracy. WebSocket is the only correct architecture for this feature.</div>
       </div>
 
     </div>
@@ -1929,7 +1997,7 @@
       outCls: 'ptv-dim', hold: 1800
     },
     {
-      name: '02 — WhisperX STT',
+      name: '02 — openai-whisper STT',
       badge: '~150ms', fast: false,
       pkt: '日本語→',
       inText: 'PCM audio buffer (48 kHz, 960 ms window)',
