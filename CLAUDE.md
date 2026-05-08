@@ -74,7 +74,7 @@
 - ✅ Window snap-to-corner (double-click header) — Header.tsx handleSnapToCorner() + LogicalPosition
 - ✅ Number key shortcuts 1/2/3 for suggestion delivery — App.tsx useEffect
 - ✅ README.md — full professional README written
-- ✅ bot/tts.js — XTTS v2 stub with createTtsPlayer() + speak() + Day 5 uncomment wiring
+- ✅ bot/tts.js — edge-tts stub with createTtsPlayer() + speak() + Day 5 uncomment wiring
 - ✅ hf-space/README.md — HF Space YAML front matter (sdk: static, pinned: true)
 - ✅ hf-space/index.html — Full HF Space landing page:
     - Hero with Three.js/postprocessing hyperspeed WebGL animation
@@ -90,12 +90,12 @@
 ### Day 5 (May 8) — AMD Cloud Reconnect ☁️
 
 #### Non-cloud work (done locally May 7)
-- ✅ server/transcribe.py — WhisperX wrapper (stub-compatible, lazy-load)
+- ✅ server/transcribe.py — openai-whisper wrapper (stub-compatible, lazy-load)
 - ✅ server/memory.py — Qdrant vector store per speaker (lazy-load, graceful fallback)
 - ✅ server/suggest.py — CrewAI 3-agent pipeline (Analyst→Strategist→Writer) + direct vLLM + static fallback
-- ✅ server/tts.py — XTTS v2 synthesis wrapper (lazy-load, returns WAV bytes)
+- ✅ server/tts.py — edge-tts synthesis wrapper (lazy-load, returns MP3 bytes)
 - ✅ server/main.py — wired all 4 modules: transcribe(), memory_store/recall(), get_suggestions(), /tts endpoint
-- ✅ bot/tts.js — uncommented real XTTS wiring (POST /tts → WAV → AudioResource)
+- ✅ bot/tts.js — uncommented real edge-tts wiring (POST /tts → MP3 → AudioResource)
 - ✅ requirements.txt — added Day 5 deps (cloud-only deps commented out)
 - ✅ .env — added Day 5 env var keys (VLLM_URL, WHISPERX_DEVICE, TTS_DEVICE, QDRANT_URL, etc.)
 
@@ -106,7 +106,7 @@
 - ✅ Clone code: `git clone https://github.com/Mizunandayo/miwa.git /tmp/miwa && cp -r /tmp/miwa/server /app/server`
 - ✅ Fix openai pkg: `pip install "openai>=1.99.1,<2.25.0"` (container had 1.77.0, vLLM needs >=1.99.1)
 - ⬜ SSH tunnel WebSocket (ssh -N -L 8765:172.17.0.2:8765 root@129.212.188.94)
-- ⬜ pip install whisperx qdrant-client sentence-transformers crewai TTS
+- ⬜ pip install openai-whisper qdrant-client sentence-transformers crewai edge-tts
 - ⬜ docker run qdrant/qdrant
 - ⬜ End-to-end test full pipeline (whisper transcription, not stub)
 
@@ -137,7 +137,7 @@
 
 Real-time Discord voice translation overlay. When Japanese-speaking friends talk in a Discord voice call, Miwa:
 1. Captures their audio per-speaker (not mixed)
-2. Transcribes it (WhisperX on AMD MI300X)
+2. Transcribes it (openai-whisper on AMD MI300X)
 3. Shows Google Translate result instantly (<100ms)
 4. LLM refines translation to selected style (Formal/Neutral/Casual/Gaming)
 5. Generates romaji pronunciation
@@ -157,8 +157,8 @@ Target latency: **<800ms** end-to-end.
 - **Container IP:** `172.17.0.2` (Docker bridge — use for SSH tunnel target)
 - **Cost:** $1.99/hr, ~$39.63 credit balance remaining (~19.9hrs)
 - **SSH Key:** `$HOME\.ssh\miwa_amd` (private), `miwa_amd.pub` (public)
-- **SSH Command:** `ssh -i "$HOME\.ssh\miwa_amd" -o StrictHostKeyChecking=no root@129.212.188.94`
-- **SSH Tunnel:** `ssh -i "$HOME\.ssh\miwa_amd" -N -L 8765:172.17.0.2:8765 root@129.212.188.94`
+- **SSH Command:** `ssh -i "$HOME\.ssh\miwa_amd" -o StrictHostKeyChecking=no root@129.212.176.166`
+- **SSH Tunnel:** `ssh -i "$HOME\.ssh\miwa_amd" -N -L 8765:172.17.0.2:8765 root@129.212.176.166`
 
 ### Docker Container (vLLM)
 - Container name: `rocm`
@@ -237,7 +237,7 @@ Discord Voice Channel
     → per-user Opus audio stream
     → prism-media decodes to PCM
     → SSH tunnel WebSocket → AMD Cloud FastAPI (port 8000)
-      → WhisperX: PCM → Japanese text + word timestamps
+      → openai-whisper: PCM → Japanese text + word timestamps
       → Google Translate API: fast first-pass EN translation (shown immediately)
       → vLLM (Llama 3.3 70B): style-refined translation + 3 suggestions
       → pykakasi: romaji generation
@@ -265,7 +265,7 @@ miwa/
 │   └── tts.js            # Bot speaks / Bot sends delivery
 ├── server/
 │   ├── main.py           # FastAPI WebSocket server (runs on AMD cloud)
-│   ├── transcribe.py     # WhisperX wrapper
+│   ├── transcribe.py     # openai-whisper wrapper
 │   ├── translate.py      # Google Translate + vLLM translation
 │   ├── suggest.py        # CrewAI suggestion agent pipeline
 │   ├── romaji.py         # pykakasi romaji generator
@@ -365,7 +365,7 @@ miwa/
 | hf-space/ | ✅ DONE — README.md (HF YAML) + index.html (animated hero, demo, pipeline, AMD, features, stack, engineering) |
 | hf-space/index.html overlay sizing | ✅ TUNED — 3 resize iterations: -30% h + widen → +40% wide/-20% h → -30% w. Final: max-width:504px, grid 1fr 1fr (commits fa0c164, af00abf, 8496a85) |
 | bot/tts.js | ✅ DONE — pre-synthesis cache + Readable.fromWeb streaming (cache hit ~0ms, miss ~300ms) |
-| server/transcribe.py | ✅ DONE — WhisperX wrapper, lazy-load, hallucination filter |
+| server/transcribe.py | ✅ DONE — openai-whisper wrapper, lazy-load, hallucination filter |
 | server/memory.py | ✅ DONE — Qdrant vector store, lazy-load, graceful fallback |
 | server/suggest.py | ✅ DONE — CrewAI 3-agent + direct vLLM + static fallback |
 | server/tts.py | ✅ DONE — synthesize() + synthesize_stream() async generator for StreamingResponse |
@@ -380,7 +380,7 @@ miwa/
 | openai pkg in rocm container | ✅ FIXED — upgraded from 1.77.0 → >=1.99.1 (vLLM import was crashing) |
 | vLLM GPU util cap | ✅ FIXED — restart with --gpu-memory-utilization 0.80 (was 100%, OOM for Whisper) |
 | server code on cloud | ✅ DONE — cloned via /tmp/miwa, copied to /app/server/ |
-| WhisperX on cloud | ⬜ NOT YET INSTALLED (Day 6) |
+| openai-whisper on cloud | ⬜ NOT YET INSTALLED (Day 6) — `pip install openai-whisper ffmpeg` |
 | Qdrant container | ⬜ NOT YET STARTED (Day 6) |
 | CrewAI on cloud | ⬜ NOT YET INSTALLED (Day 6) |
 | edge-tts on cloud | ⬜ NOT YET INSTALLED (Day 6) — `pip install edge-tts` |

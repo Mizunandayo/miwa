@@ -1,8 +1,8 @@
 /**
- * bot/tts.js — XTTS v2 TTS delivery stub
+ * bot/tts.js — edge-tts delivery (Microsoft Neural TTS)
  *
- * Day 5 wiring plan:
- * 1. POST japanese text to server/tts.py → returns raw WAV bytes
+ * Wiring:
+ * 1. POST japanese text to server/tts.py → returns MP3 bytes (edge-tts)
  * 2. Convert bytes to Readable stream
  * 3. Wrap in AudioResource via @discordjs/voice
  * 4. Play on the guild's AudioPlayer

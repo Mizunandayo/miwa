@@ -7,7 +7,7 @@
  * - Framer Motion spring physics for enter/exit
  */
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { SpeakerState } from "../store/atoms";
 import KaraokeText from "./KaraokeText";
@@ -41,19 +41,8 @@ export default function SpeakerCard({ speaker, sendCommand }: SpeakerCardProps) 
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [romajiCopied, setRomajiCopied] = useState(false);
-  const [prevHadSuggestions, setPrevHadSuggestions] = useState(false);
 
-  // Auto-expand when suggestions arrive for the first time.
-  // Using a prev-state tracker avoids the dep-array trick and is explicit.
   const hasSuggestions = suggestions.length > 0;
-  useEffect(() => {
-    if (hasSuggestions && !prevHadSuggestions) {
-      setSuggestionsOpen(true);
-      setPrevHadSuggestions(true);
-    } else if (!hasSuggestions) {
-      setPrevHadSuggestions(false);
-    }
-  }, [hasSuggestions, prevHadSuggestions]);
 
   const handleRefresh = () => {
     if (refreshing) return;
