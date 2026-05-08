@@ -120,6 +120,9 @@ export default function QuickReplyBox({ sendCommand }: QuickReplyBoxProps) {
           value={inputValue}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
+          onPaste={(e) => e.stopPropagation()}
+          onCopy={(e) => e.stopPropagation()}
+          onCut={(e) => e.stopPropagation()}
           maxLength={300}
         />
         {loading && <span className="quick-reply-spinner">⟳</span>}

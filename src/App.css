@@ -1086,6 +1086,11 @@ kbd {
   transition: border-color 0.15s ease;
   user-select: text;
   -webkit-user-select: text;
+  cursor: text;
+}
+
+.quick-reply-input::-webkit-input-placeholder {
+  -webkit-user-select: none;
 }
 
 .quick-reply-input::placeholder {
