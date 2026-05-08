@@ -139,9 +139,9 @@ def recall(user_id: str, query: str, top_k: int = TOP_K) -> list[dict]:
         from qdrant_client.models import Filter, FieldCondition, MatchValue
 
         vector = _embed(query)
-        results = _qdrant.search(
+        results = _qdrant.query_points(
             collection_name=COLLECTION,
-            query_vector=vector,
+            query=vector,
             query_filter=Filter(
                 must=[
                     FieldCondition(
@@ -152,7 +152,7 @@ def recall(user_id: str, query: str, top_k: int = TOP_K) -> list[dict]:
             ),
             limit=min(top_k, 10),  # cap at 10 regardless of caller
             with_payload=True,
-        )
+        ).points
 
         memories = []
         for hit in results:
