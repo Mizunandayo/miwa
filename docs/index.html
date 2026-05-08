@@ -855,6 +855,67 @@
     .footer-links { display: flex; gap: 20px; }
     .footer-link { font-size: 13px; color: var(--muted2); text-decoration: none; transition: color 140ms; }
     .footer-link:hover { color: var(--text); }
+
+    /* ── MOBILE ── */
+    @media (max-width: 640px) {
+      /* Section spacing */
+      section { padding: 56px 0; }
+      .s-h2 { margin-bottom: 32px; }
+
+      /* Hero stats */
+      .hero-stat-row { gap: 24px; margin-top: 40px; padding-top: 24px; }
+      .hero-stat-num { font-size: 1.5rem; }
+
+      /* Pipeline — horizontal scroll so nodes don't crush */
+      .pipe-stages-row { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px; scrollbar-width: none; }
+      .pipe-stages-row::-webkit-scrollbar { display: none; }
+      .pipe-stage { min-width: 60px; }
+      .pipe-sname { font-size: 10px; }
+      .pipe-stime { font-size: 9px; padding: 2px 5px; }
+
+      /* Pipeline terminal bar — hide long title, wrap */
+      .pipe-term-bar { flex-wrap: wrap; gap: 4px; }
+      .pipe-term-title { display: none; }
+      .pipe-term-stage-lbl { font-size: 10px; }
+      .pipe-term-val { font-size: 12px; }
+      .ptv-jp { font-size: 13px; }
+
+      /* Latency legend */
+      .pfl-legend { gap: 8px; }
+      .pfl-item { font-size: 11px; }
+
+      /* AMD table */
+      .amd-table th, .amd-table td { padding: 10px 12px; font-size: 12px; }
+      .amd-table .col-feat { width: 90px; }
+
+      /* AMD hero name */
+      .amd-hero-name { font-size: 28px; }
+
+      /* Architecture diagram header */
+      .arch-zoom-header { flex-wrap: wrap; gap: 6px; }
+      .arch-zoom-sub { margin-left: 0; }
+      .arch-label { font-size: 11px; margin-bottom: 16px; }
+
+      /* Architecture legend */
+      .arch-legend { gap: 12px; }
+      .arch-leg-item { font-size: 12px; }
+
+      /* Engineering banner */
+      .eng-banner-claim { font-size: 22px; }
+      .eng-banner { padding: 20px; }
+
+      /* Demo copy title */
+      .demo-copy-title { font-size: 1.3rem; }
+
+      /* Footer */
+      .footer-row { flex-direction: column; align-items: flex-start; gap: 16px; }
+
+      /* Bento card padding */
+      .bc { padding: 20px; }
+
+      /* AMD adv cards */
+      .amd-adv { padding: 16px 14px; }
+    }
   </style>
 </head>
 <body>
