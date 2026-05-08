@@ -22,23 +22,10 @@ export default function StatsPanel() {
     // Don't render before first translation packet
     if (stats.lastUpdated === 0) return null;
 
-    const latencyColor =
-        stats.latencyMs < 400 ? "var(--green)"  :
-        stats.latencyMs < 800 ? "var(--amber)"  :
-        "var(--red)";
-
-
 
     
      return (
     <div className="stats-panel">
-      <span className="stats-item">
-        <span className="stats-label">⚡</span>
-        <span className="stats-value" style={{ color: latencyColor }}>
-          {stats.latencyMs}ms
-        </span>
-      </span>
-      <span className="stats-sep">·</span>
       <span className="stats-item">
         <span className="stats-label">WS</span>
         <span className={`stats-value stats-ws-${wsStatus}`}>{wsStatus}</span>
