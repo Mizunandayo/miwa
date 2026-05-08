@@ -1,0 +1,2233 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Miwa — Real-Time Discord Voice Translation</title>
+  <script type="importmap">
+  {"imports":{"three":"https://esm.sh/three@0.169.0","postprocessing":"https://esm.sh/postprocessing@6.36.4?external=three"}}
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    :root {
+      --bg:      #000000;
+      --bg1:     #0a0a0a;
+      --bg2:     #111111;
+      --surface: rgba(255,255,255,0.03);
+      --surface2: rgba(255,255,255,0.06);
+      --border:  rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.16);
+      --text:    rgba(255,255,255,0.92);
+      --muted:   rgba(255,255,255,0.75);
+      --muted2:  rgba(255,255,255,0.52);
+      --mono:    "Geist Mono","SF Mono","JetBrains Mono",ui-monospace,monospace;
+      --sans:    "Geist","SF Pro Display",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── NAV ── */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 40px;
+      height: 56px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0,0,0,0.72);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .nav-left { display: flex; align-items: center; gap: 36px; }
+    .nav-brand { font-size: 14px; font-weight: 700; letter-spacing: -.025em; }
+    .nav-links { display: flex; gap: 2px; }
+    .nav-link { font-size: 13px; color: var(--muted); text-decoration: none; padding: 5px 10px; border-radius: 5px; transition: color 140ms, background 140ms; }
+    .nav-link:hover { color: var(--text); background: var(--surface2); }
+    .nav-cta {
+      font-size: 13px; font-weight: 600; color: #000; background: #fff;
+      padding: 7px 16px; border-radius: 5px; text-decoration: none;
+      transition: opacity 140ms;
+    }
+    .nav-cta:hover { opacity: .82; }
+    @media (max-width: 640px) { .nav-links { display: none; } .nav { padding: 0 20px; } }
+
+    /* ── HERO ── */
+    /* ── HERO (VengenceUI style) ── */
+    .hero {
+      position: relative;
+      min-height: 100dvh;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+      text-align: center;
+      /* dot grid — visible in the center spotlight, fades at edges */
+      background-image: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+    #hyperspeed-canvas {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      opacity: 0.18;
+    }
+    .hero-overlay {
+      position: absolute; inset: 0; z-index: 1;
+      /* radial vignette: center clear → edges dark, creates spotlight on grid */
+      background: radial-gradient(ellipse 78% 62% at 50% 44%, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.97) 100%);
+    }
+    .hero-content {
+      position: relative; z-index: 2;
+      max-width: 900px; margin: 0 auto;
+      padding: 136px 40px 80px;
+      width: 100%;
+    }
+    @media (max-width: 640px) { .hero-content { padding: 110px 20px 60px; } }
+
+    /* Keyframes */
+    @keyframes heroUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes heroUpDim {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 0.32; transform: translateY(0); }
+    }
+    @keyframes pulse { 0%,100% { opacity:.9; } 50% { opacity:.3; } }
+
+    /* Badge — pill */
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 12px; font-family: var(--mono); letter-spacing: .06em;
+      color: var(--muted); border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      padding: 6px 16px 6px 12px; border-radius: 999px; margin-bottom: 40px;
+      animation: heroUp 0.8s cubic-bezier(.16,1,.3,1) 0.05s both;
+    }
+    .badge-dot { width: 5px; height: 5px; border-radius: 50%; background: #fff; opacity: .9; flex-shrink: 0; animation: pulse 2.4s ease-in-out infinite; }
+
+    /* Multi-line headline — dimmed middle like VengenceUI */
+    .hero-h1 {
+      font-size: clamp(3.2rem, 8vw, 6.4rem);
+      font-weight: 800; letter-spacing: -.055em; line-height: 0.97;
+      margin-bottom: 32px;
+    }
+    .hero-line { display: block; }
+    .hero-line:nth-child(1) { animation: heroUp    0.9s cubic-bezier(.16,1,.3,1) 0.15s both; }
+    .hero-line-dim           { animation: heroUpDim 0.9s cubic-bezier(.16,1,.3,1) 0.30s both; }
+    .hero-line:nth-child(3)  { animation: heroUp    0.9s cubic-bezier(.16,1,.3,1) 0.45s both; }
+
+    /* Subtitle */
+    .hero-sub {
+      font-size: clamp(1rem, 1.8vw, 1.2rem);
+      font-weight: 400; letter-spacing: -.015em; line-height: 1.6;
+      color: var(--muted); margin: 0 auto 28px; max-width: 500px;
+      animation: heroUp 0.9s cubic-bezier(.16,1,.3,1) 0.60s both;
+    }
+    .hero-desc {
+      font-size: 15px; color: var(--muted); line-height: 1.78;
+      max-width: 460px; margin: 0 auto 24px;
+      animation: heroUp 0.9s cubic-bezier(.16,1,.3,1) 0.68s both;
+    }
+    .hero-author {
+      display: flex; flex-direction: column; gap: 5px;
+      margin-bottom: 36px; align-items: center;
+      animation: heroUp 0.9s cubic-bezier(.16,1,.3,1) 0.74s both;
+    }
+    .hero-author-name { font-size: 14px; font-weight: 600; color: var(--text); }
+    .hero-author-hack { font-size: 13px; font-family: var(--mono); color: var(--muted2); }
+
+    /* CTAs */
+    .hero-ctas {
+      display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+      animation: heroUp 0.9s cubic-bezier(.16,1,.3,1) 0.80s both;
+    }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 600; color: #000; background: #fff;
+      padding: 11px 24px; border-radius: 999px; text-decoration: none;
+      transition: opacity 150ms, transform 150ms;
+    }
+    .btn-primary:hover { opacity: .84; transform: translateY(-1px); }
+    .btn-primary:active { transform: scale(.97); }
+    .btn-ghost {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 500; color: var(--muted);
+      background: transparent; border: 1px solid var(--border2);
+      padding: 11px 24px; border-radius: 999px; text-decoration: none;
+      transition: color 150ms, border-color 150ms, transform 150ms;
+    }
+    .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,.3); transform: translateY(-1px); }
+
+    /* Stats row */
+    .hero-stat-row {
+      display: flex; gap: 48px; flex-wrap: wrap; justify-content: center;
+      margin-top: 64px; padding-top: 40px;
+      border-top: 1px solid var(--border);
+      animation: heroUp 0.9s cubic-bezier(.16,1,.3,1) 0.95s both;
+    }
+    .hero-stat-num { font-size: 1.9rem; font-weight: 700; font-family: var(--mono); letter-spacing: -.04em; }
+    .hero-stat-lbl { font-size: 12px; font-family: var(--mono); color: var(--muted2); text-transform: uppercase; letter-spacing: .07em; margin-top: 4px; }
+
+    /* ── LAYOUT ── */
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 40px; }
+    @media (max-width: 640px) { .wrap { padding: 0 20px; } }
+    section { padding: 96px 0; border-top: 1px solid var(--border); position: relative; z-index: 1; }
+
+    .s-label { font-size: 12px; font-family: var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted2); margin-bottom: 16px; }
+    .s-h2 { font-size: clamp(1.6rem, 3vw, 2.4rem); font-weight: 700; letter-spacing: -.035em; line-height: 1.1; margin-bottom: 56px; }
+    .s-h2 em { font-style: normal; color: var(--muted); }
+
+    /* ── SCROLL REVEAL ── */
+    .r { opacity: 0; transform: translateY(16px); transition: opacity 600ms cubic-bezier(.16,1,.3,1), transform 600ms cubic-bezier(.16,1,.3,1); }
+    .r.in { opacity: 1; transform: none; }
+    .r[data-d="1"] { transition-delay: 80ms; }
+    .r[data-d="2"] { transition-delay: 160ms; }
+    .r[data-d="3"] { transition-delay: 240ms; }
+    .r[data-d="4"] { transition-delay: 320ms; }
+
+    /* ── PIPELINE ── */
+    /* ── PIPELINE (animated) ── */
+    .pipe-viz { margin-top: 40px; display: flex; flex-direction: column; gap: 16px; }
+
+    /* Stage nodes row */
+    .pipe-stages-row {
+      display: flex; align-items: flex-start;
+      padding: 0 4px; gap: 0;
+    }
+    .pipe-stage {
+      display: flex; flex-direction: column; align-items: center; gap: 5px;
+      flex: 0 0 auto; position: relative; z-index: 2; min-width: 72px;
+    }
+    .pipe-node {
+      width: 34px; height: 34px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.15);
+      background: rgba(255,255,255,.04);
+      transition: border-color .35s, background .35s, box-shadow .35s;
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    .pipe-node::after {
+      content: ''; position: absolute; inset: -4px; border-radius: 50%;
+      border: 1px solid transparent;
+      transition: border-color .35s;
+    }
+    .pipe-stage.active .pipe-node {
+      border-color: #3b9eff;
+      background: rgba(59,158,255,.18);
+      box-shadow: 0 0 18px rgba(59,158,255,.55), 0 0 40px rgba(59,158,255,.2);
+    }
+    .pipe-stage.active .pipe-node::after { border-color: rgba(59,158,255,.25); }
+    .pipe-stage.passed .pipe-node { border-color: rgba(74,222,128,.5); background: rgba(74,222,128,.08); }
+
+    .pipe-node-ico { font-size: 13px; line-height: 1; }
+    .pipe-num { font-size: 10px; font-family: var(--mono); color: rgba(255,255,255,.35); font-weight: 700; letter-spacing: .04em; }
+    .pipe-stage.active .pipe-num { color: #3b9eff; }
+    .pipe-stage.passed .pipe-num { color: rgba(74,222,128,.7); }
+    .pipe-sname { font-size: 11px; font-weight: 600; text-align: center; line-height: 1.3; color: rgba(255,255,255,.45); }
+    .pipe-stage.active .pipe-sname { color: #fff; }
+    .pipe-stage.passed .pipe-sname { color: rgba(255,255,255,.6); }
+    .pipe-stime { font-size: 10px; font-family: var(--mono); padding: 2px 7px; border-radius: 4px; background: rgba(255,255,255,.05); color: rgba(255,255,255,.3); border: 1px solid transparent; }
+    .pipe-stage.active .pipe-stime { background: rgba(59,158,255,.12); color: #3b9eff; border-color: rgba(59,158,255,.25); }
+
+    /* Connector segments between nodes */
+    .pipe-cseg {
+      flex: 1; height: 2px; background: rgba(255,255,255,.07);
+      margin-top: 16px; position: relative; overflow: hidden; min-width: 12px;
+    }
+    .pipe-cseg::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(90deg, #4ade80, rgba(59,158,255,.6));
+      transform: translateX(-101%);
+      transition: transform .5s ease;
+    }
+    .pipe-cseg.filled::after { transform: translateX(0); }
+
+    /* Track: flowing chars + packet */
+    .pipe-track {
+      position: relative; height: 40px;
+      background: rgba(255,255,255,.02); border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.06); overflow: hidden;
+    }
+    .pipe-track-glow {
+      position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(59,158,255,.04), transparent);
+      animation: track-shimmer 3s linear infinite;
+    }
+    @keyframes track-shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+    /* Flowing Japanese character particles */
+    .pipe-char {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      font-size: 14px; font-weight: 600;
+      animation: pipe-char-flow linear infinite;
+      pointer-events: none;
+    }
+    @keyframes pipe-char-flow {
+      from { left: -30px; opacity: 0; }
+      8%   { opacity: 1; }
+      88%  { opacity: 1; }
+      to   { left: calc(100% + 30px); opacity: 0; }
+    }
+
+    /* Animated packet */
+    .pipe-packet {
+      position: absolute; top: 50%; transform: translate(-50%, -50%);
+      height: 28px; padding: 0 12px;
+      background: rgba(59,158,255,.22); border: 1px solid rgba(59,158,255,.7);
+      border-radius: 6px; display: flex; align-items: center;
+      font-size: 11px; font-family: var(--mono); color: #fff; font-weight: 600;
+      white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis;
+      transition: left .7s cubic-bezier(.4,0,.2,1);
+      box-shadow: 0 0 16px rgba(59,158,255,.45), 0 0 4px rgba(59,158,255,.8);
+      z-index: 5;
+    }
+
+    /* Terminal output panel */
+    .pipe-terminal {
+      background: #050505; border: 1px solid rgba(59,158,255,.2);
+      border-radius: 12px; overflow: hidden; font-family: var(--mono);
+    }
+    .pipe-term-bar {
+      display: flex; align-items: center; gap: 8px; padding: 9px 14px 8px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      background: rgba(59,158,255,.04);
+    }
+    .pipe-term-dots { display: flex; gap: 5px; }
+    .pipe-term-dots span { width: 8px; height: 8px; border-radius: 50%; }
+    .pipe-term-dots span:nth-child(1) { background: #ff5f57; }
+    .pipe-term-dots span:nth-child(2) { background: #febc2e; }
+    .pipe-term-dots span:nth-child(3) { background: #28c840; }
+    .pipe-term-title {
+      flex: 1; font-size: 11px; color: rgba(255,255,255,.4); text-align: center; letter-spacing: .04em;
+    }
+    .pipe-term-stage-lbl { font-size: 11px; font-weight: 700; color: #3b9eff; letter-spacing: .04em; }
+    .pipe-term-badge {
+      font-size: 10px; padding: 2px 8px; border-radius: 4px;
+      font-weight: 600; border: 1px solid;
+    }
+    .pipe-term-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-height: 90px; }
+    .pipe-term-row { display: flex; align-items: flex-start; gap: 12px; }
+    .pipe-term-key {
+      font-size: 10px; font-weight: 700; letter-spacing: .08em; padding: 2px 7px;
+      border-radius: 3px; flex-shrink: 0; margin-top: 2px;
+    }
+    .ptk-in  { background: rgba(255,255,255,.07); color: rgba(255,255,255,.45); }
+    .ptk-out { background: rgba(74,222,128,.12); color: #4ade80; }
+    .pipe-term-val {
+      font-size: 13px; color: rgba(255,255,255,.8); line-height: 1.65;
+      white-space: pre-wrap; word-break: break-word;
+    }
+    .ptv-jp  { font-size: 16px; font-weight: 500; color: #fff; font-family: sans-serif; }
+    .ptv-dim { color: rgba(255,255,255,.4); }
+    .pipe-cursor {
+      display: inline-block; width: 7px; height: 14px;
+      background: #3b9eff; vertical-align: middle; margin-left: 1px;
+      animation: pipe-blink .65s step-end infinite;
+    }
+    @keyframes pipe-blink { 50% { opacity: 0; } }
+
+    /* latency bar */
+    .pfl { margin-top: 0; }
+    .pfl-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+    .pfl-htitle { font-size: 12px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted2); }
+    .pfl-htotal { font-size: 12px; font-family: var(--mono); color: var(--muted); }
+    .pfl-track { display: flex; height: 20px; border-radius: 4px; overflow: hidden; gap: 2px; background: rgba(255,255,255,.03); }
+    .pfl-s1 { background: rgba(255,255,255,.82); min-width: 5px; width: .7%; border-radius: 3px 0 0 3px; }
+    .pfl-s2 { background: rgba(255,255,255,.28); width: 25%; }
+    .pfl-s3 { background: rgba(255,255,255,.6);  width: 12.5%; }
+    .pfl-s4 { background: rgba(255,255,255,.11); flex: 1; }
+    .pfl-s5 { background: rgba(255,255,255,.78); min-width: 5px; width: 2.5%; border-radius: 0 3px 3px 0; }
+    .pfl-axis { display: flex; justify-content: space-between; margin-top: 7px; }
+    .pfl-axis span { font-size: 11px; font-family: var(--mono); color: var(--muted2); }
+    .pfl-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 16px; }
+    .pfl-item { display: flex; align-items: center; gap: 7px; font-size: 12px; font-family: var(--mono); color: var(--muted); }
+    .pfl-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+    .pfl-dot-1 { background: rgba(255,255,255,.82); }
+    .pfl-dot-2 { background: rgba(255,255,255,.28); }
+    .pfl-dot-3 { background: rgba(255,255,255,.6); }
+    .pfl-dot-4 { background: rgba(255,255,255,.11); border: 1px solid rgba(255,255,255,.2); }
+    .pfl-dot-5 { background: rgba(255,255,255,.78); }
+
+    /* ── BENTO FEATURES ── */
+    .bento { display: grid; grid-template-columns: repeat(12,1fr); gap: 8px; }
+    @media (max-width: 768px) { .bento > * { grid-column: 1/-1 !important; grid-row: auto !important; } }
+    .bc {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+      padding: 28px; position: relative; overflow: hidden;
+      transition: background 160ms, border-color 160ms;
+    }
+    .bc:hover { background: var(--surface2); border-color: var(--border2); }
+    .bc-a { grid-column: span 7; }
+    .bc-b { grid-column: span 5; grid-row: span 2; }
+    .bc-c { grid-column: span 4; }
+    .bc-d { grid-column: span 3; }
+    .bc-e { grid-column: span 5; }
+    .bc-f { grid-column: span 4; }
+    .bc-g { grid-column: span 3; }
+    .bc-lbl { font-size: 11px; font-family: var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted2); margin-bottom: 12px; }
+    .bc-title { font-size: 16px; font-weight: 600; letter-spacing: -.02em; margin-bottom: 8px; line-height: 1.3; }
+    .bc-desc { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+    .tp-list { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+    .tp-row  { display: flex; align-items: center; gap: 10px; }
+    .tp-lbl  { font-size: 12px; font-family: var(--mono); color: var(--muted); width: 72px; flex-shrink: 0; }
+    .tp-track { flex: 1; height: 4px; background: rgba(255,255,255,.06); border-radius: 2px; overflow: hidden; }
+    .tp-bar  { height: 100%; border-radius: 2px; }
+    .tp-bar.gt  { width: 18%; background: #fff; }
+    .tp-bar.llm { width: 86%; background: rgba(255,255,255,.5); }
+    .tp-t { font-size: 12px; font-family: var(--mono); color: var(--muted2); width: 52px; text-align: right; flex-shrink: 0; }
+
+    .lb-wrap { display: flex; align-items: baseline; gap: 4px; margin-top: 18px; }
+    .lb-num  { font-size: 3rem; font-weight: 700; font-family: var(--mono); letter-spacing: -.05em; line-height: 1; }
+    .lb-unit { font-size: 1rem; font-family: var(--mono); color: var(--muted); }
+    .lb-sub  { font-size: 13px; color: var(--muted2); margin-top: 6px; }
+
+    kbd { font-family: var(--mono); font-size: 12px; padding: 3px 8px; background: var(--surface2); border: 1px solid var(--border2); border-bottom-width: 2px; border-radius: 4px; }
+    .kbd-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 16px; align-items: center; }
+    .kbd-sep { font-size: 11px; color: var(--muted2); }
+
+    .rx-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 14px; }
+    .rx-chip  { font-size: 14px; padding: 5px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; color: var(--muted); }
+
+    /* ── STACK ── */
+    /* AMD featured card */
+    .si-feat {
+      display: flex; align-items: center; gap: 24px; padding: 24px 28px;
+      border-radius: 8px; background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.16); margin-bottom: 8px;
+      transition: border-color 160ms;
+    }
+    .si-feat:hover { border-color: rgba(255,255,255,.28); }
+    @media (max-width: 640px) { .si-feat { flex-direction: column; align-items: flex-start; gap: 14px; } }
+    .si-feat-ico { width: 36px; height: 36px; flex-shrink: 0; }
+    .si-feat-ico svg { width: 36px; height: 36px; display: block; }
+    .si-feat-body { flex: 1; min-width: 0; }
+    .si-feat-eyebrow { font-size: 11px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--muted2); margin-bottom: 5px; }
+    .si-feat-name { font-size: 20px; font-weight: 700; letter-spacing: -.04em; line-height: 1; margin-bottom: 7px; }
+    .si-feat-desc { font-size: 13px; font-family: var(--mono); color: var(--muted); line-height: 1.6; }
+    .si-feat-pills { display: flex; gap: 6px; flex-wrap: wrap; flex-shrink: 0; }
+    .si-feat-pill {
+      font-size: 11px; font-family: var(--mono); padding: 5px 11px;
+      border-radius: 4px; border: 1px solid rgba(255,255,255,.12); color: var(--muted);
+      white-space: nowrap;
+    }
+    /* Layer rows */
+    .stack-layers { display: flex; flex-direction: column; }
+    .stack-layer {
+      display: grid; grid-template-columns: 128px 1fr;
+      gap: 24px; padding: 18px 0; border-top: 1px solid var(--border);
+      align-items: start;
+    }
+    @media (max-width: 580px) { .stack-layer { grid-template-columns: 1fr; gap: 10px; } }
+    .sl-cat {
+      font-size: 12px; font-family: var(--mono); letter-spacing: .06em;
+      text-transform: uppercase; color: var(--muted2); padding-top: 4px; line-height: 1.4;
+    }
+    .sl-cards { display: flex; flex-wrap: wrap; gap: 5px; }
+    /* Tech card pill */
+    .si {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px; border-radius: 6px;
+      background: var(--surface); border: 1px solid var(--border);
+      transition: background 160ms, border-color 160ms;
+    }
+    .si:hover { background: var(--surface2); border-color: var(--border2); }
+    .si-icon { width: 16px; height: 16px; flex-shrink: 0; opacity: .78; display: flex; align-items: center; justify-content: center; }
+    .si-icon svg, .si-icon span, .si-icon img { display: block; width: 16px; height: 16px; }
+    .si-text {}
+    .si-role { font-size: 10px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted2); line-height: 1; margin-bottom: 3px; }
+    .si-name { font-size: 13px; font-weight: 600; letter-spacing: -.015em; line-height: 1; }
+
+    /* ── DEMO PREVIEW ── */
+    .demo-outer { display: flex; justify-content: center; }
+    /* Simulated Tauri window — matches actual app */
+    .demo-frame {
+      width: 100%; max-width: 504px;
+      background: transparent;
+      border-radius: 16px;
+      overflow: hidden;
+      filter: drop-shadow(0 32px 80px rgba(0,0,0,.75));
+      display: flex; flex-direction: column; gap: 8px;
+      padding: 10px;
+      background: rgba(5,5,5,.94);
+      border: 1px solid rgba(255,255,255,.10);
+    }
+    /* ── Header (matches real .header) ── */
+    .demo-header {
+      background: rgba(5,5,5,.88);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .demo-drag-row {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .demo-drag-dots {
+      width: 16px; height: 10px;
+      background-image: radial-gradient(circle, rgba(255,255,255,.28) 1px, transparent 1px);
+      background-size: 4px 4px;
+      flex-shrink: 0;
+    }
+    .demo-app-name {
+      font-size: 13px; font-weight: 600; letter-spacing: .02em; color: #fff;
+    }
+    .demo-status {
+      display: flex; align-items: center; gap: 5px;
+      margin-left: auto;
+    }
+    .demo-status-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: #22c55e;
+    }
+    .demo-status-text {
+      font-size: 10px; font-family: var(--mono); color: rgba(255,255,255,.55);
+    }
+    /* style mode buttons row */
+    .demo-style-row { display: flex; gap: 5px; }
+    .demo-sb {
+      flex: 1; padding: 6px 0; font-size: 11px; font-weight: 500;
+      border-radius: 7px; border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.04); color: rgba(255,255,255,.55);
+      text-align: center;
+    }
+    .demo-sb.active {
+      background: rgba(59,158,255,.15); border-color: rgba(59,158,255,.4);
+      color: #3b9eff;
+    }
+    /* ── Call info strip ── */
+    .demo-call-strip {
+      background: rgba(5,5,5,.8);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .demo-call-guild { font-size: 11px; flex-shrink: 0; }
+    .demo-call-server {
+      font-size: 10px; font-family: var(--mono); color: #3b9eff;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px;
+    }
+    .demo-call-sep { font-size: 10px; color: rgba(59,158,255,.4); flex-shrink: 0; }
+    .demo-call-channel {
+      font-size: 10px; font-family: var(--mono); color: rgba(255,255,255,.55);
+    }
+    .demo-call-count {
+      font-size: 10px; font-family: var(--mono); color: rgba(255,255,255,.28);
+      margin-left: auto; white-space: nowrap;
+    }
+    /* ── Speaker card (matches real .speaker-card) ── */
+    .demo-speaker {
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 12px; padding: 14px;
+      display: flex; flex-direction: column; gap: 10px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.03), 0 4px 20px rgba(0,0,0,.45);
+    }
+    /* card header row */
+    .demo-card-head { display: flex; align-items: center; gap: 10px; }
+    .demo-avatar-wrap { position: relative; flex-shrink: 0; }
+    .demo-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg,#5865f2,#eb459e);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; color: #fff;
+      border: 1.5px solid rgba(255,255,255,.08);
+    }
+    @keyframes demo-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.75)} }
+    .demo-speaking-dot {
+      position: absolute; bottom: -1px; right: -1px;
+      width: 9px; height: 9px; border-radius: 50%;
+      background: #22c55e; border: 2px solid #050505;
+      animation: demo-pulse 1s ease-in-out infinite;
+    }
+    .demo-card-meta { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; }
+    .demo-username { font-size: 12px; font-weight: 600; color: #fff; }
+    .demo-source-icon { font-size: 12px; line-height: 1; }
+    .demo-badge {
+      font-size: 9px; font-family: var(--mono); font-weight: 700;
+      padding: 2px 5px; border-radius: 4px; letter-spacing: .06em; flex-shrink: 0;
+    }
+    .demo-badge-gt { background: rgba(245,158,11,.12); color: #f59e0b; border: 1px solid rgba(245,158,11,.2); }
+    .demo-badge-ai { background: rgba(59,158,255,.15); color: #3b9eff; border: 1px solid rgba(59,158,255,.4); }
+    /* card body */
+    .demo-card-body { display: flex; flex-direction: column; gap: 6px; }
+    .demo-jp {
+      font-size: 16px; font-weight: 500; color: #fff;
+      line-height: 1.45; letter-spacing: .01em;
+    }
+    .demo-jp .hl {
+      background: rgba(255,255,255,.18); border-radius: 3px; padding: 0 3px;
+    }
+    .demo-romaji {
+      font-size: 11px; font-family: var(--mono);
+      color: rgba(255,255,255,.28); letter-spacing: .04em;
+    }
+    .demo-en { font-size: 13px; color: rgba(255,255,255,.55); line-height: 1.45; }
+    /* suggestions section */
+    .demo-sugs {
+      border-top: 1px solid rgba(255,255,255,.08);
+      padding-top: 10px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .demo-sugs-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .demo-sugs-lbl {
+      font-size: 10px; font-family: var(--mono); color: rgba(255,255,255,.28);
+      text-transform: uppercase; letter-spacing: .08em;
+    }
+    .demo-sugs-refresh {
+      font-size: 12px; color: rgba(255,255,255,.28); line-height: 1;
+    }
+    .demo-sug {
+      background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 10px; padding: 10px 10px 8px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .demo-sug-top {
+      display: flex; align-items: flex-start; gap: 10px;
+    }
+    .demo-sug-num {
+      width: 17px; height: 17px; border-radius: 4px; flex-shrink: 0;
+      background: rgba(59,158,255,.15); color: #3b9eff;
+      font-size: 10px; font-weight: 700; font-family: var(--mono);
+      display: flex; align-items: center; justify-content: center; margin-top: 2px;
+    }
+    .demo-sug-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+    .demo-sug-jp { font-size: 13px; font-weight: 500; color: #fff; }
+    .demo-sug-en { font-size: 11px; color: rgba(255,255,255,.55); }
+    .demo-sug-romaji { font-size: 10px; font-family: var(--mono); color: rgba(255,255,255,.28); }
+    .demo-sug-btns { display: flex; gap: 5px; }
+    .demo-sug-btn {
+      flex: 1; padding: 5px 6px; font-size: 10px; font-weight: 500;
+      border-radius: 6px; border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.04); color: rgba(255,255,255,.55);
+      text-align: center; white-space: nowrap;
+    }
+    .demo-sug-btn.speak { border-color: rgba(59,158,255,.35); color: #3b9eff; background: rgba(59,158,255,.10); }
+    .demo-sug-btn.send  { border-color: rgba(34,197,94,.3);  color: #22c55e; background: rgba(34,197,94,.08); }
+    .demo-sug-btn.say   { border-color: rgba(245,158,11,.3); color: #f59e0b; background: rgba(245,158,11,.08); }
+    /* Quick reactions */
+    .demo-reactions {
+      display: flex; gap: 6px; flex-wrap: wrap; padding: 2px 0;
+    }
+    .demo-react {
+      padding: 6px 13px; font-size: 12px; font-weight: 500;
+      color: rgba(255,255,255,.55);
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 20px; white-space: nowrap;
+    }
+    /* Quick reply box */
+    .demo-qr {
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 10px; padding: 10px 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .demo-qr-input {
+      flex: 1; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 6px; padding: 7px 12px; font-size: 12px;
+      font-family: var(--mono); color: rgba(255,255,255,.4);
+    }
+    .demo-qr-hint {
+      font-size: 10px; font-family: var(--mono); color: rgba(255,255,255,.28);
+      white-space: nowrap;
+    }
+    /* resize nub */
+    .demo-nub {
+      height: 6px; display: flex; align-items: center; justify-content: center;
+    }
+    .demo-nub-line {
+      width: 32px; height: 3px; border-radius: 2px;
+      background: rgba(255,255,255,.08);
+    }
+    .demo-caption {
+      text-align: center; font-size: 12px; font-family: var(--mono);
+      color: var(--muted2); margin-top: 16px;
+    }
+    /* 2-col layout for demo section */
+    .demo-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+    @media (max-width: 860px) { .demo-layout { grid-template-columns: 1fr; } }
+    .demo-copy { }
+    .demo-copy-title { font-size: clamp(1.4rem,2.5vw,2rem); font-weight: 700; letter-spacing: -.03em; line-height: 1.15; margin-bottom: 20px; }
+    .demo-copy-title em { font-style: normal; color: var(--muted); }
+    .demo-feature-list { display: flex; flex-direction: column; gap: 14px; margin-top: 28px; }
+    .demo-feat {
+      display: flex; gap: 12px; align-items: flex-start;
+    }
+    .demo-feat-ico {
+      width: 32px; height: 32px; border-radius: 7px; flex-shrink: 0;
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .demo-feat-ico svg { width: 15px; height: 15px; opacity: .7; }
+    .demo-feat-body { }
+    .demo-feat-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .demo-feat-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* ── WHY MI300X ── */
+    /* Hero banner */
+    .amd-hero {
+      display: flex; align-items: center; justify-content: space-between; gap: 32px;
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.18);
+      border-radius: 12px; padding: 32px 36px; margin-bottom: 12px;
+    }
+    @media (max-width: 760px) { .amd-hero { flex-direction: column; align-items: flex-start; gap: 24px; } }
+    .amd-hero-tag { font-size: 11px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .12em; color: #4ade80; margin-bottom: 8px; }
+    .amd-hero-name { font-size: 36px; font-weight: 800; letter-spacing: -.06em; line-height: 1; margin-bottom: 6px; }
+    .amd-hero-sub { font-size: 12px; font-family: var(--mono); color: var(--muted2); }
+    .amd-hero-stats { display: flex; gap: 40px; flex-shrink: 0; }
+    @media (max-width: 560px) { .amd-hero-stats { gap: 24px; flex-wrap: wrap; } }
+    .amd-hs { text-align: center; }
+    .amd-hs-num { font-size: 30px; font-weight: 700; font-family: var(--mono); letter-spacing: -.05em; color: #4ade80; line-height: 1; }
+    .amd-hs-num em { font-style: normal; font-size: .52em; opacity: .65; font-weight: 500; }
+    .amd-hs-lbl { font-size: 10px; font-family: var(--mono); color: var(--muted2); margin-top: 5px; text-transform: uppercase; letter-spacing: .08em; }
+    /* Comparison table */
+    .amd-table-wrap { margin-bottom: 12px; overflow-x: auto; border-radius: 10px; border: 1px solid rgba(255,255,255,.1); }
+    .amd-table { width: 100%; border-collapse: collapse; }
+    .amd-table th, .amd-table td { padding: 14px 20px; text-align: left; border-bottom: 1px solid rgba(255,255,255,.06); font-size: 13px; }
+    .amd-table tbody tr:last-child td { border-bottom: none; }
+    .amd-table th { font-size: 11px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted2); font-weight: 600; background: rgba(255,255,255,.02); }
+    .amd-table .col-feat { font-family: var(--mono); font-size: 12px; color: var(--muted); width: 130px; }
+    .amd-table thead .col-feat { color: transparent; }
+    .amd-table .col-mi { background: rgba(74,222,128,.04); border-left: 1px solid rgba(74,222,128,.15); border-right: 1px solid rgba(74,222,128,.15); }
+    .amd-table thead .col-mi { border-top: none; }
+    .amd-table tbody tr:last-child .col-mi { border-bottom: none; }
+    .amd-table .col-mi-head { color: #fff; font-weight: 700; font-family: var(--sans, sans-serif); font-size: 13px; text-transform: none; letter-spacing: -.01em; }
+    .amd-mi-badge { display: inline-block; font-size: 9px; font-family: var(--mono); color: #4ade80; border: 1px solid rgba(74,222,128,.35); border-radius: 4px; padding: 1px 6px; margin-left: 6px; text-transform: uppercase; letter-spacing: .08em; vertical-align: middle; }
+    .val-bad  { color: var(--muted2); }
+    .val-good { color: #4ade80; font-weight: 600; }
+    .amd-table .val-good::before { content: '✓ '; opacity: .7; }
+    /* Advantage cards — 4-col strip */
+    .amd-advantage { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    @media (max-width: 880px) { .amd-advantage { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 480px) { .amd-advantage { grid-template-columns: 1fr; } }
+    .amd-adv {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 20px 18px;
+      transition: background 160ms, border-color 160ms;
+    }
+    .amd-adv:hover { background: var(--surface2); border-color: var(--border2); }
+    .amd-adv-ico { width: 26px; height: 26px; margin-bottom: 14px; opacity: .55; }
+    .amd-adv-ico svg { width: 26px; height: 26px; }
+    .amd-adv-title { font-size: 13px; font-weight: 700; letter-spacing: -.01em; margin-bottom: 6px; }
+    .amd-adv-desc { font-size: 12px; color: var(--muted); line-height: 1.65; }
+
+    /* ── ENGINEERING DEPTH ── */
+    .eng-banner {
+      display: flex; align-items: center; justify-content: space-between; gap: 32px;
+      background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.1);
+      border-radius: 12px; padding: 28px 32px; margin-bottom: 48px;
+    }
+    @media (max-width: 700px) { .eng-banner { flex-direction: column; align-items: flex-start; gap: 20px; } }
+    .eng-banner-tag { font-size: 11px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--muted2); margin-bottom: 8px; }
+    .eng-banner-claim { font-size: 28px; font-weight: 800; letter-spacing: -.05em; line-height: 1.1; margin-bottom: 8px; }
+    .eng-banner-sub { font-size: 13px; font-family: var(--mono); color: var(--muted); }
+    .eng-lang-strip { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+    .eng-lang { display: flex; align-items: center; gap: 9px; font-size: 12px; font-family: var(--mono); color: var(--muted); }
+    .eng-lang-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    /* Architecture diagram */
+    /* Architecture diagram — visual flow */
+    .arch-wrap {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 32px; margin-bottom: 12px; overflow: hidden;
+    }
+    .arch-label { font-size: 12px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .1em; color: rgba(255,255,255,.7); margin-bottom: 28px; }
+    /* Main flow — horizontal pipeline */
+    .arch-flow { display: flex; align-items: center; gap: 0; overflow-x: auto; padding-bottom: 4px; }
+    .arch-node {
+      flex-shrink: 0; min-width: 130px; max-width: 160px; flex: 1;
+      border-radius: 10px; padding: 18px 16px; text-align: center;
+      border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04);
+      transition: border-color 160ms;
+    }
+    .arch-node:hover { border-color: rgba(255,255,255,.28); }
+    .arch-node-ico { font-size: 26px; line-height: 1; margin-bottom: 12px; display: block; }
+    .arch-node-name { font-size: 15px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 4px; }
+    .arch-node-rt {
+      display: inline-block; margin-top: 10px;
+      font-size: 11px; font-family: var(--mono); padding: 3px 8px;
+      border-radius: 3px; border: 1px solid rgba(255,255,255,.15); color: rgba(255,255,255,.75);
+    }
+    /* Color accents per runtime */
+    .an-js  { border-color: rgba(247,223,30,.35);  background: rgba(247,223,30,.06); }
+    .an-js .arch-node-rt  { border-color: rgba(247,223,30,.3);  color: rgba(247,223,30,.9); }
+    .an-py  { border-color: rgba(74,222,128,.38);  background: rgba(74,222,128,.07); }
+    .an-py .arch-node-rt  { border-color: rgba(74,222,128,.3);  color: rgba(74,222,128,.95); }
+    .an-rs  { border-color: rgba(222,165,132,.38); background: rgba(222,165,132,.06); }
+    .an-rs .arch-node-rt  { border-color: rgba(222,165,132,.3); color: rgba(222,165,132,.9); }
+    .an-ts  { border-color: rgba(49,120,198,.38);  background: rgba(49,120,198,.07); }
+    .an-ts .arch-node-rt  { border-color: rgba(49,120,198,.3);  color: rgba(96,165,250,.95); }
+    /* Arrow connector between nodes */
+    .arch-conn {
+      flex-shrink: 0; display: flex; flex-direction: column; align-items: center;
+      gap: 4px; padding: 0 8px;
+    }
+    .arch-conn-line {
+      display: flex; align-items: center; gap: 3px;
+    }
+    .arch-conn-dash {
+      width: 20px; height: 1px; background: rgba(255,255,255,.18);
+    }
+    .arch-conn-arrow {
+      font-size: 16px; color: rgba(255,255,255,.55); line-height: 1;
+    }
+    .arch-conn-lbl {
+      font-size: 11px; font-family: var(--mono); color: rgba(255,255,255,.65);
+      white-space: nowrap; text-align: center; line-height: 1.4;
+    }
+    .arch-conn-badge {
+      font-size: 11px; font-family: var(--mono); padding: 3px 7px;
+      border-radius: 3px; white-space: nowrap; font-weight: 600;
+    }
+    .cb-ssh  { background: rgba(250,204,21,.15);  border: 1px solid rgba(250,204,21,.35);  color: rgba(250,204,21,.95); }
+    .cb-ws   { background: rgba(96,165,250,.13);  border: 1px solid rgba(96,165,250,.35);   color: rgba(96,165,250,.95); }
+    .cb-ipc  { background: rgba(222,165,132,.13); border: 1px solid rgba(222,165,132,.35);  color: rgba(222,165,132,.95); }
+    /* AI pipeline internals zoom */
+    .arch-zoom-wrap {
+      margin-top: 24px;
+      border: 1px solid rgba(74,222,128,.18); border-radius: 10px;
+      background: rgba(74,222,128,.03); overflow: hidden;
+    }
+    .arch-zoom-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 18px;
+      border-bottom: 1px solid rgba(74,222,128,.12);
+      background: rgba(74,222,128,.04);
+    }
+    .arch-zoom-tag { font-size: 12px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .08em; color: rgba(74,222,128,.9); font-weight: 600; }
+    .arch-zoom-name { font-size: 14px; font-weight: 700; letter-spacing: -.02em; }
+    .arch-zoom-sub { font-size: 12px; font-family: var(--mono); color: rgba(255,255,255,.7); margin-left: auto; }
+    .arch-zoom-body { padding: 20px; overflow-x: auto; }
+    .arch-pipe { display: flex; align-items: stretch; gap: 0; min-width: 600px; }
+    .arch-step {
+      flex: 1; min-width: 120px;
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1);
+      border-radius: 8px; padding: 16px 14px; position: relative;
+    }
+    .arch-step-fast { border-color: rgba(255,255,255,.2); background: rgba(255,255,255,.06); }
+    .arch-step-llm  { border-color: rgba(74,222,128,.35);  background: rgba(74,222,128,.07); }
+    .arch-step-num { font-size: 11px; font-family: var(--mono); color: rgba(255,255,255,.65); margin-bottom: 8px; letter-spacing: .06em; font-weight: 600; }
+    .arch-step-name { font-size: 14px; font-weight: 700; letter-spacing: -.01em; margin-bottom: 6px; }
+    .arch-step-detail { font-size: 12px; color: rgba(255,255,255,.8); line-height: 1.55; }
+    .arch-step-time {
+      display: inline-block; margin-top: 12px;
+      font-size: 12px; font-family: var(--mono); padding: 3px 8px;
+      border-radius: 3px; border: 1px solid rgba(255,255,255,.2); color: rgba(255,255,255,.85); font-weight: 600;
+    }
+    .arch-step-time.fast { border-color: rgba(255,255,255,.3); color: #fff; }
+    .arch-step-time.good { border-color: rgba(74,222,128,.5); color: #4ade80; }
+    .arch-pipe-arr {
+      display: flex; align-items: center; flex-shrink: 0;
+      padding: 0 8px; color: rgba(255,255,255,.45); font-size: 18px;
+    }
+    /* Two-pass split */
+    .arch-split { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px; }
+    .arch-split-row { display: flex; align-items: center; gap: 0; }
+    /* Runtime legend */
+    .arch-legend { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,.1); }
+    .arch-leg-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-family: var(--mono); color: rgba(255,255,255,.85); }
+    .arch-leg-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    /* Engineering decisions */
+    .eng-decisions { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-top: 16px; }
+    @media (max-width: 860px) { .eng-decisions { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 520px) { .eng-decisions { grid-template-columns: 1fr; } }
+    .eng-dec {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 22px 20px;
+      transition: background 160ms, border-color 160ms;
+    }
+    .eng-dec:hover { background: var(--surface2); border-color: var(--border2); }
+    .eng-dec-num { font-size: 12px; font-family: var(--mono); color: rgba(255,255,255,.6); letter-spacing: .06em; margin-bottom: 12px; font-weight: 600; }
+    .eng-dec-title { font-size: 16px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 10px; }
+    .eng-dec-body { font-size: 13px; color: rgba(255,255,255,.82); line-height: 1.75; }
+
+    /* ── FOOTER ── */
+    footer { border-top: 1px solid var(--border); padding: 36px 0; position: relative; z-index: 1; }
+    .footer-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+    .footer-copy { font-size: 13px; color: var(--muted2); line-height: 1.7; }
+    .footer-copy strong { color: var(--muted); font-weight: 600; }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-link { font-size: 13px; color: var(--muted2); text-decoration: none; transition: color 140ms; }
+    .footer-link:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<!-- Floating Nav -->
+<nav class="nav">
+  <div class="nav-left">
+    <div class="nav-brand">Miwa <span style="color:var(--muted);font-weight:400;">美話</span></div>
+    <div class="nav-links">
+      <a class="nav-link" href="#demo">Demo</a>
+      <a class="nav-link" href="#pipeline">Pipeline</a>
+      <a class="nav-link" href="#amd">MI300X</a>
+      <a class="nav-link" href="#features">Features</a>
+      <a class="nav-link" href="#stack">Stack</a>
+      <a class="nav-link" href="#engineering">Engineering</a>
+    </div>
+  </div>
+  <a class="nav-cta" href="https://github.com/Mizunandayo/miwa" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<!-- ─── HERO ─── -->
+<section class="hero">
+  <div id="hyperspeed-canvas"></div>
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <!-- Pill badge -->
+    <div class="hero-badge">
+      <span class="badge-dot"></span>
+      AMD MI300X &middot; 192 GB HBM3 &middot; Llama 3.3 70B &middot; FP16
+    </div>
+
+    <!-- Multi-line headline — VengenceUI style: bright / dim / bright -->
+    <h1 class="hero-h1">
+      <span class="hero-line" style="white-space:nowrap">Miwa <span style="opacity:0.32">美話</span></span>
+
+    </h1>
+
+    <!-- Subtitle -->
+    <p class="hero-sub">
+      Per-speaker Discord voice translation with romaji, AI reply suggestions, and style-matched LLM refinement &mdash; targeting under 800ms end-to-end.
+    </p>
+
+    <!-- Author + hackathon -->
+    <div class="hero-author">
+      <span class="hero-author-name">Francis Daniel &mdash; Mizu</span>
+      <span class="hero-author-hack">AMD Developer Hackathon 2026 &middot; lablab.ai &middot; Track 1: AI Agents &amp; Agentic Workflows &middot; May 4&ndash;11, 2026</span>
+    </div>
+
+    <!-- CTAs -->
+    <div class="hero-ctas">
+      <a class="btn-primary" href="https://github.com/Mizunandayo/miwa" target="_blank" rel="noopener">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
+        View on GitHub
+      </a>
+      <a class="btn-ghost" href="#demo">See how it works</a>
+    </div>
+
+    <!-- Stats -->
+    <div class="hero-stat-row">
+      <div>
+        <div class="hero-stat-num">&lt;800ms</div>
+        <div class="hero-stat-lbl">End-to-end latency</div>
+      </div>
+      <div>
+        <div class="hero-stat-num">70B</div>
+        <div class="hero-stat-lbl">Model parameters</div>
+      </div>
+      <div>
+        <div class="hero-stat-num">3</div>
+        <div class="hero-stat-lbl">AI reply suggestions</div>
+      </div>
+      <div>
+        <div class="hero-stat-num">FP16</div>
+        <div class="hero-stat-lbl">Precision on MI300X</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── DEMO PREVIEW ─── -->
+<section id="demo">
+  <div class="wrap">
+    <div class="s-label r">Demo</div>
+    <div class="demo-layout">
+
+      <!-- Left: copy + feature list -->
+      <div class="demo-copy r" data-d="1">
+        <h2 class="demo-copy-title">What you see <em>during a call</em></h2>
+        <p style="font-size:15px;color:var(--muted);line-height:1.75;margin-bottom:8px;">The Miwa overlay sits transparently above your game or browser. Per-speaker cards appear as each person talks, fading out when they go silent.</p>
+        <div class="demo-feature-list">
+          <div class="demo-feat">
+            <div class="demo-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 12 5 12 5 8 8 8 8 16 11 16 11 4 14 4 14 20 17 20 17 9 20 9 20 12 22 12"/></svg></div>
+            <div class="demo-feat-body">
+              <div class="demo-feat-title">Word-by-word karaoke highlight</div>
+              <div class="demo-feat-desc">Each word lights up in sync with the speaker's voice as WhisperX emits word-level timestamps.</div>
+            </div>
+          </div>
+          <div class="demo-feat">
+            <div class="demo-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
+            <div class="demo-feat-body">
+              <div class="demo-feat-title">Two-pass translation</div>
+              <div class="demo-feat-desc">Google Translate appears in ~100ms. Llama 3.3 70B refines it to your chosen style in ~700ms — the card updates in place.</div>
+            </div>
+          </div>
+          <div class="demo-feat">
+            <div class="demo-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div>
+            <div class="demo-feat-body">
+              <div class="demo-feat-title">Reply with one key</div>
+              <div class="demo-feat-desc">Press <strong>1</strong>, <strong>2</strong>, or <strong>3</strong> to instantly send that suggestion to Discord chat. Each card also has individual buttons &mdash; Bot Speaks in VC, Bot Sends in text, or I&rsquo;ll Speak (opens fullscreen romaji).</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: mock overlay window (pixel-faithful replica of screenshot) -->
+      <div class="demo-outer r" data-d="2">
+        <div class="demo-frame" style="gap:3px;padding:8px">
+
+          <!-- ── Header ── -->
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:6px 10px;display:flex;flex-direction:column;gap:4px;margin-bottom:0">
+            <!-- Row 1: drag + title + status + win controls -->
+            <div style="display:flex;align-items:center;gap:7px">
+              <div class="demo-drag-dots"></div>
+              <span style="font-size:14px;font-weight:700;color:#fff;font-family:var(--sans);letter-spacing:-.01em">Miwa</span>
+              <div style="display:flex;align-items:center;gap:5px;margin-left:auto">
+                <span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:block;flex-shrink:0"></span>
+                <span style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.5)">connected</span>
+              </div>
+              <div style="display:flex;gap:5px;flex-shrink:0;margin-left:6px">
+                <span style="width:11px;height:11px;border-radius:50%;background:#febc2e;display:block"></span>
+                <span style="width:11px;height:11px;border-radius:50%;background:#ff5f57;display:block"></span>
+              </div>
+            </div>
+            <!-- Row 2: style mode buttons -->
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">
+              <span style="text-align:center;font-size:11px;font-family:var(--mono);padding:5px 4px;border-radius:6px;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.5);background:rgba(255,255,255,.04)">Formal</span>
+              <span style="text-align:center;font-size:11px;font-family:var(--mono);padding:5px 4px;border-radius:6px;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.5);background:rgba(255,255,255,.04)">Neutral</span>
+              <span style="text-align:center;font-size:11px;font-family:var(--mono);padding:5px 4px;border-radius:6px;border:1px solid rgba(59,158,255,.5);color:#fff;background:rgba(59,158,255,.18);font-weight:600">Casual</span>
+              <span style="text-align:center;font-size:11px;font-family:var(--mono);padding:5px 4px;border-radius:6px;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.5);background:rgba(255,255,255,.04)">Gaming</span>
+            </div>
+            <!-- Row 3: opacity slider + icon buttons -->
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:10px;font-family:var(--mono);color:rgba(255,255,255,.35);white-space:nowrap">Opacity</span>
+              <div style="flex:1;height:3px;background:rgba(255,255,255,.12);border-radius:2px;position:relative">
+                <div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(59,158,255,.5) 100%,transparent 100%);border-radius:2px"></div>
+                <div style="position:absolute;right:-6px;top:50%;transform:translateY(-50%);width:13px;height:13px;border-radius:50%;background:#3b9eff;box-shadow:0 0 0 2px rgba(59,158,255,.3)"></div>
+              </div>
+              <span style="font-size:10px;font-family:var(--mono);color:rgba(255,255,255,.45);min-width:28px">100%</span>
+              <div style="display:flex;gap:3px;flex-shrink:0">
+                <span style="width:22px;height:22px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:rgba(255,255,255,.4)">◑</span>
+                <span style="width:22px;height:22px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);display:inline-flex;align-items:center;justify-content:center;font-size:13px;color:rgba(255,255,255,.4)">−</span>
+                <span style="width:22px;height:22px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);display:inline-flex;align-items:center;justify-content:center;font-size:9px;color:rgba(255,255,255,.4);font-family:var(--mono)">□</span>
+                <span style="width:22px;height:22px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:rgba(255,255,255,.4)">?</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Quick reply ── -->
+          <div style="background:rgba(20,20,20,.9);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:4px 10px">
+            <span style="font-size:12px;font-family:var(--mono);color:rgba(255,255,255,.28)">Type English &mdash; translates as Casual&hellip;</span>
+          </div>
+
+          <!-- ── Call info strip ── -->
+          <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden">
+            <!-- Top row: guild + channel + member count -->
+            <div style="display:flex;align-items:center;gap:6px;padding:4px 8px">
+              <span style="font-size:14px;flex-shrink:0">🍁</span>
+              <span style="font-size:11px;font-family:var(--mono);color:#3b9eff;font-weight:600;white-space:nowrap">Valo Tomodachi</span>
+              <span style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.28)">🌵</span>
+              <span style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.22)">·</span>
+              <span style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.28)">#🔥</span>
+              <span style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.22)">|</span>
+              <span style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.55)">ざつだん</span>
+              <span style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.28)">🍁_</span>
+              <span style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.25);margin-left:auto;white-space:nowrap">· 1 in call &#9662;</span>
+            </div>
+            <!-- Member row -->
+            <div style="display:flex;align-items:center;gap:8px;padding:2px 8px 4px;border-top:1px solid rgba(255,255,255,.05)">
+              <div style="width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#4a5568,#718096);border:1.5px solid rgba(255,255,255,.12);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:10px;color:rgba(255,255,255,.7)">M</div>
+              <span style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.6)">`Mizu</span>
+            </div>
+          </div>
+
+          <!-- ── Reaction cards (5 equal columns, single row) ── -->
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px">
+            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:5px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center">
+              <span style="font-size:11px;font-weight:700;color:#fff">lol</span>
+              <span style="font-size:8px;font-family:var(--mono);color:rgba(255,255,255,.35)">kusa</span>
+              <span style="font-size:8px;color:rgba(255,255,255,.25)">草w</span>
+              <div style="display:flex;gap:3px;margin-top:2px;width:100%">
+                <span style="flex:1;text-align:center;font-size:10px;padding:2px 2px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:4px;color:rgba(255,255,255,.4)">💬</span>
+                <span style="flex:1;text-align:center;font-size:10px;padding:2px 2px;background:rgba(59,158,255,.08);border:1px solid rgba(59,158,255,.2);border-radius:4px;color:#3b9eff">🔊</span>
+              </div>
+            </div>
+            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:5px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center">
+              <span style="font-size:11px;font-weight:700;color:#fff">Ehh?!</span>
+              <span style="font-size:8px;font-family:var(--mono);color:rgba(255,255,255,.35)">ee~</span>
+              <span style="font-size:8px;color:rgba(255,255,255,.25)">えー！</span>
+              <div style="display:flex;gap:3px;margin-top:2px;width:100%">
+                <span style="flex:1;text-align:center;font-size:10px;padding:2px 2px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:4px;color:rgba(255,255,255,.4)">💬</span>
+                <span style="flex:1;text-align:center;font-size:10px;padding:2px 2px;background:rgba(59,158,255,.08);border:1px solid rgba(59,158,255,.2);border-radius:4px;color:#3b9eff">🔊</span>
+              </div>
+            </div>
+            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:5px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center">
+              <span style="font-size:10px;font-weight:700;color:#fff">Seriously?</span>
+              <span style="font-size:8px;font-family:var(--mono);color:rgba(255,255,255,.35)">maji de?</span>
+              <span style="font-size:8px;color:rgba(255,255,255,.25)">マジで？</span>
+              <div style="display:flex;gap:3px;margin-top:2px;width:100%">
+                <span style="flex:1;text-align:center;font-size:10px;padding:2px 2px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:4px;color:rgba(255,255,255,.4)">💬</span>
+                <span style="flex:1;text-align:center;font-size:10px;padding:2px 2px;background:rgba(59,158,255,.08);border:1px solid rgba(59,158,255,.2);border-radius:4px;color:#3b9eff">🔊</span>
+              </div>
+            </div>
+            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:5px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center">
+              <span style="font-size:11px;font-weight:700;color:#fff">Insane!</span>
+              <span style="font-size:8px;font-family:var(--mono);color:rgba(255,255,255,.35)">yabai!</span>
+              <span style="font-size:8px;color:rgba(255,255,255,.25)">やばい！</span>
+              <div style="display:flex;gap:3px;margin-top:2px;width:100%">
+                <span style="flex:1;text-align:center;font-size:10px;padding:2px 2px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:4px;color:rgba(255,255,255,.4)">💬</span>
+                <span style="flex:1;text-align:center;font-size:10px;padding:2px 2px;background:rgba(59,158,255,.08);border:1px solid rgba(59,158,255,.2);border-radius:4px;color:#3b9eff">🔊</span>
+              </div>
+            </div>
+            <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:5px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center">
+              <span style="font-size:10px;font-weight:700;color:#fff">Nice one!</span>
+              <span style="font-size:8px;font-family:var(--mono);color:rgba(255,255,255,.35)">ii ne!</span>
+              <span style="font-size:8px;color:rgba(255,255,255,.25)">いいね！</span>
+              <div style="display:flex;gap:3px;margin-top:2px;width:100%">
+                <span style="flex:1;text-align:center;font-size:10px;padding:2px 2px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:4px;color:rgba(255,255,255,.4)">💬</span>
+                <span style="flex:1;text-align:center;font-size:10px;padding:2px 2px;background:rgba(59,158,255,.08);border:1px solid rgba(59,158,255,.2);border-radius:4px;color:#3b9eff">🔊</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── SPEAKERS header ── -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 3px 0">
+            <span style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.3);font-weight:600">Speakers</span>
+            <span style="width:24px;height:24px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:rgba(255,255,255,.35)">&#9662;</span>
+          </div>
+
+          <!-- ── Speaker card ── -->
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:7px;display:flex;flex-direction:column;gap:4px">
+            <!-- Card header: avatar + name + badge -->
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="position:relative;flex-shrink:0">
+                <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#4a5568,#2d3748);border:2px solid rgba(255,255,255,.12);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:rgba(255,255,255,.8)">M</div>
+                <div style="position:absolute;bottom:0;right:0;width:10px;height:10px;border-radius:50%;background:#22c55e;border:2px solid rgba(15,15,15,.95)"></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;flex:1">
+                <span style="font-size:13px;font-weight:600;color:#fff;font-family:var(--sans)">`Mizu</span>
+                <span style="font-size:13px">🎤</span>
+              </div>
+              <span style="font-size:9px;font-family:var(--mono);font-weight:700;padding:3px 6px;border-radius:5px;background:rgba(59,158,255,.15);border:1px solid rgba(59,158,255,.3);color:#3b9eff;flex-shrink:0">AI</span>
+            </div>
+            <!-- JP text -->
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="font-size:15px;font-weight:400;color:#fff;line-height:1.3;font-family:'Noto Sans JP',sans-serif">それは<span style="background:rgba(59,158,255,.2);border-radius:3px;padding:0 2px;color:#fff">面白い</span>ですね</div>
+              <div style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.4);letter-spacing:.03em">soreha omoshiroi desune</div>
+              <div style="font-size:13px;color:rgba(255,255,255,.75)">That&rsquo;s interesting.</div>
+            </div>
+            <!-- Suggestions -->
+            <div style="display:flex;flex-direction:column;gap:3px">
+              <!-- REPLY WITH header -->
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:0 1px">
+                <span style="font-size:9px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.3);font-weight:600">Reply With</span>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="font-size:13px;color:rgba(255,255,255,.35);cursor:pointer">↻</span>
+                  <span style="font-size:11px;color:rgba(255,255,255,.25)">&#9662;</span>
+                </div>
+              </div>
+              <!-- Suggestion 1 -->
+              <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:5px 8px;display:flex;flex-direction:column;gap:4px">
+                <div style="display:flex;align-items:flex-start;gap:6px">
+                  <span style="font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:4px;background:rgba(59,158,255,.15);border:1px solid rgba(59,158,255,.25);color:#3b9eff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">1</span>
+                  <div style="flex:1;display:flex;flex-direction:column;gap:1px">
+                    <div style="font-size:13px;color:#fff;font-family:'Noto Sans JP',sans-serif">そうですね</div>
+                    <div style="font-size:11px;color:rgba(255,255,255,.6)">Yes, it is</div>
+                  </div>
+                  <span style="font-size:12px;color:rgba(255,255,255,.18);flex-shrink:0">📌</span>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px">
+                  <span style="text-align:center;font-size:10px;padding:3px 2px;border-radius:5px;background:rgba(59,158,255,.08);border:1px solid rgba(59,158,255,.2);color:#3b9eff;white-space:nowrap">🔊 Bot Speaks</span>
+                  <span style="text-align:center;font-size:10px;padding:3px 2px;border-radius:5px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);color:#22c55e;white-space:nowrap">💬 Bot Sends</span>
+                  <span style="text-align:center;font-size:10px;padding:3px 2px;border-radius:5px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);color:#f59e0b;white-space:nowrap">👤 I&rsquo;ll Speak</span>
+                </div>
+              </div>
+              <!-- Suggestion 2 -->
+              <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:5px 8px;display:flex;flex-direction:column;gap:4px">
+                <div style="display:flex;align-items:flex-start;gap:6px">
+                  <span style="font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:4px;background:rgba(59,158,255,.15);border:1px solid rgba(59,158,255,.25);color:#3b9eff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">2</span>
+                  <div style="flex:1;display:flex;flex-direction:column;gap:1px">
+                    <div style="font-size:13px;color:#fff;font-family:'Noto Sans JP',sans-serif">どうして面白いと思ったんですか</div>
+                    <div style="font-size:11px;color:rgba(255,255,255,.6)">Why do you think it&rsquo;s interesting?</div>
+                  </div>
+                  <span style="font-size:12px;color:rgba(255,255,255,.18);flex-shrink:0">📌</span>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px">
+                  <span style="text-align:center;font-size:10px;padding:3px 2px;border-radius:5px;background:rgba(59,158,255,.08);border:1px solid rgba(59,158,255,.2);color:#3b9eff;white-space:nowrap">🔊 Bot Speaks</span>
+                  <span style="text-align:center;font-size:10px;padding:3px 2px;border-radius:5px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);color:#22c55e;white-space:nowrap">💬 Bot Sends</span>
+                  <span style="text-align:center;font-size:10px;padding:3px 2px;border-radius:5px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);color:#f59e0b;white-space:nowrap">👤 I&rsquo;ll Speak</span>
+                </div>
+              </div>
+              <!-- Suggestion 3 -->
+              <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:5px 8px;display:flex;flex-direction:column;gap:4px">
+                <div style="display:flex;align-items:flex-start;gap:6px">
+                  <span style="font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:4px;background:rgba(59,158,255,.15);border:1px solid rgba(59,158,255,.25);color:#3b9eff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">3</span>
+                  <div style="flex:1;display:flex;flex-direction:column;gap:1px">
+                    <div style="font-size:13px;color:#fff;font-family:'Noto Sans JP',sans-serif">私も興味があります</div>
+                    <div style="font-size:11px;color:rgba(255,255,255,.6)">I&rsquo;m interested too</div>
+                  </div>
+                  <span style="font-size:12px;color:rgba(255,255,255,.18);flex-shrink:0">📌</span>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px">
+                  <span style="text-align:center;font-size:10px;padding:3px 2px;border-radius:5px;background:rgba(59,158,255,.08);border:1px solid rgba(59,158,255,.2);color:#3b9eff;white-space:nowrap">🔊 Bot Speaks</span>
+                  <span style="text-align:center;font-size:10px;padding:3px 2px;border-radius:5px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);color:#22c55e;white-space:nowrap">💬 Bot Sends</span>
+                  <span style="text-align:center;font-size:10px;padding:3px 2px;border-radius:5px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);color:#f59e0b;white-space:nowrap">👤 I&rsquo;ll Speak</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Stats bar ── -->
+          <div style="display:flex;align-items:center;gap:8px;padding:1px 3px">
+            <span style="font-size:11px;font-family:var(--mono);color:#c7ed31;font-weight:600">&#9889;AT ~150-800ms</span>
+            <span style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.2)">·</span>
+            <span style="font-size:11px;font-family:var(--mono);color:#f59e0b;font-weight:600">LLM ~400ms</span>
+            <span style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.2)">·</span>
+            <span style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.3)">WS</span>
+            <span style="font-size:11px;font-family:var(--mono);color:#22c55e;font-weight:600">open</span>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─── PIPELINE ─── -->
+<section id="pipeline">
+  <div class="wrap">
+    <div class="s-label r">Pipeline</div>
+    <h2 class="s-h2 r" data-d="1">Voice to translation <em>targeting under 800ms</em></h2>
+
+    <div class="pipe-viz r" id="pipe-viz" data-d="2">
+
+      <!-- Stage nodes + connectors -->
+      <div class="pipe-stages-row">
+
+        <div class="pipe-stage" data-i="0">
+          <div class="pipe-node"><span class="pipe-node-ico">🎤</span></div>
+          <div class="pipe-num">01</div>
+          <div class="pipe-sname">Audio<br>Capture</div>
+          <div class="pipe-stime">&lt;5ms</div>
+        </div>
+
+        <div class="pipe-cseg"><div></div></div>
+
+        <div class="pipe-stage" data-i="1">
+          <div class="pipe-node"><span class="pipe-node-ico">📝</span></div>
+          <div class="pipe-num">02</div>
+          <div class="pipe-sname">WhisperX<br>STT</div>
+          <div class="pipe-stime">~150ms</div>
+        </div>
+
+        <div class="pipe-cseg"><div></div></div>
+
+        <div class="pipe-stage" data-i="2">
+          <div class="pipe-node"><span class="pipe-node-ico">⚡</span></div>
+          <div class="pipe-num">03</div>
+          <div class="pipe-sname">Google<br>Translate</div>
+          <div class="pipe-stime">&lt;100ms</div>
+        </div>
+
+        <div class="pipe-cseg"><div></div></div>
+
+        <div class="pipe-stage" data-i="3">
+          <div class="pipe-node"><span class="pipe-node-ico">🧠</span></div>
+          <div class="pipe-num">04</div>
+          <div class="pipe-sname">Llama 3.3<br>70B FP16</div>
+          <div class="pipe-stime">~500ms</div>
+        </div>
+
+        <div class="pipe-cseg"><div></div></div>
+
+        <div class="pipe-stage" data-i="4">
+          <div class="pipe-node"><span class="pipe-node-ico">🤖</span></div>
+          <div class="pipe-num">05</div>
+          <div class="pipe-sname">CrewAI<br>Agents</div>
+          <div class="pipe-stime">~300ms*</div>
+        </div>
+
+        <div class="pipe-cseg"><div></div></div>
+
+        <div class="pipe-stage" data-i="5">
+          <div class="pipe-node"><span class="pipe-node-ico">🪟</span></div>
+          <div class="pipe-num">06</div>
+          <div class="pipe-sname">Tauri<br>Overlay</div>
+          <div class="pipe-stime">&lt;20ms</div>
+        </div>
+
+      </div>
+
+      <!-- Flowing track: Japanese chars + animated packet -->
+      <div class="pipe-track" id="pipe-track">
+        <div class="pipe-track-glow"></div>
+        <!-- chars + packet injected by JS -->
+        <div class="pipe-packet" id="pipe-pkt">♪ PCM</div>
+      </div>
+
+      <!-- Terminal output panel -->
+      <div class="pipe-terminal">
+        <div class="pipe-term-bar">
+          <div class="pipe-term-dots"><span></span><span></span><span></span></div>
+          <div class="pipe-term-title">miwa — live pipeline simulation</div>
+          <span class="pipe-term-stage-lbl" id="term-stage">01 — Audio Capture</span>
+          <span class="pipe-term-badge" id="term-badge">&lt;5ms</span>
+        </div>
+        <div class="pipe-term-body">
+          <div class="pipe-term-row">
+            <span class="pipe-term-key ptk-in">IN</span>
+            <span class="pipe-term-val ptv-dim" id="term-in">Discord Opus stream (per-speaker, 48 kHz)</span>
+          </div>
+          <div class="pipe-term-row">
+            <span class="pipe-term-key ptk-out">OUT</span>
+            <span class="pipe-term-val" id="term-out"></span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Latency breakdown bar -->
+    <div class="pfl r" data-d="2">
+      <div class="pfl-head">
+        <span class="pfl-htitle">Latency breakdown</span>
+        <span class="pfl-htotal">target &lt;800ms end-to-end</span>
+      </div>
+      <div class="pfl-track">
+        <div class="pfl-s1"></div>
+        <div class="pfl-s2"></div>
+        <div class="pfl-s3"></div>
+        <div class="pfl-s4"></div>
+        <div class="pfl-s5"></div>
+      </div>
+      <div class="pfl-axis">
+        <span>0ms</span><span>200ms</span><span>400ms</span><span>600ms</span><span>800ms</span>
+      </div>
+      <div class="pfl-legend">
+        <div class="pfl-item"><span class="pfl-dot pfl-dot-1"></span>01 Capture (&lt;5ms)</div>
+        <div class="pfl-item"><span class="pfl-dot pfl-dot-2"></span>02 Transcription (~200ms)</div>
+        <div class="pfl-item"><span class="pfl-dot pfl-dot-3"></span>03 Fast Translation (&lt;100ms)</div>
+        <div class="pfl-item"><span class="pfl-dot pfl-dot-4"></span>04&ndash;05 LLM + Agents (~475ms)</div>
+        <div class="pfl-item"><span class="pfl-dot pfl-dot-5"></span>06 Delivery (&lt;20ms)</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ─── WHY MI300X ─── -->
+<section id="amd">
+  <div class="wrap">
+    <div class="s-label r">Infrastructure</div>
+    <h2 class="s-h2 r" data-d="1">Why AMD MI300X <em>matters for this</em></h2>
+
+    <!-- MI300X hero banner -->
+    <div class="amd-hero r" data-d="1">
+      <div class="amd-hero-left">
+        <div class="amd-hero-tag">Used in Miwa &mdash; AMD Developer Cloud</div>
+        <div class="amd-hero-name">AMD MI300X</div>
+        <div class="amd-hero-sub">ROCm 7.2 &middot; vLLM 0.17.1 &middot; PyTorch 2.6.0 &middot; 20 vCPU &middot; 240 GB RAM</div>
+      </div>
+      <div class="amd-hero-stats">
+        <div class="amd-hs">
+          <div class="amd-hs-num">192<em>GB</em></div>
+          <div class="amd-hs-lbl">HBM3 VRAM</div>
+        </div>
+        <div class="amd-hs">
+          <div class="amd-hs-num">5.3<em>TB/s</em></div>
+          <div class="amd-hs-lbl">Mem bandwidth</div>
+        </div>
+        <div class="amd-hs">
+          <div class="amd-hs-num">FP16</div>
+          <div class="amd-hs-lbl">Full precision</div>
+        </div>
+        <div class="amd-hs">
+          <div class="amd-hs-num">&lt;800<em>ms</em></div>
+          <div class="amd-hs-lbl">E2E latency</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comparison table -->
+    <div class="amd-table-wrap r" data-d="2">
+      <table class="amd-table">
+        <thead>
+          <tr>
+            <th class="col-feat"></th>
+            <th>RTX 4090 &mdash; Consumer</th>
+            <th>NVIDIA A100 &mdash; Data center</th>
+            <th class="col-mi col-mi-head">AMD MI300X <span class="amd-mi-badge">✓ Miwa</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-feat">VRAM</td>
+            <td class="val-bad">24 GB GDDR6X</td>
+            <td class="val-bad">80 GB HBM2e</td>
+            <td class="col-mi val-good">192 GB HBM3</td>
+          </tr>
+          <tr>
+            <td class="col-feat">Llama 3.3 70B</td>
+            <td class="val-bad">INT4 only &mdash; quality loss</td>
+            <td class="val-bad">INT8, sharded across GPUs</td>
+            <td class="col-mi val-good">Full FP16, single GPU</td>
+          </tr>
+          <tr>
+            <td class="col-feat">Bandwidth</td>
+            <td class="val-bad">1.0 TB/s</td>
+            <td class="val-bad">2.0 TB/s</td>
+            <td class="col-mi val-good">5.3 TB/s</td>
+          </tr>
+          <tr>
+            <td class="col-feat">Multi-GPU</td>
+            <td class="val-bad">Required for 70B</td>
+            <td class="val-bad">Often needed</td>
+            <td class="col-mi val-good">Not needed</td>
+          </tr>
+          <tr>
+            <td class="col-feat">Ecosystem</td>
+            <td class="val-bad">CUDA only</td>
+            <td class="val-bad">CUDA only</td>
+            <td class="col-mi val-good">ROCm &mdash; open source</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 4 advantage cards -->
+    <div class="amd-advantage r" data-d="3">
+      <div class="amd-adv">
+        <div class="amd-adv-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg></div>
+        <div class="amd-adv-title">Zero quantization loss</div>
+        <div class="amd-adv-desc">192GB unified HBM3 memory fits Llama 3.3 70B entirely in FP16. No INT4/INT8 rounding errors that degrade Japanese nuance and translation style.</div>
+      </div>
+      <div class="amd-adv">
+        <div class="amd-adv-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div class="amd-adv-title">Latency target &lt;800ms</div>
+        <div class="amd-adv-desc">High memory bandwidth means tokens fly through the model fast. Combined with vLLM's continuous batching, the LLM step stays under 500ms even during live calls.</div>
+      </div>
+      <div class="amd-adv">
+        <div class="amd-adv-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="15" x2="4" y2="15"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="15" x2="23" y2="15"/></svg></div>
+        <div class="amd-adv-title">ROCm open ecosystem</div>
+        <div class="amd-adv-desc">WhisperX, vLLM 0.17.1, PyTorch 2.6.0, and XTTS v2 all run on ROCm 7.2 — the same code that runs on CUDA runs here with a single env flag.</div>
+      </div>
+      <div class="amd-adv">
+        <div class="amd-adv-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="amd-adv-title">Multi-speaker concurrency</div>
+        <div class="amd-adv-desc">Discord voice channels can have 10+ speakers. The MI300X handles concurrent WhisperX transcription and vLLM inference requests without GPU contention.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FEATURES ─── -->
+<section id="features">
+  <div class="wrap">
+    <div class="s-label r">Features</div>
+    <h2 class="s-h2 r" data-d="1">Everything you need <em>to stay in the conversation</em></h2>
+    <div class="bento">
+      <div class="bc bc-a r" data-d="1">
+        <div class="bc-lbl">Two-pass translation</div>
+        <div class="bc-title">Instant display, then refined</div>
+        <div class="bc-desc">Google Translate fires in under 100ms so you read immediately. Llama 3.3 70B follows with a style-aware refinement — Formal, Neutral, Casual, or Gaming — updating the card in place.</div>
+        <div class="tp-list">
+          <div class="tp-row"><span class="tp-lbl">Google</span><div class="tp-track"><div class="tp-bar gt"></div></div><span class="tp-t">&lt;100ms</span></div>
+          <div class="tp-row"><span class="tp-lbl">LLM</span><div class="tp-track"><div class="tp-bar llm"></div></div><span class="tp-t">~700ms</span></div>
+        </div>
+      </div>
+      <div class="bc bc-b r" data-d="2">
+        <div class="bc-lbl">Always-on-top overlay</div>
+        <div class="bc-title">Tauri v2 window, zero distraction</div>
+        <div class="bc-desc">Transparent, frameless, always-on-top Tauri window sits over your game or browser. Drag the header to reposition. Double-click to snap to corners. Resize vertically from the bottom edge.</div>
+      </div>
+      <div class="bc bc-c r" data-d="1">
+        <div class="bc-lbl">Latency</div>
+        <div class="bc-title">End-to-end target</div>
+        <div class="lb-wrap"><span class="lb-num">&lt;800</span><span class="lb-unit">ms</span></div>
+        <div class="lb-sub">GPU: AMD MI300X 192GB VRAM</div>
+      </div>
+      <div class="bc bc-d r" data-d="2">
+        <div class="bc-lbl">Shortcuts</div>
+        <div class="bc-title">Keyboard-first workflow</div>
+        <div class="kbd-row">
+          <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><span class="kbd-sep">Send suggestion to chat</span>
+        </div>
+        <div class="kbd-row">
+          <kbd>Ctrl+1&ndash;9</kbd><span class="kbd-sep">Phrasebook slots</span>
+        </div>
+        <div class="kbd-row">
+          <kbd>?</kbd><span class="kbd-sep">Show all shortcuts</span>
+        </div>
+        <div class="kbd-row">
+          <kbd>Esc</kbd><span class="kbd-sep">Close romaji popup</span>
+        </div>
+      </div>
+      <div class="bc bc-e r" data-d="3">
+        <div class="bc-lbl">Quick Reactions</div>
+        <div class="bc-title">80 reactions, style-aware &amp; searchable</div>
+        <div class="bc-desc" style="margin-bottom:12px">20 reactions per style mode (Formal / Neutral / Casual / Gaming). Each card shows English, romaji, and Japanese. Type to search. Send via 💬 Bot Sends or 🔊 Bot Speaks instantly.</div>
+        <div class="rx-chips">
+          <span class="rx-chip">gg</span>
+          <span class="rx-chip">行くぞ！</span>
+          <span class="rx-chip">了解！</span>
+          <span class="rx-chip">草</span>
+          <span class="rx-chip">えー</span>
+        </div>
+      </div>
+      <div class="bc bc-f r" data-d="1">
+        <div class="bc-lbl">Memory</div>
+        <div class="bc-title">Per-speaker Qdrant vector store</div>
+        <div class="bc-desc">Each Discord user ID maps to a vector memory. Suggestions become more contextual as the conversation progresses.</div>
+      </div>
+      <div class="bc bc-g r" data-d="2">
+        <div class="bc-lbl">Romaji</div>
+        <div class="bc-title">Fullscreen popup</div>
+        <div class="bc-desc">Hit <kbd>3</kbd> to open a large romaji pronunciation overlay and speak the reply yourself.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── STACK ─── -->
+<section id="stack">
+  <div class="wrap">
+    <div class="s-label r">Stack</div>
+    <h2 class="s-h2 r" data-d="1">Built on AMD MI300X <em>and open-source AI</em></h2>
+
+    <!-- Featured AMD card -->
+    <div class="si-feat r" data-d="1">
+      <div class="si-feat-ico">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192.756 192.756">
+          <g fill-rule="evenodd" clip-rule="evenodd" fill="#fff">
+            <path d="M72.194 173.336H61.725l-3.203-7.723H41.075l-2.917 7.723H27.86l15.731-39.014h11.27l17.333 39.014zm-22.824-29.69l-5.721 15.158h12.013l-6.292-15.158zM110.221 134.322h8.467v39.014h-9.725v-24.371l-10.525 12.244H96.95l-10.526-12.244v24.371H76.7v-39.014h8.466l12.527 14.473 12.528-14.473zM143.33 134.322c14.244 0 21.566 8.867 21.566 19.564 0 11.211-7.094 19.449-22.652 19.449h-16.133v-39.014h17.219v.001zm-7.494 31.864h6.35c9.783 0 12.699-6.637 12.699-12.355 0-6.693-3.604-12.357-12.812-12.357h-6.236v24.712h-.001zM116.455 45.426H74.063l-26.1-25.887 94.853-.118v94.64L116.455 87.58V45.426zM74.396 88.411l-.214-38.236-26.836 26.836v37.762h38.829l26.362-26.362H74.396z"/>
+          </g>
+        </svg>
+      </div>
+      <div class="si-feat-body">
+        <div class="si-feat-eyebrow">Primary GPU</div>
+        <div class="si-feat-name">AMD MI300X</div>
+        <div class="si-feat-desc">192GB HBM3 unified memory &mdash; runs Llama 3.3 70B in full FP16 with zero quantization loss</div>
+      </div>
+      <div class="si-feat-pills">
+        <span class="si-feat-pill">192GB VRAM</span>
+        <span class="si-feat-pill">FP16</span>
+        <span class="si-feat-pill">ROCm 7.2</span>
+        <span class="si-feat-pill">5.3 TB/s</span>
+        <span class="si-feat-pill">vLLM 0.17.1</span>
+      </div>
+    </div>
+
+    <div class="stack-layers">
+
+      <!-- Layer 1: Inference -->
+      <div class="stack-layer r" data-d="1">
+        <div class="sl-cat">Inference</div>
+        <div class="sl-cards">
+          <div class="si">
+            <div class="si-icon" style="opacity:.9">
+              <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="15" x2="4" y2="15"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="15" x2="23" y2="15"/></svg>
+            </div>
+            <div class="si-text"><div class="si-role">Serving</div><div class="si-name">vLLM + ROCm</div></div>
+          </div>
+          <div class="si">
+            <div class="si-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 12 5 12 5 8 8 8 8 16 11 16 11 4 14 4 14 20 17 20 17 9 20 9 20 12 22 12"/></svg>
+            </div>
+            <div class="si-text"><div class="si-role">STT</div><div class="si-name">WhisperX</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Layer 2: AI & Agents -->
+      <div class="stack-layer r" data-d="2">
+        <div class="sl-cat">AI &amp; Agents</div>
+        <div class="sl-cards">
+          <div class="si" data-icon="meta">
+            <div class="si-text"><div class="si-role">LLM</div><div class="si-name">Llama 3.3 70B</div></div>
+          </div>
+          <div class="si">
+            <div class="si-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            </div>
+            <div class="si-text"><div class="si-role">Agents</div><div class="si-name">CrewAI</div></div>
+          </div>
+          <div class="si">
+            <div class="si-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 57 64">
+                <g clip-path="url(#qd-a)">
+                  <path fill="#dc244c" d="M28.335 0 .62 16v32l27.714 16 10.392-6V46l-10.392 6-17.32-10V22l17.32-10 17.32 10v40l10.393-6V16z"/>
+                  <path fill="#dc244c" d="M17.943 26v12l10.392 6 10.392-6V26l-10.392-6z"/>
+                  <path fill="#bd0c3e" d="M38.727 46v12l-10.392 6V52zm17.321-30v40l-10.393 6V22z"/>
+                  <path fill="#ff516b" d="m56.048 16-10.393 6-17.32-10-17.32 10L.62 16 28.335 0z"/>
+                  <path fill="#dc244c" d="M28.335 52v12L.62 48V16l10.394 6v20z"/>
+                  <path fill="#ff516b" d="m38.727 26-10.392 6-10.392-6 10.392-6z"/>
+                  <path fill="#dc244c" d="M28.335 32v12l-10.392-6V26z"/>
+                  <path fill="#bd0c3e" d="M38.727 26v12l-10.392 6V32z"/>
+                </g>
+                <defs><clipPath id="qd-a"><path fill="#fff" d="M.332 0h56v64h-56z"/></clipPath></defs>
+              </svg>
+            </div>
+            <div class="si-text"><div class="si-role">Vector DB</div><div class="si-name">Qdrant</div></div>
+          </div>
+          <div class="si">
+            <div class="si-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            </div>
+            <div class="si-text"><div class="si-role">TTS</div><div class="si-name">XTTS v2</div></div>
+          </div>
+          <div class="si" data-icon="google">
+            <div class="si-text"><div class="si-role">Translation</div><div class="si-name">Google Translate</div></div>
+          </div>
+          <div class="si" data-icon="python">
+            <div class="si-text"><div class="si-role">Romaji</div><div class="si-name">pykakasi</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Layer 3: Application -->
+      <div class="stack-layer r" data-d="3">
+        <div class="sl-cat">Application</div>
+        <div class="sl-cards">
+          <div class="si">
+            <div class="si-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="#009688" stroke="#009688"/></svg>
+            </div>
+            <div class="si-text"><div class="si-role">Server</div><div class="si-name">FastAPI</div></div>
+          </div>
+          <div class="si" data-icon="sqlite">
+            <div class="si-text"><div class="si-role">Cache</div><div class="si-name">SQLite WAL</div></div>
+          </div>
+          <div class="si" data-icon="tauri">
+            <div class="si-text"><div class="si-role">Desktop</div><div class="si-name">Tauri v2</div></div>
+          </div>
+          <div class="si" data-icon="rust">
+            <div class="si-text"><div class="si-role">Runtime</div><div class="si-name">Rust</div></div>
+          </div>
+          <div class="si" data-icon="react">
+            <div class="si-text"><div class="si-role">UI</div><div class="si-name">React 19</div></div>
+          </div>
+          <div class="si" data-icon="framer">
+            <div class="si-text"><div class="si-role">Animation</div><div class="si-name">Framer Motion</div></div>
+          </div>
+          <div class="si">
+            <div class="si-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                <path fill="#6665d2" d="M85.22,24.958c-11.459-8.575-22.438-8.334-22.438-8.334l-1.122,1.282c13.623,4.087,19.954,10.097,19.954,10.097c-19.491-10.731-44.317-10.654-64.59,0c0,0,6.571-6.331,20.996-10.418l-0.801-0.962c0,0-10.899-0.24-22.438,8.334c0,0-11.54,20.755-11.54,46.319c0,0,6.732,11.54,24.442,12.101c0,0,2.965-3.526,5.369-6.571c-10.177-3.045-14.024-9.376-14.024-9.376c6.394,4.001,12.859,6.505,20.916,8.094c13.108,2.698,29.413-0.076,41.591-8.094c0,0-4.007,6.491-14.505,9.456c2.404,2.965,5.289,6.411,5.289,6.411c17.71-0.561,24.441-12.101,24.441-12.02C96.759,45.713,85.22,24.958,85.22,24.958z M35.055,63.824c-4.488,0-8.174-3.927-8.174-8.815c0.328-11.707,16.102-11.671,16.348,0C43.229,59.897,39.622,63.824,35.055,63.824z M64.304,63.824c-4.488,0-8.174-3.927-8.174-8.815c0.36-11.684,15.937-11.689,16.348,0C72.478,59.897,68.872,63.824,64.304,63.824z"/>
+              </svg>
+            </div>
+            <div class="si-text"><div class="si-role">Discord</div><div class="si-name">discord.js v14</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─── ENGINEERING DEPTH ─── -->
+<section id="engineering">
+  <div class="wrap">
+    <div class="s-label r">Engineering</div>
+    <h2 class="s-h2 r" data-d="1">Built to <em>production standard</em></h2>
+
+    <!-- Solo build banner -->
+    <div class="eng-banner r" data-d="1">
+      <div>
+        <div class="eng-banner-tag">Solo build &middot; 7 days &middot; AMD Developer Hackathon 2026</div>
+        <div class="eng-banner-claim">Full-stack, from GPU to glass.</div>
+        <div class="eng-banner-sub">One engineer. Five runtimes. Real-time AI inference on AMD MI300X.</div>
+      </div>
+      <div class="eng-lang-strip">
+        <div class="eng-lang"><span class="eng-lang-dot" style="background:#3178c6"></span>TypeScript &mdash; React 19 overlay UI</div>
+        <div class="eng-lang"><span class="eng-lang-dot" style="background:#3572A5"></span>Python &mdash; FastAPI AI pipeline server</div>
+        <div class="eng-lang"><span class="eng-lang-dot" style="background:#dea584"></span>Rust &mdash; Tauri desktop backend</div>
+        <div class="eng-lang"><span class="eng-lang-dot" style="background:#f7df1e; outline:1px solid rgba(255,255,255,.1)"></span>JavaScript &mdash; Discord bot &amp; voice capture</div>
+        <div class="eng-lang"><span class="eng-lang-dot" style="background:#4ade80"></span>GLSL &mdash; Hyperspeed WebGL shaders</div>
+      </div>
+    </div>
+
+    <!-- Architecture diagram -->
+    <div class="arch-wrap r" data-d="2">
+      <div class="arch-label">System architecture &mdash; data flow</div>
+
+      <!-- Top: main 4-node flow -->
+      <div class="arch-flow">
+
+        <!-- Node 1: Discord -->
+        <div class="arch-node an-js">
+          <span class="arch-node-ico">🎤</span>
+          <div class="arch-node-name">Discord Voice</div>
+          <div style="font-size:12px;font-family:var(--mono);color:rgba(255,255,255,.8);line-height:1.55;margin-top:8px">Per-speaker Opus stream &middot; VoiceReceiver API &middot; PCM decode</div>
+          <span class="arch-node-rt">Node.js 18 &middot; discord.js v14</span>
+        </div>
+
+        <!-- Conn 1: WS over SSH -->
+        <div class="arch-conn">
+          <div class="arch-conn-line">
+            <div class="arch-conn-dash"></div>
+            <div class="arch-conn-dash"></div>
+            <div class="arch-conn-arrow">&rarr;</div>
+          </div>
+          <span class="arch-conn-badge cb-ssh">SSH tunnel</span>
+          <div class="arch-conn-lbl">WebSocket<br>8765 via SSH</div>
+        </div>
+
+        <!-- Node 2: AMD MI300X FastAPI -->
+        <div class="arch-node an-py">
+          <span class="arch-node-ico">⚡</span>
+          <div class="arch-node-name">FastAPI Server</div>
+          <div style="font-size:12px;font-family:var(--mono);color:rgba(255,255,255,.8);line-height:1.55;margin-top:8px">AI pipeline &middot; STT &rarr; LLM &rarr; romaji &rarr; suggestions</div>
+          <span class="arch-node-rt">AMD MI300X &middot; ROCm 7.2</span>
+        </div>
+
+        <!-- Conn 2: WS back -->
+        <div class="arch-conn">
+          <div class="arch-conn-line">
+            <div class="arch-conn-dash"></div>
+            <div class="arch-conn-dash"></div>
+            <div class="arch-conn-arrow">&rarr;</div>
+          </div>
+          <span class="arch-conn-badge cb-ws">WebSocket</span>
+          <div class="arch-conn-lbl">JSON packets<br>typed events</div>
+        </div>
+
+        <!-- Node 3: Tauri Rust -->
+        <div class="arch-node an-rs">
+          <span class="arch-node-ico">🦀</span>
+          <div class="arch-node-name">Tauri Backend</div>
+          <div style="font-size:12px;font-family:var(--mono);color:rgba(255,255,255,.8);line-height:1.55;margin-top:8px">WS bridge &middot; always-on-top window &middot; transparent overlay</div>
+          <span class="arch-node-rt">Rust &middot; Tauri v2 &middot; 50 MB</span>
+        </div>
+
+        <!-- Conn 3: IPC -->
+        <div class="arch-conn">
+          <div class="arch-conn-line">
+            <div class="arch-conn-dash"></div>
+            <div class="arch-conn-dash"></div>
+            <div class="arch-conn-arrow">&rarr;</div>
+          </div>
+          <span class="arch-conn-badge cb-ipc">Tauri IPC</span>
+          <div class="arch-conn-lbl">typed cmds<br>event bridge</div>
+        </div>
+
+        <!-- Node 4: React UI -->
+        <div class="arch-node an-ts">
+          <span class="arch-node-ico">⛛️</span>
+          <div class="arch-node-name">React Overlay</div>
+          <div style="font-size:12px;font-family:var(--mono);color:rgba(255,255,255,.8);line-height:1.55;margin-top:8px">Speaker cards &middot; karaoke &middot; suggestions &middot; phrasebook</div>
+          <span class="arch-node-rt">React 19 &middot; TypeScript strict</span>
+        </div>
+
+      </div>
+
+      <!-- Bottom: AI pipeline zoom -->
+      <div class="arch-zoom-wrap">
+        <div class="arch-zoom-header">
+          <div class="arch-zoom-tag">↓ zoom &mdash; AI pipeline</div>
+          <div class="arch-zoom-name">FastAPI Server &mdash; AMD MI300X &middot; 192 GB HBM3</div>
+          <div class="arch-zoom-sub">Python &middot; ROCm 7.2 &middot; vLLM 0.17.1 &middot; PyTorch 2.6.0</div>
+        </div>
+        <div class="arch-zoom-body">
+          <div class="arch-pipe">
+
+            <div class="arch-step">
+              <div class="arch-step-num">STT</div>
+              <div class="arch-step-name">WhisperX</div>
+              <div class="arch-step-detail">PCM &rarr; Japanese text + word-level timestamps for karaoke</div>
+              <span class="arch-step-time">&lt;150ms</span>
+            </div>
+
+            <div class="arch-pipe-arr">&rarr;</div>
+
+            <!-- Two-pass translation split -->
+            <div class="arch-split">
+              <div class="arch-split-row">
+                <div class="arch-step arch-step-fast" style="flex:1">
+                  <div class="arch-step-num">TRANSLATE &middot; pass 1</div>
+                  <div class="arch-step-name">Google Translate</div>
+                  <div class="arch-step-detail">Fast EN result &rarr; shown immediately as <em style="font-style:normal;color:#fff">fast</em> packet</div>
+                  <span class="arch-step-time fast">&lt;100ms</span>
+                </div>
+              </div>
+              <div class="arch-split-row">
+                <div class="arch-step arch-step-llm" style="flex:1">
+                  <div class="arch-step-num">TRANSLATE &middot; pass 2</div>
+                  <div class="arch-step-name">vLLM &mdash; Llama 3.3 70B FP16</div>
+                  <div class="arch-step-detail">Style-refined EN &rarr; updates card as <em style="font-style:normal;color:#4ade80">refined</em> packet</div>
+                  <span class="arch-step-time good">&lt;700ms</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="arch-pipe-arr">&rarr;</div>
+
+            <div class="arch-step">
+              <div class="arch-step-num">ROMAJI</div>
+              <div class="arch-step-name">pykakasi</div>
+              <div class="arch-step-detail">JP text &rarr; phonetic reading for pronunciation guide</div>
+              <span class="arch-step-time">&lt;5ms</span>
+            </div>
+
+            <div class="arch-pipe-arr">&rarr;</div>
+
+            <div class="arch-step">
+              <div class="arch-step-num">AGENTS</div>
+              <div class="arch-step-name">CrewAI + Qdrant</div>
+              <div class="arch-step-detail">3 reply suggestions &middot; vector memory per speaker user ID &middot; context-aware</div>
+              <span class="arch-step-time">&lt;300ms</span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Runtime legend -->
+      <div class="arch-legend">
+        <div class="arch-leg-item"><span class="arch-leg-dot" style="background:#f7df1e"></span>JavaScript &mdash; Discord bot</div>
+        <div class="arch-leg-item"><span class="arch-leg-dot" style="background:#3572A5"></span>Python &mdash; AI server</div>
+        <div class="arch-leg-item"><span class="arch-leg-dot" style="background:#dea584"></span>Rust &mdash; Tauri backend</div>
+        <div class="arch-leg-item"><span class="arch-leg-dot" style="background:#3178c6"></span>TypeScript &mdash; React UI</div>
+        <div class="arch-leg-item"><span class="arch-leg-dot" style="background:#4ade80"></span>AMD MI300X &mdash; 192 GB HBM3</div>
+      </div>
+
+    </div>
+
+    <!-- 6 Engineering decisions -->
+    <div class="s-label r" style="margin-top:56px" data-d="2">Key engineering decisions</div>
+    <div class="eng-decisions r" data-d="3">
+
+      <div class="eng-dec">
+        <div class="eng-dec-num">01</div>
+        <div class="eng-dec-title">Two-pass translation</div>
+        <div class="eng-dec-body">Google Translate result shows in &lt;100ms as a <em style="font-style:normal;color:var(--text)">fast</em> packet. vLLM-refined translation arrives as a <em style="font-style:normal;color:var(--text)">refined</em> packet at ~700ms, updating in-place. Perceived latency is under 100ms even though LLM inference takes 700ms.</div>
+      </div>
+
+      <div class="eng-dec">
+        <div class="eng-dec-num">02</div>
+        <div class="eng-dec-title">Tauri, not Electron</div>
+        <div class="eng-dec-body">50 MB binary vs Electron&rsquo;s 200+ MB. The Rust backend gives native always-on-top transparent windows with no chrome, direct OS API access, and a real security sandbox &mdash; non-negotiable for a persistent screen overlay.</div>
+      </div>
+
+      <div class="eng-dec">
+        <div class="eng-dec-num">03</div>
+        <div class="eng-dec-title">SSH tunnel, not public port</div>
+        <div class="eng-dec-body">All traffic between the local bot and AMD cloud routes through SSH port 22. Zero firewall rules, zero exposed WebSocket endpoints, zero attack surface. The production path is identical to the development path.</div>
+      </div>
+
+      <div class="eng-dec">
+        <div class="eng-dec-num">04</div>
+        <div class="eng-dec-title">Per-speaker, not mixed audio</div>
+        <div class="eng-dec-body">Discord&rsquo;s VoiceReceiver provides separate Opus streams per user ID. Mixing destroys speaker identity before transcription. Each stream gets its own WhisperX task, enabling per-speaker karaoke cards and context-aware reply suggestions.</div>
+      </div>
+
+      <div class="eng-dec">
+        <div class="eng-dec-num">05</div>
+        <div class="eng-dec-title">FP16, not quantized</div>
+        <div class="eng-dec-body">192 GB HBM3 fits Llama 3.3 70B in full FP16 &mdash; no INT4/INT8. Japanese is precision-sensitive: honorifics, formal vs casual register, and verb conjugation endings degrade measurably at lower precision. Full precision is the correct engineering choice.</div>
+      </div>
+
+      <div class="eng-dec">
+        <div class="eng-dec-num">06</div>
+        <div class="eng-dec-title">WebSocket streaming, not polling</div>
+        <div class="eng-dec-body">Karaoke word-by-word highlight needs word timestamps from WhisperX to stream in real-time. HTTP polling adds 100&ndash;500ms latency per word and cannot achieve sub-frame accuracy. WebSocket is the only correct architecture for this feature.</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-row">
+      <div class="footer-copy">
+        Built by <strong>Francis Daniel (Mizu)</strong> for the AMD Developer Hackathon 2026 &mdash; Track 1: AI Agents &amp; Agentic Workflows
+      </div>
+      <div class="footer-links">
+        <a class="footer-link" href="https://github.com/Mizunandayo/miwa" target="_blank" rel="noopener">GitHub</a>
+        <a class="footer-link" href="https://lablab.ai" target="_blank" rel="noopener">lablab.ai</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); obs.unobserve(e.target); } });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.r').forEach(el => obs.observe(el));
+</script>
+
+<!-- Pipeline animation -->
+<script>
+(function() {
+  const STAGES = [
+    {
+      name: '01 — Audio Capture',
+      badge: '<5ms', fast: true,
+      pkt: '♪ PCM',
+      inText: 'Discord Opus stream (per-speaker, 48 kHz)',
+      outText: '♪ PCM decoded — 48 kHz mono, 20 ms chunks\n  stream ID: user_819204 | buffer: 4096 bytes',
+      outCls: 'ptv-dim', hold: 1800
+    },
+    {
+      name: '02 — WhisperX STT',
+      badge: '~150ms', fast: false,
+      pkt: '日本語→',
+      inText: 'PCM audio buffer (48 kHz, 960 ms window)',
+      outText: '今日のゲーム本当に楽しかったよ！\n  [今日:0.00s] [の:0.21s] [ゲーム:0.35s]\n  [本当に:0.72s] [楽しかった:1.01s] [よ:1.38s]',
+      outCls: 'ptv-jp', hold: 2200
+    },
+    {
+      name: '03 — Google Translate',
+      badge: '<100ms', fast: true,
+      pkt: 'fast→EN',
+      inText: '今日のゲーム本当に楽しかったよ！',
+      outText: '→ "Today\'s game was really fun!"  [type: fast]\n  packet dispatched → UI in <5ms',
+      outCls: '', hold: 1600
+    },
+    {
+      name: '04 — Llama 3.3 70B FP16',
+      badge: '~500ms', fast: false,
+      pkt: 'refined→',
+      inText: 'JP text + style=casual + speaker context',
+      outText: '→ "Today\'s gaming session was genuinely enjoyable!"\n  [type: refined] [style: casual] [tokens: 42]\n  vLLM · ROCm 7.2 · AMD MI300X · 192 GB HBM3',
+      outCls: '', hold: 2400
+    },
+    {
+      name: '05 — CrewAI + Qdrant',
+      badge: '~300ms*', fast: false,
+      pkt: '提案×3',
+      inText: 'refined EN + speaker vector memory (Qdrant)',
+      outText: '私もすごく楽しかった！  →  I had so much fun too!\nまた明日やろう！        →  Let\'s play again tomorrow!\n本当に上手だったね！    →  You were seriously amazing!',
+      outCls: 'ptv-jp', hold: 2000
+    },
+    {
+      name: '06 — Tauri Overlay',
+      badge: '<20ms', fast: true,
+      pkt: '✓ done',
+      inText: 'JSON packets via WebSocket (ws://localhost:8766)',
+      outText: '✓ Speaker card updated   ✓ Karaoke highlighting active\n✓ Romaji generated       ✓ Suggestions displayed\n✓ Phrasebook saved       ✓ Stats latency: 782ms',
+      outCls: '', hold: 1800
+    }
+  ];
+
+  const JP_CHARS = '今日ゲーム楽しかった語翻訳文字音声話友達ねよ！私また本当に速い美会話';
+  const COLORS   = ['rgba(59,158,255,.5)','rgba(74,222,128,.35)','rgba(255,255,255,.25)','rgba(168,85,247,.4)'];
+
+  const stageEls = Array.from(document.querySelectorAll('.pipe-stage'));
+  const connSegs = Array.from(document.querySelectorAll('.pipe-cseg'));
+  const pkt      = document.getElementById('pipe-pkt');
+  const track    = document.getElementById('pipe-track');
+  const termStage = document.getElementById('term-stage');
+  const termBadge = document.getElementById('term-badge');
+  const termIn    = document.getElementById('term-in');
+  const termOut   = document.getElementById('term-out');
+
+  if (!track || !pkt || !termStage) return;
+
+  // Spawn flowing Japanese character particles
+  for (let i = 0; i < 22; i++) {
+    const s = document.createElement('span');
+    s.className = 'pipe-char';
+    s.textContent = JP_CHARS[Math.floor(Math.random() * JP_CHARS.length)];
+    const dur = 2.2 + Math.random() * 2.6;
+    const delay = -(Math.random() * dur * 1.8);
+    const top = 20 + Math.random() * 60;
+    const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+    s.style.cssText = `animation-duration:${dur}s;animation-delay:${delay}s;top:${top}%;color:${color}`;
+    track.appendChild(s);
+  }
+
+  // Packet horizontal position per stage (% left, accounting for centered transform)
+  function stagePct(i) {
+    return 6 + (i / (STAGES.length - 1)) * 88;
+  }
+
+  // Typewriter that resolves when done
+  function typewrite(el, text, speed) {
+    el.textContent = '';
+    let i = 0;
+    const cur = document.createElement('span');
+    cur.className = 'pipe-cursor';
+    el.appendChild(cur);
+    return new Promise(resolve => {
+      function tick() {
+        if (i >= text.length) { cur.remove(); resolve(); return; }
+        cur.before(document.createTextNode(text[i++]));
+        setTimeout(tick, speed);
+      }
+      tick();
+    });
+  }
+
+  let running = false;
+
+  async function runStage(i) {
+    const s = STAGES[i];
+
+    // Update node states
+    stageEls.forEach((el, j) => {
+      el.classList.toggle('active', j === i);
+      el.classList.toggle('passed', j < i);
+    });
+
+    // Fill connector segments up to current
+    connSegs.forEach((seg, j) => seg.classList.toggle('filled', j < i));
+
+    // Move packet
+    pkt.textContent = s.pkt;
+    pkt.style.left = stagePct(i) + '%';
+
+    // Update terminal header
+    termStage.textContent = s.name;
+    termBadge.textContent = s.badge;
+    if (s.fast) {
+      termBadge.style.cssText = 'background:rgba(74,222,128,.12);color:#4ade80;border-color:rgba(74,222,128,.25)';
+    } else {
+      termBadge.style.cssText = 'background:rgba(59,158,255,.12);color:#3b9eff;border-color:rgba(59,158,255,.25)';
+    }
+
+    // IN (instant)
+    termIn.textContent = s.inText;
+
+    // OUT (typewriter)
+    termOut.className = 'pipe-term-val ' + s.outCls;
+    const charSpeed = (s.outCls === 'ptv-jp') ? 14 : 18;
+    await typewrite(termOut, s.outText, charSpeed);
+
+    // Hold at this stage then advance
+    await new Promise(r => setTimeout(r, s.hold));
+
+    if (running) runStage((i + 1) % STAGES.length);
+  }
+
+  // Start when pipeline section enters viewport
+  const viz = document.getElementById('pipe-viz');
+  const startObs = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting && !running) {
+      running = true;
+      startObs.disconnect();
+      runStage(0);
+    }
+  }, { threshold: 0.25 });
+  startObs.observe(viz);
+})();
+</script>
+
+<!-- Tech stack icons via esm.sh -->
+<script type="module">
+  import { createElement as h } from 'https://esm.sh/react@19';
+  import { createRoot } from 'https://esm.sh/react-dom@19/client';
+  import StackIcon from 'https://esm.sh/tech-stack-icons@3.7.1';
+
+  document.querySelectorAll('[data-icon]').forEach(el => {
+    const name = el.dataset.icon;
+    const wrap = document.createElement('div');
+    wrap.className = 'si-icon';
+    el.prepend(wrap);
+    try {
+      createRoot(wrap).render(h(StackIcon, { name, variant: 'dark', style: { width: '16px', height: '16px' } }));
+    } catch (_) {}
+  });
+</script>
+
+<!-- Hyperspeed WebGL road -->
+<script type="module">
+import * as THREE from 'three';
+import { BloomEffect, EffectComposer, EffectPass, RenderPass } from 'postprocessing';
+
+const container = document.getElementById('hyperspeed-canvas');
+if (!container) throw new Error('no container');
+
+const OPTIONS = {
+  distortion: 'turbulentDistortion',
+  length: 400, roadWidth: 10, islandWidth: 2, lanesPerRoad: 3,
+  fov: 90, fovSpeedUp: 150, speedUp: 2, carLightsFade: 0.4,
+  totalSideLightSticks: 20, lightPairsPerRoadWay: 40,
+  shoulderLinesWidthPercentage: 0.05, brokenLinesWidthPercentage: 0.1, brokenLinesLengthPercentage: 0.5,
+  lightStickWidth: [0.12, 0.5], lightStickHeight: [1.3, 1.7],
+  movingAwaySpeed: [60, 80], movingCloserSpeed: [-120, -160],
+  carLightsLength: [400*0.03, 400*0.2], carLightsRadius: [0.05, 0.14],
+  carWidthPercentage: [0.3, 0.5], carShiftX: [-0.8, 0.8], carFloorSeparation: [0, 5],
+  colors: {
+    roadColor: 0x080808, islandColor: 0x0a0a0a, background: 0x000000,
+    shoulderLines: 0xffffff, brokenLines: 0xffffff,
+    leftCars: [0xd856bf, 0x6750a2, 0xc247ac],
+    rightCars: [0x03b3c3, 0x0e5ea5, 0x324555],
+    sticks: 0x03b3c3
+  }
+};
+
+function rand(b) { return Array.isArray(b) ? Math.random()*(b[1]-b[0])+b[0] : Math.random()*b; }
+function pick(a) { return Array.isArray(a) ? a[Math.floor(Math.random()*a.length)] : a; }
+function lerp(c,t,s=0.1,lim=0.001) { let d=(t-c)*s; if(Math.abs(d)<lim)d=t-c; return d; }
+function nsin(v) { return Math.sin(v)*0.5+0.5; }
+
+const turbU = { uFreq:{value:new THREE.Vector4(4,8,8,1)}, uAmp:{value:new THREE.Vector4(25,5,10,10)} };
+
+const DISTORTION = {
+  uniforms: turbU,
+  getDistortion: `
+    uniform vec4 uFreq; uniform vec4 uAmp;
+    float nsin(float v){return sin(v)*0.5+0.5;}
+    #define PI 3.14159265358979
+    float getDistortionX(float p){return cos(PI*p*uFreq.r+uTime)*uAmp.r+pow(cos(PI*p*uFreq.g+uTime*(uFreq.g/uFreq.r)),2.)*uAmp.g;}
+    float getDistortionY(float p){return -nsin(PI*p*uFreq.b+uTime)*uAmp.b-pow(nsin(PI*p*uFreq.a+uTime/(uFreq.b/uFreq.a)),5.)*uAmp.a;}
+    vec3 getDistortion(float p){return vec3(getDistortionX(p)-getDistortionX(0.0125),getDistortionY(p)-getDistortionY(0.0125),0.);}
+  `,
+  getJS(p,t) {
+    const f=turbU.uFreq.value, a=turbU.uAmp.value;
+    const gx=q=>Math.cos(Math.PI*q*f.x+t)*a.x+Math.pow(Math.cos(Math.PI*q*f.y+t*(f.y/f.x)),2)*a.y;
+    const gy=q=>-nsin(Math.PI*q*f.z+t)*a.z-Math.pow(nsin(Math.PI*q*f.w+t/(f.z/f.w)),5)*a.w;
+    return new THREE.Vector3(gx(p)-gx(p+0.007),gy(p)-gy(p+0.007),0).multiply(new THREE.Vector3(-2,-5,0)).add(new THREE.Vector3(0,0,-10));
+  }
+};
+
+const FOG_FRAG = THREE.ShaderChunk['fog_pars_fragment'];
+const FOG_VERT = THREE.ShaderChunk['fog_pars_vertex'];
+const FOG_VF = THREE.ShaderChunk['fog_fragment'];
+const FOG_VV = THREE.ShaderChunk['fog_vertex'];
+
+const CAR_FRAG=`#define USE_FOG;\n${FOG_FRAG}\nvarying vec3 vColor;varying vec2 vUv;uniform vec2 uFade;\nvoid main(){vec3 c=vColor;float a=smoothstep(uFade.x,uFade.y,vUv.x);gl_FragColor=vec4(c,a);if(gl_FragColor.a<0.0001)discard;\n${FOG_VF}\n}`;
+const CAR_VERT=`#define USE_FOG;\n${FOG_VERT}\nattribute vec3 aOffset;attribute vec3 aMetrics;attribute vec3 aColor;\nuniform float uTravelLength;uniform float uTime;varying vec2 vUv;varying vec3 vColor;\n#include <getDistortion_vertex>\nvoid main(){vec3 t=position.xyz;float radius=aMetrics.r;float myLen=aMetrics.g;float spd=aMetrics.b;t.xy*=radius;t.z*=myLen;t.z+=myLen-mod(uTime*spd+aOffset.z,uTravelLength);t.xy+=aOffset.xy;float prog=abs(t.z/uTravelLength);t.xyz+=getDistortion(prog);vec4 mv=modelViewMatrix*vec4(t,1.);gl_Position=projectionMatrix*mv;vUv=uv;vColor=aColor;\n${FOG_VV}\n}`;
+const STICK_FRAG=`#define USE_FOG;\n${FOG_FRAG}\nvarying vec3 vColor;\nvoid main(){gl_FragColor=vec4(vColor,1.);\n${FOG_VF}\n}`;
+const STICK_VERT=`#define USE_FOG;\n${FOG_VERT}\nattribute float aOffset;attribute vec3 aColor;attribute vec2 aMetrics;\nuniform float uTravelLength;uniform float uTime;varying vec3 vColor;\nmat4 rotY(in float a){return mat4(cos(a),0,sin(a),0,0,1,0,0,-sin(a),0,cos(a),0,0,0,0,1);}\n#include <getDistortion_vertex>\nvoid main(){vec3 t=position.xyz;float w=aMetrics.x;float h=aMetrics.y;t.xy*=vec2(w,h);float tm=mod(uTime*120.+aOffset,uTravelLength);t=(rotY(3.14/2.)*vec4(t,1.)).xyz;t.z+=-uTravelLength+tm;float prog=abs(t.z/uTravelLength);t.xyz+=getDistortion(prog);t.y+=h/2.;t.x+=-w/2.;vec4 mv=modelViewMatrix*vec4(t,1.);gl_Position=projectionMatrix*mv;vColor=aColor;\n${FOG_VV}\n}`;
+const ROAD_VERT=`#define USE_FOG;\nuniform float uTime;\n${FOG_VERT}\nuniform float uTravelLength;varying vec2 vUv;\n#include <getDistortion_vertex>\nvoid main(){vec3 t=position.xyz;vec3 d=getDistortion((t.y+uTravelLength/2.)/uTravelLength);t.x+=d.x;t.z+=d.y;t.y+=-1.*d.z;vec4 mv=modelViewMatrix*vec4(t,1.);gl_Position=projectionMatrix*mv;vUv=uv;\n${FOG_VV}\n}`;
+const ISLAND_FRAG=`#define USE_FOG;\n${FOG_FRAG}\nvarying vec2 vUv;uniform vec3 uColor;uniform float uTime;\nvoid main(){gl_FragColor=vec4(uColor,1.);\n${FOG_VF}\n}`;
+const ROAD_FRAG=`#define USE_FOG;\n${FOG_FRAG}\nvarying vec2 vUv;uniform vec3 uColor;uniform float uTime;\nuniform float uLanes;uniform vec3 uBrokenLinesColor;uniform vec3 uShoulderLinesColor;\nuniform float uShoulderLinesWidthPercentage;uniform float uBrokenLinesLengthPercentage;uniform float uBrokenLinesWidthPercentage;\nvoid main(){\nvec2 uv=vUv;uv.y=mod(uv.y+uTime*0.05,1.);float lw=1./uLanes;float blw=lw*uBrokenLinesWidthPercentage;\nfloat bl=step(1.-blw,fract(uv.x*2.))*step(1.-uBrokenLinesLengthPercentage,fract(uv.y*10.));\nfloat sl=step(1.-blw,fract((uv.x-lw*(uLanes-1.))*2.))+step(blw,uv.x);\nbl=mix(bl,sl,uv.x);vec3 color=uColor;gl_FragColor=vec4(color,1.);\n${FOG_VF}\n}`;
+
+const w=container.offsetWidth||window.innerWidth, h=container.offsetHeight||window.innerHeight;
+const renderer=new THREE.WebGLRenderer({antialias:false,alpha:true});
+renderer.setSize(w,h,false);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+container.appendChild(renderer.domElement);
+renderer.domElement.style.cssText='position:absolute;inset:0;width:100%;height:100%;';
+
+const composer=new EffectComposer(renderer);
+const camera=new THREE.PerspectiveCamera(OPTIONS.fov,w/h,0.1,10000);
+camera.position.set(0,8,-5);
+const scene=new THREE.Scene();
+scene.background=null;
+const fog=new THREE.Fog(OPTIONS.colors.background,OPTIONS.length*0.2,OPTIONS.length*500);
+scene.fog=fog;
+const fogU={fogColor:{value:fog.color},fogNear:{value:fog.near},fogFar:{value:fog.far}};
+
+function makeMat(vs,fs,uniforms,transparent=false){
+  return new THREE.ShaderMaterial({vertexShader:vs,fragmentShader:fs,transparent,side:THREE.DoubleSide,
+    uniforms:Object.assign({},uniforms,fogU,DISTORTION.uniforms)});
+}
+function compileMat(mat){
+  mat.onBeforeCompile=s=>{s.vertexShader=s.vertexShader.replace('#include <getDistortion_vertex>',DISTORTION.getDistortion);};
+}
+
+// Road
+const roadUTime={value:0};
+function makePlane(side,isRoad){
+  const geo=new THREE.PlaneGeometry(isRoad?OPTIONS.roadWidth:OPTIONS.islandWidth,OPTIONS.length,20,100);
+  const extra=isRoad?{uLanes:{value:OPTIONS.lanesPerRoad},uBrokenLinesColor:{value:new THREE.Color(OPTIONS.colors.brokenLines)},uShoulderLinesColor:{value:new THREE.Color(OPTIONS.colors.shoulderLines)},uShoulderLinesWidthPercentage:{value:OPTIONS.shoulderLinesWidthPercentage},uBrokenLinesLengthPercentage:{value:OPTIONS.brokenLinesLengthPercentage},uBrokenLinesWidthPercentage:{value:OPTIONS.brokenLinesWidthPercentage}}: {};
+  const mat=makeMat(ROAD_VERT,isRoad?ROAD_FRAG:ISLAND_FRAG,Object.assign({uTravelLength:{value:OPTIONS.length},uColor:{value:new THREE.Color(isRoad?OPTIONS.colors.roadColor:OPTIONS.colors.islandColor)},uTime:roadUTime},extra));
+  compileMat(mat);
+  const mesh=new THREE.Mesh(geo,mat);
+  mesh.rotation.x=-Math.PI/2;
+  mesh.position.z=-OPTIONS.length/2;
+  mesh.position.x=(OPTIONS.islandWidth/2+OPTIONS.roadWidth/2)*side;
+  scene.add(mesh);
+  return mesh;
+}
+makePlane(-1,true); makePlane(1,true); makePlane(0,false);
+
+// Cars
+function makeCars(colors,speed,fade,side){
+  const curve=new THREE.LineCurve3(new THREE.Vector3(0,0,0),new THREE.Vector3(0,0,-1));
+  const geo=new THREE.TubeGeometry(curve,40,1,8,false);
+  const inst=new THREE.InstancedBufferGeometry().copy(geo);
+  inst.instanceCount=OPTIONS.lightPairsPerRoadWay*2;
+  const lw=OPTIONS.roadWidth/OPTIONS.lanesPerRoad;
+  const aOffset=[],aMetrics=[],aColor=[];
+  const cols=colors.map(c=>new THREE.Color(c));
+  for(let i=0;i<OPTIONS.lightPairsPerRoadWay;i++){
+    const radius=rand(OPTIONS.carLightsRadius),length=rand(OPTIONS.carLightsLength),spd=rand(speed);
+    const lane=i%OPTIONS.lanesPerRoad;
+    let lx=lane*lw-OPTIONS.roadWidth/2+lw/2+rand(OPTIONS.carShiftX)*lw;
+    const cw=rand(OPTIONS.carWidthPercentage)*lw,oy=rand(OPTIONS.carFloorSeparation)+radius*1.3,oz=-rand(OPTIONS.length);
+    aOffset.push(lx-cw/2,oy,oz,lx+cw/2,oy,oz);
+    aMetrics.push(radius,length,spd,radius,length,spd);
+    const col=pick(cols);
+    aColor.push(col.r,col.g,col.b,col.r,col.g,col.b);
+  }
+  inst.setAttribute('aOffset',new THREE.InstancedBufferAttribute(new Float32Array(aOffset),3));
+  inst.setAttribute('aMetrics',new THREE.InstancedBufferAttribute(new Float32Array(aMetrics),3));
+  inst.setAttribute('aColor',new THREE.InstancedBufferAttribute(new Float32Array(aColor),3));
+  const mat=makeMat(CAR_VERT,CAR_FRAG,{uTime:{value:0},uTravelLength:{value:OPTIONS.length},uFade:{value:fade}},true);
+  compileMat(mat);
+  const mesh=new THREE.Mesh(inst,mat);
+  mesh.frustumCulled=false;
+  mesh.position.x=(OPTIONS.roadWidth/2+OPTIONS.islandWidth/2)*side;
+  scene.add(mesh);
+  return mesh;
+}
+const leftCars=makeCars(OPTIONS.colors.leftCars,OPTIONS.movingAwaySpeed,new THREE.Vector2(0,1-OPTIONS.carLightsFade),-1);
+const rightCars=makeCars(OPTIONS.colors.rightCars,OPTIONS.movingCloserSpeed,new THREE.Vector2(1,OPTIONS.carLightsFade),1);
+
+// Sticks
+const stickGeo=new THREE.PlaneGeometry(1,1);
+const stickInst=new THREE.InstancedBufferGeometry().copy(stickGeo);
+stickInst.instanceCount=OPTIONS.totalSideLightSticks;
+const stickOff=[],stickCol=[],stickMet=[];
+const stickColor=new THREE.Color(OPTIONS.colors.sticks);
+const soff=OPTIONS.length/(OPTIONS.totalSideLightSticks-1);
+for(let i=0;i<OPTIONS.totalSideLightSticks;i++){
+  stickOff.push((i-1)*soff*2+soff*Math.random());
+  stickCol.push(stickColor.r,stickColor.g,stickColor.b);
+  stickMet.push(rand(OPTIONS.lightStickWidth),rand(OPTIONS.lightStickHeight));
+}
+stickInst.setAttribute('aOffset',new THREE.InstancedBufferAttribute(new Float32Array(stickOff),1));
+stickInst.setAttribute('aColor',new THREE.InstancedBufferAttribute(new Float32Array(stickCol),3));
+stickInst.setAttribute('aMetrics',new THREE.InstancedBufferAttribute(new Float32Array(stickMet),2));
+const stickMat=makeMat(STICK_VERT,STICK_FRAG,{uTravelLength:{value:OPTIONS.length},uTime:{value:0}});
+compileMat(stickMat);
+const stickMesh=new THREE.Mesh(stickInst,stickMat);
+stickMesh.frustumCulled=false;
+stickMesh.position.x=-(OPTIONS.roadWidth+OPTIONS.islandWidth/2);
+scene.add(stickMesh);
+
+// Passes
+const rp=new RenderPass(scene,camera);
+const bp=new EffectPass(camera,new BloomEffect({luminanceThreshold:0.2,luminanceSmoothing:0,intensity:1.2}));
+bp.renderToScreen=true;
+composer.addPass(rp); composer.addPass(bp);
+
+// Animate
+const clock=new THREE.Clock();
+let fovTarget=OPTIONS.fov,speedUpTarget=0,speedUp=0,timeOffset=0;
+container.addEventListener('mousedown',()=>{fovTarget=OPTIONS.fovSpeedUp;speedUpTarget=OPTIONS.speedUp;});
+container.addEventListener('mouseup',()=>{fovTarget=OPTIONS.fov;speedUpTarget=0;});
+container.addEventListener('mouseout',()=>{fovTarget=OPTIONS.fov;speedUpTarget=0;});
+
+function tick(){
+  const delta=clock.getDelta();
+  const lp=Math.exp(-(-60*Math.log2(1-0.1))*delta);
+  speedUp+=lerp(speedUp,speedUpTarget,lp,0.00001);
+  timeOffset+=speedUp*delta;
+  const t=clock.elapsedTime+timeOffset;
+  [leftCars,rightCars].forEach(m=>{if(m.material.uniforms.uTime)m.material.uniforms.uTime.value=t;});
+  if(stickMat.uniforms.uTime)stickMat.uniforms.uTime.value=t;
+  roadUTime.value=t;
+  const fc=lerp(camera.fov,fovTarget,lp);
+  if(fc!==0){camera.fov+=fc*delta*6;camera.updateProjectionMatrix();}
+  const d=DISTORTION.getJS(0.025,t);
+  camera.lookAt(camera.position.x+d.x,camera.position.y+d.y,camera.position.z+d.z);
+  camera.updateProjectionMatrix();
+  composer.render(delta);
+  requestAnimationFrame(tick);
+}
+window.addEventListener('resize',()=>{
+  const w=container.offsetWidth,h=container.offsetHeight;
+  if(!w||!h)return;
+  renderer.setSize(w,h,false);
+  camera.aspect=w/h; camera.updateProjectionMatrix();
+  composer.setSize(w,h);
+});
+tick();
+</script>
+
+</body>
+</html>
