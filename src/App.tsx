@@ -454,36 +454,38 @@ export default function App() {
 
         {/* Body: main speaker column + sidebar */}
         <div className={`fs-body${orderedSpeakers.length === 0 ? " fs-body--empty" : ""}`}>
-          {orderedSpeakers.length === 0 ? (
-            /* Empty state: centered across full body */
-            <div className="fs-empty-state">
-              <span className="empty-state-icon">🎙️</span>
-              <span className="empty-state-text">type !join in Discord to start</span>
-            </div>
-          ) : (
-            <>
-              {/* Main: call info strip + speaker cards */}
-              <div className="fs-main">
-                <CallInfoStrip />
-                {speakerListJSX}
+          <div className="fs-body-inner">
+            {orderedSpeakers.length === 0 ? (
+              /* Empty state: centered across full body */
+              <div className="fs-empty-state">
+                <span className="empty-state-icon">🎙️</span>
+                <span className="empty-state-text">type !join in Discord to start</span>
               </div>
+            ) : (
+              <>
+                {/* Main: call info strip + speaker cards */}
+                <div className="fs-main">
+                  <CallInfoStrip />
+                  {speakerListJSX}
+                </div>
 
-              {/* Sidebar: stats + phrasebook */}
-              <div className="fs-sidebar">
-                <StatsPanel />
-                <Phrasebook sendCommand={sendCommand} />
-              </div>
-            </>
-          )}
+                {/* Sidebar: stats + phrasebook */}
+                <div className="fs-sidebar">
+                  <StatsPanel />
+                  <Phrasebook sendCommand={sendCommand} />
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Bottom bar */}
         <div className="fs-bottombar">
           <div className="fs-bottombar-inner">
-            <QuickReactions sendCommand={sendCommand} />
             <div className="fs-quickreply-wrap">
               <QuickReplyBox sendCommand={sendCommand} />
             </div>
+            <QuickReactions sendCommand={sendCommand} />
           </div>
         </div>
 

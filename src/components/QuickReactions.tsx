@@ -129,8 +129,11 @@ export default function QuickReactions({ sendCommand }: QuickReactionsProps) {
   const [styleMode] = useAtom(styleModeAtom);
   const [flashing, setFlashing] = useState<FlashKey | null>(null);
   const [query, setQuery] = useState("");
+  const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const dragStartXRef = useRef(0);
+  const dragStartScrollRef = useRef(0);
 
   // Reset search + scroll to start when style changes
   useEffect(() => {
@@ -143,6 +146,24 @@ export default function QuickReactions({ sendCommand }: QuickReactionsProps) {
     if (!scrollRef.current) return;
     e.preventDefault();
     scrollRef.current.scrollLeft += e.deltaY + e.deltaX;
+  }, []);
+
+  // Click + drag to scroll horizontally (desktop mouse-friendly)
+  const onMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!scrollRef.current || e.button !== 0) return;
+    dragStartXRef.current = e.clientX;
+    dragStartScrollRef.current = scrollRef.current.scrollLeft;
+    setDragging(true);
+  }, []);
+
+  const onMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!scrollRef.current || !dragging) return;
+    const dx = e.clientX - dragStartXRef.current;
+    scrollRef.current.scrollLeft = dragStartScrollRef.current - dx;
+  }, [dragging]);
+
+  const onMouseUpOrLeave = useCallback(() => {
+    setDragging(false);
   }, []);
 
   const baseReactions = REACTIONS[styleMode];
@@ -174,7 +195,7 @@ export default function QuickReactions({ sendCommand }: QuickReactionsProps) {
   );
 
   return (
-    <div className="quick-reactions">
+    <div className="quick-reactions" onWheel={onWheel}>
       {/* Search + style label row */}
       <div className="reaction-search-wrap">
         <input
@@ -197,7 +218,14 @@ export default function QuickReactions({ sendCommand }: QuickReactionsProps) {
       </div>
 
       {/* Cards — horizontal scroll, also scrollable by mouse wheel */}
-      <div className="reaction-cards" ref={scrollRef} onWheel={onWheel}>
+      <div
+        className={`reaction-cards${dragging ? " dragging" : ""}`}
+        ref={scrollRef}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUpOrLeave}
+        onMouseLeave={onMouseUpOrLeave}
+      >
         {filtered.length === 0 ? (
           <span className="reaction-no-results">No matches</span>
         ) : (
