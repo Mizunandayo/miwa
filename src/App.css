@@ -1106,6 +1106,23 @@ kbd {
   to   { transform: rotate(360deg); }
 }
 
+.quick-reply-clear {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  padding: 2px 4px;
+  flex-shrink: 0;
+  border-radius: 3px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.quick-reply-clear:hover {
+  color: var(--text-primary);
+  background: rgba(255,255,255,0.08);
+}
+
 .quick-reply-spinner {
   font-size: 14px;
   color: var(--accent);

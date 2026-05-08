@@ -80,27 +80,31 @@ export default function QuickReplyBox({ sendCommand }: QuickReplyBoxProps) {
   const handleSend = () => {
     if (!result) return;
     sendCommand({ action: "botSends", text: result.jp });
-    setResult(null);
-    setInputValue("");
-    if (inputRef.current) inputRef.current.value = "";
   };
 
   const handleBotSpeaks = () => {
     if (!result) return;
     sendCommand({ action: "botSpeaks", text: result.jp });
+  };
+
+  const handleClear = () => {
     setResult(null);
     setInputValue("");
-    if (inputRef.current) inputRef.current.value = "";
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setLoading(false);
+    inputRef.current?.focus();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && result) handleSend();
-    if (e.key === "Escape") {
-      setResult(null);
-      setInputValue("");
-      if (inputRef.current) inputRef.current.value = "";
-    }
+    if (e.key === "Escape") handleClear();
   };
+
+  // stopPropagation prevents Tauri's drag region from swallowing clipboard events.
+  // Do NOT preventDefault — let the browser/WebView2 handle the actual clipboard read/write natively.
+  const handleCut = (e: React.ClipboardEvent<HTMLInputElement>) => { e.stopPropagation(); };
+  const handleCopy = (e: React.ClipboardEvent<HTMLInputElement>) => { e.stopPropagation(); };
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => { e.stopPropagation(); };
 
   const styleLabelMap: Record<string, string> = {
     formal: "Formal",
@@ -120,11 +124,14 @@ export default function QuickReplyBox({ sendCommand }: QuickReplyBoxProps) {
           value={inputValue}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          onPaste={(e) => e.stopPropagation()}
-          onCopy={(e) => e.stopPropagation()}
-          onCut={(e) => e.stopPropagation()}
+          onCut={handleCut}
+          onCopy={handleCopy}
+          onPaste={handlePaste}
           maxLength={300}
         />
+        {inputValue && (
+          <button className="quick-reply-clear" onClick={handleClear} title="Clear">✕</button>
+        )}
         {loading && <span className="quick-reply-spinner">⟳</span>}
       </div>
 
