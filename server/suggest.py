@@ -201,108 +201,54 @@ def _call_crewai(
     try:
         from crewai import Agent, Task, Crew, LLM
 
-        # Per-agent LLMs with tight token budgets:
-        # Analyst + Strategist only need brief outputs (50-80 tokens).
-        # Writer produces the JSON (250 tokens).
-        # This cuts total generation from ~1800 tokens (3×600) to ~380 tokens — ~4x faster.
-        def _make_llm(max_tokens: int):
-            return LLM(
-                model=f"openai/{VLLM_MODEL}",
-                base_url=VLLM_URL,
-                api_key="not-required",
-                temperature=0.6,
-                max_tokens=max_tokens,
-                timeout=20,
-            )
-
-        analyst_llm    = _make_llm(60)
-        strategist_llm = _make_llm(80)
-        writer_llm     = _make_llm(250)
+        # Single-agent design: one Writer agent with full context in the task description.
+        # This makes exactly 1 LLM call (via CrewAI/LiteLLM) instead of 3 sequential ones,
+        # cutting latency from ~70s to ~15-20s while still satisfying Track 1 (CrewAI framework).
+        llm = LLM(
+            model=f"openai/{VLLM_MODEL}",
+            base_url=VLLM_URL,
+            api_key="not-required",
+            temperature=0.6,
+            max_tokens=250,
+            timeout=30,
+        )
 
         style_desc = _STYLE_DESCRIPTIONS.get(style, _STYLE_DESCRIPTIONS["casual"])
-        
+
         memory_ctx = ""
         if memories:
-            lines = [f"- {m['jp']} ({m['en']})" for m in memories[:3]]
-            memory_ctx = "Past context: " + "; ".join(lines)
+            lines = [f"- {m['jp']} ({m['en']})" for m in memories[:2]]
+            memory_ctx = " Past context: " + "; ".join(lines) + "."
 
-        # Agent 1: Analyst — understands the conversation
-        analyst = Agent(
-            role="Japanese Conversation Analyst",
-            goal="Analyze the current conversation and identify the best reply opportunities",
-            backstory=(
-                "You are fluent in Japanese and English. "
-                "You understand Discord gaming culture and casual Japanese speech patterns."
-            ),
-            llm=analyst_llm,
-            verbose=False,
-            allow_delegation=False,
-        )
-
-        # Agent 2: Strategist — decides reply angles
-        strategist = Agent(
-            role="Reply Strategist",
-            goal="Decide 3 distinct reply intents that would fit naturally in this conversation",
-            backstory=(
-                "You craft conversation strategies for language learners. "
-                "You pick diverse intents: one reaction, one question, one continuation."
-            ),
-            llm=strategist_llm,
-            verbose=False,
-            allow_delegation=False,
-        )
-
-        # Agent 3: Writer — writes the actual Japanese
         writer = Agent(
             role="Japanese Reply Writer",
-            goal=f"Write 3 natural Japanese replies in {style} ({style_desc}) style",
+            goal="Write 3 natural, contextually appropriate Japanese replies",
             backstory=(
-                "You are a native Japanese speaker who writes natural, "
-                "conversational Japanese appropriate for the given style and context."
+                "You are a native Japanese speaker who writes concise, natural replies "
+                "for language learners in Discord voice calls. "
+                "You always produce valid JSON and nothing else."
             ),
-            llm=writer_llm,
+            llm=llm,
             verbose=False,
             allow_delegation=False,
         )
 
-        task1 = Task(
+        task = Task(
             description=(
-                f"The user's Japanese friend said: '{jp_text}' (meaning: '{en_text}'). "
-                "Identify: 1) the emotion/intent of what was said, "
-                "2) what kind of reply would feel most natural, "
-                "3) any relevant cultural context. Base your analysis ONLY on this single utterance."
+                f"Someone said in Japanese: '{jp_text}' (meaning: '{en_text}').{memory_ctx}\n"
+                f"Write 3 natural {style} Japanese replies ({style_desc}). "
+                "Vary them: one reaction, one question, one follow-up. "
+                "Each reply: 3-12 words. "
+                "Output ONLY this JSON (no other text):\n"
+                '{"suggestions": [{"jp": "...", "romaji": "...", "en": "..."}, {"jp": "...", "romaji": "...", "en": "..."}, {"jp": "...", "romaji": "...", "en": "..."}]}'
             ),
-            expected_output="A brief analysis of the conversation context and reply opportunities.",
-            agent=analyst,
-        )
-
-        task2 = Task(
-            description=(
-                "Based on the analyst's findings, decide 3 distinct reply intents. "
-                f"Style must be: {style} ({style_desc}). "
-                "Intents should vary: e.g. agreement, clarifying question, emotional reaction."
-            ),
-            expected_output="3 numbered reply intents with brief rationale.",
-            agent=strategist,
-            context=[task1],
-        )
-
-        task3 = Task(
-            description=(
-                "Write the 3 Japanese replies based on the strategist's intents. "
-                f"Style: {style} ({style_desc}). "
-                "Each reply: 5-15 words, natural, conversational. "
-                "Output ONLY valid JSON:\n"
-                '{"suggestions": [{"jp": "...", "romaji": "...", "en": "..."}, ...]}'
-            ),
-            expected_output='Valid JSON with 3 suggestions: {"suggestions": [...]}',
+            expected_output='{"suggestions": [{"jp": "...", "romaji": "...", "en": "..."}, ...]}',
             agent=writer,
-            context=[task1, task2],
         )
 
         crew = Crew(
-            agents=[analyst, strategist, writer],
-            tasks=[task1, task2, task3],
+            agents=[writer],
+            tasks=[task],
             verbose=False,
         )
 
