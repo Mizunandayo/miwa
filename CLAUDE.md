@@ -153,7 +153,7 @@ Target latency: **<800ms** end-to-end.
 
 - **Provider:** AMD Developer Cloud (DigitalOcean-based)
 - **Instance:** MI300X x1 — 192GB VRAM, 20 vCPU, 240GB RAM
-- **IP:** ✅ RUNNING — `129.212.188.94` (new instance, recreated Day 5)
+- **IP:** ❌ DESTROYED (May 8) — recreate when ready for final testing
 - **Container IP:** `172.17.0.2` (Docker bridge — use for SSH tunnel target)
 - **Cost:** $1.99/hr, ~$83 credit balance remaining
 - **SSH Key:** `$HOME\.ssh\miwa_amd` (private), `miwa_amd.pub` (public)
@@ -326,7 +326,7 @@ miwa/
 
 | Component | Status |
 |---|---|
-| AMD MI300X instance | ✅ RUNNING — 129.212.188.94 (recreated Day 5) |
+| AMD MI300X instance | ❌ DESTROYED (May 8) — recreate for final testing |
 | Llama 3.3 70B downloaded | ✅ Re-downloaded to /app/models/llama3.3-70b/ |
 | vLLM serving (background) | ✅ Running on port 8000 inside rocm container |
 | PyTorch + ROCm GPU access | ✅ Confirmed (prev session) |
