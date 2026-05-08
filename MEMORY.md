@@ -1309,13 +1309,62 @@ Three iterative resize operations on the demo overlay section of `hf-space/index
 | Demo video | ⬜ Still pending |
 | HuggingFace Space publish | ⬜ Day 6 |
 
+---
+
+## SESSION 14 — May 9, 2026 (Day 6 — TTS Latency Reduction + GitHub Pages)
+
+### What was done this session
+
+#### hf-space/index.html — Accuracy patches (commit `4851887`)
+- Port label: "FastAPI :8765 (SSH tunnel)" — was missing SSH tunnel context
+- Latency targets: updated to match real numbers (~300ms fast, ~700ms refined, ~5-6s suggestions)
+- CrewAI footnote: `~300ms*` asterisk + footnote "CrewAI multi-agent pipeline active on cloud only"
+- XTTS wording: "edge-tts (cloud: XTTS v2)" to reflect current reality
+
+#### docs/ — GitHub Pages deployment (commit `3c397e6`)
+- GitHub Pages requires `/` or `/docs` as source — `/hf-space` not supported
+- Created `docs/` folder as copy of `hf-space/`
+- User still needs to go to repo Settings → Pages → Branch=main, Folder=/docs → Save
+
+#### Mobile CSS — hf-space + docs (commit `ef5ba5c`)
+- Added `@media (max-width: 640px)` block: sections/pipeline scroll, terminal, AMD table, footer
+- Columns collapse to 1fr, terminal scrolls horizontally, AMD badge below headline, footer stacks
+
+#### TTS Latency Fix — Three-layer optimization
+Root causes diagnosed:
+1. Server buffers entire MP3 before sending (edge-tts streams but `b"".join(chunks)` before return)
+2. Bot buffers entire response with `res.arrayBuffer()` before playing
+3. No pre-synthesis — synthesis starts when user clicks, but suggestion text known ~5s earlier
+
+**Changes made:**
+- `server/tts.py`: Added `synthesize_stream()` async generator — yields MP3 chunks immediately as edge-tts produces them
+- `server/main.py`:
+  - Added `_tts_cache: dict[str, bytes]` (max 100 entries, FIFO eviction)
+  - Added `_tts_prefetch(text)` coroutine — synthesizes and stores in cache
+  - After suggestions are sent (the `suggestionsOnly` packet), fires `asyncio.create_task(_tts_prefetch(sug["jp"]))` for each of the 3 suggestions
+  - `/tts` endpoint: checks `_tts_cache` first → instant `Response` on hit; miss → `StreamingResponse` via `synthesize_stream()` that also populates cache after streaming
+  - Added `StreamingResponse` to fastapi.responses import
+- `bot/tts.js`:
+  - Added `ttsCache = new Map()` (max 50 entries) and exported `prefetch(text, serverUrl)` function
+  - `speak()`: checks cache first → plays from memory (~0ms) using `Readable.from(cached)`; cache miss → `Readable.fromWeb(res.body)` streams response body directly to Discord AudioPlayer (no full-buffer wait)
+- `bot/index.js`:
+  - Imported `prefetch` from `./tts.js`
+  - In server WS message handler: when `packet.suggestionsOnly && packet.suggestions`, calls `prefetch(sug.jp)` for each suggestion in background
+
+**Latency improvement:**
+| Scenario | Before | After |
+|---|---|---|
+| Bot Speaks on suggestion | ~2-3s | ~0ms (cache hit) |
+| Bot Speaks on quick reaction | ~2-3s | ~300ms (streaming first byte) |
+| Bot Speaks cold start (QuickReply) | ~2-3s | ~300ms (streaming first byte) |
+
 ### Day 6 Immediate Priority List (May 9)
 1. SSH into cloud, verify vLLM still running: `curl -s http://localhost:8000/health`
 2. Deploy latest server code: `cd /tmp/miwa && git pull && cp -r /tmp/miwa/server /app/server`
 3. Restart FastAPI server with new optimizations
 4. Install cloud deps inside rocm container:
    ```bash
-   pip install whisperx qdrant-client sentence-transformers crewai TTS
+   pip install whisperx qdrant-client sentence-transformers crewai TTS edge-tts
    docker run -d --name qdrant -p 6333:6333 qdrant/qdrant
    ```
 5. Full E2E test with WhisperX transcription (not stub)

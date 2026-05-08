@@ -14,7 +14,7 @@
 | 3 | May 6 | LLM + Agents + Memory (cloud) | UI polish — QuickReplyBox, SuggestionCard (delivery buttons), RomajiPopup, QuickReactions, Phrasebook (Ctrl+1-9), StatsPanel, CallInfoStrip, resize handle, bug fix: google_translate source hardcode |
 | 4 | May 7 | Suggestions + Quick Reply + Full UX | ✅ Complete — README.md, 1/2/3 shortcuts, Framer Motion spring, snap-to-corner, bot/tts.js stub, hf-space/ (README + animated index.html), git push |
 | 5 | May 8 | Polish + .exe build | ✅ Complete — AMD cloud recreated (IP: 129.212.188.94), full pipeline tested E2E. Bug fixes: hallucination filter, style translation, Bot Speaks TTS wired, quick reply two-pass latency, card timeout, dark UI (quick-reply + reactions), refined packet split (translation immediate, suggestions deferred). Window controls (macOS traffic-light). Latency optimizations (avatar non-blocking, persistent TCP session, max_tokens 400→250, separate semaphores). hf-space overlay iterative resize (3 commits: -30% height+widen, +40% wide/-20% height, -30% width → final 504px max-width grid 1fr 1fr). Latest commit: 8496a85 |
-| 6 | May 9 | GitHub + HF Space + Demo Video | ⬜ Planned |
+| 6 | May 9 | GitHub + HF Space + Demo Video | ✅ In Progress — TTS latency reduced: pre-synthesis cache (server) + StreamingResponse + Readable.fromWeb streaming (bot). Suggestions now take ~0ms (cache hit) vs 2-3s. Cache misses stream first byte in ~300ms. hf-space accuracy patches, docs/ GitHub Pages, mobile CSS. |
 | 7 | May 10 | Final Review + SUBMIT | ⬜ Planned |
 
 **Note:** Cloud (MI300X) was destroyed after Day 1 to stop billing (~$83 remaining). All Day 2–3 work done locally with stub server. Cloud will be recreated Day 5 (May 8).
@@ -364,11 +364,12 @@ miwa/
 | README.md | ✅ DONE — full professional README written |
 | hf-space/ | ✅ DONE — README.md (HF YAML) + index.html (animated hero, demo, pipeline, AMD, features, stack, engineering) |
 | hf-space/index.html overlay sizing | ✅ TUNED — 3 resize iterations: -30% h + widen → +40% wide/-20% h → -30% w. Final: max-width:504px, grid 1fr 1fr (commits fa0c164, af00abf, 8496a85) |
-| bot/tts.js | ✅ DONE — real XTTS wiring (POST /tts → WAV → AudioResource) |
+| bot/tts.js | ✅ DONE — pre-synthesis cache + Readable.fromWeb streaming (cache hit ~0ms, miss ~300ms) |
 | server/transcribe.py | ✅ DONE — WhisperX wrapper, lazy-load, hallucination filter |
 | server/memory.py | ✅ DONE — Qdrant vector store, lazy-load, graceful fallback |
 | server/suggest.py | ✅ DONE — CrewAI 3-agent + direct vLLM + static fallback |
-| server/tts.py | ✅ DONE — XTTS v2 synthesis wrapper |
+| server/tts.py | ✅ DONE — synthesize() + synthesize_stream() async generator for StreamingResponse |
+| server/main.py TTS cache | ✅ DONE — _tts_cache dict (100 entries) + _tts_prefetch() + StreamingResponse on miss + prefetch fired after suggestions |
 | Latency split (refined) | ✅ DONE — translation sent immediately, suggestions as follow-up suggestionsOnly |
 | Dark quick-reply + reactions | ✅ DONE — rgba(5,5,5,0.75) matching speaker cards |
 | Style translation | ✅ DONE — translate_with_style uses system message + stop tokens |

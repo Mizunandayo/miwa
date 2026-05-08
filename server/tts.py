@@ -78,3 +78,25 @@ def synthesize(text: str) -> bytes | None:
     except Exception as e:
         log.error(f"TTS synthesize error: {e}")
         return None
+
+
+async def synthesize_stream(text: str):
+    """
+    Async generator — yields MP3 chunks as they arrive from edge-tts.
+
+    Use with FastAPI StreamingResponse so Discord playback starts on the first
+    chunk (~300 ms) rather than after the full audio is buffered (~1-2 s).
+    """
+    if not _check_edge_tts():
+        return
+    text = (text or "").strip()[:MAX_TEXT_LEN]
+    if not text:
+        return
+    try:
+        import edge_tts
+        communicate = edge_tts.Communicate(text, TTS_VOICE)
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                yield chunk["data"]
+    except Exception as e:
+        log.error(f"TTS stream error: {e}")

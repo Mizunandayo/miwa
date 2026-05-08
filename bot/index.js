@@ -36,7 +36,7 @@ import prism from "prism-media";
 import { WebSocket, WebSocketServer } from "ws";
 import https from "https";
 import sharp from "sharp";
-import { createTtsPlayer, speak } from "./tts.js";
+import { createTtsPlayer, speak, prefetch } from "./tts.js";
 import {
   initDb,
   getCachedAvatar,
@@ -250,6 +250,13 @@ function connectToServer() {
       }
 
       broadcastToUI(packet);
+
+      // Pre-synthesise TTS for suggestions so "Bot Speaks" is instant (~0 ms cache hit).
+      if (packet.suggestionsOnly && Array.isArray(packet.suggestions)) {
+        for (const sug of packet.suggestions) {
+          if (sug?.jp) prefetch(sug.jp).catch(() => {});
+        }
+      }
     } catch {
       /* ignore */
     }

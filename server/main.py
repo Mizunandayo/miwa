@@ -20,7 +20,7 @@ from memory    import store as memory_store, recall as memory_recall
 from suggest   import get_suggestions, translate_with_style, translate_en_to_jp_with_style
 from tts       import synthesize as tts_synthesize
 from fastapi   import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, status
-from fastapi.responses import Response
+from fastapi.responses import Response, StreamingResponse
 from pydantic  import BaseModel
 
 import requests
@@ -77,6 +77,29 @@ app.add_middleware(
 # Suggestions run concurrently and can tolerate more parallelism.
 _translate_semaphore = asyncio.Semaphore(2)  # fast path — never queued behind suggestions
 _suggest_semaphore   = asyncio.Semaphore(4)  # up to 4 speakers' suggestions concurrently
+
+# ─── TTS pre-synthesis cache ───────────────────────────────────────────────────
+# When suggestions are built the 3 JP texts are synthesised in the background.
+# /tts checks this cache first → cache hit returns in ~5 ms instead of ~1.5 s.
+_tts_cache: dict[str, bytes] = {}
+_TTS_CACHE_MAX = 100  # evict oldest entry when full
+
+
+async def _tts_prefetch(text: str) -> None:
+    """Pre-synthesise TTS for a JP text and store in the in-memory cache."""
+    if not text or text in _tts_cache:
+        return
+    loop = asyncio.get_event_loop()
+    try:
+        audio = await loop.run_in_executor(None, lambda: tts_synthesize(text))
+        if audio:
+            if len(_tts_cache) >= _TTS_CACHE_MAX:
+                _tts_cache.pop(next(iter(_tts_cache)))  # evict oldest (insertion-order)
+            _tts_cache[text] = audio
+            log.info(f"[tts-prefetch] cached '{text[:30]}' ({len(audio)}B)")
+    except Exception as e:
+        log.warning(f"[tts-prefetch] failed: {e}")
+
 
 # Track active connections (userId → WebSocket)
 active_connections: dict[str, WebSocket] = {}
@@ -406,6 +429,13 @@ async def _process_translation(
             }))
             log.info(f"[{user_id}] suggestions packet sent in {total_latency}ms")
 
+            # Pre-synthesise TTS for each suggestion JP text in the background.
+            # By the time the user clicks "Bot Speaks" the audio is already cached.
+            for sug in suggestions:
+                jp = sug.get("jp", "")
+                if jp:
+                    asyncio.create_task(_tts_prefetch(jp))
+
     except Exception as e:
         log.error(f"[{user_id}] Translation pipeline error: {e}")
 
@@ -538,24 +568,37 @@ class TtsRequest(BaseModel):
 
 @app.post("/tts")
 async def tts_endpoint(req: TtsRequest):
-    """Synthesize Japanese text to WAV audio. Called by bot/tts.js."""
+    """Synthesize Japanese text to MP3 audio.  Called by bot/tts.js.
+
+    Fast path  (cache hit)  : ~5 ms   — pre-synthesised when suggestions arrived.
+    Slow path  (cache miss) : ~300 ms first byte via StreamingResponse from edge-tts.
+    """
     text = req.text.strip()[:200]
     if not text:
         raise HTTPException(status_code=400, detail="Empty text")
 
-    wav_bytes = await asyncio.get_event_loop().run_in_executor(
-        None,
-        lambda: tts_synthesize(text)
-    )
+    # ── Cache hit: instant return ──────────────────────────────────────────────
+    if text in _tts_cache:
+        log.info(f"[tts] cache hit: '{text[:30]}'")
+        return Response(content=_tts_cache[text], media_type="audio/mpeg")
 
-    if wav_bytes is None:
-        raise HTTPException(status_code=503, detail="TTS unavailable")
+    # ── Cache miss: stream from edge-tts, first byte in ~300 ms ───────────────
+    from tts import synthesize_stream as _tts_stream
 
-    # Cap response size — 10MB max
-    if len(wav_bytes) > 10 * 1024 * 1024:
-        raise HTTPException(status_code=500, detail="TTS output too large")
+    chunks_buf: list[bytes] = []
 
-    return Response(content=wav_bytes, media_type="audio/mpeg")
+    async def _stream_and_cache():
+        async for chunk in _tts_stream(text):
+            chunks_buf.append(chunk)
+            yield chunk
+        # Populate cache after the full response has been streamed
+        if chunks_buf:
+            audio = b"".join(chunks_buf)
+            if len(_tts_cache) >= _TTS_CACHE_MAX:
+                _tts_cache.pop(next(iter(_tts_cache)))
+            _tts_cache[text] = audio
+
+    return StreamingResponse(_stream_and_cache(), media_type="audio/mpeg")
 
 
 # ─── Entry Point ──────────────────────────────────────────────────────────────
