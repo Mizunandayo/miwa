@@ -231,6 +231,8 @@ def _call_crewai(
             llm=llm,
             verbose=False,
             allow_delegation=False,
+            max_iter=1,    # CRITICAL: 1 iteration = 1 LLM call. Default (3) creates ReAct loop
+            cache=False,   # No caching overhead
         )
 
         task = Task(
@@ -250,6 +252,8 @@ def _call_crewai(
             agents=[writer],
             tasks=[task],
             verbose=False,
+            memory=False,    # No crew memory (extra embedding calls)
+            planning=False,  # No planning phase (extra LLM call before tasks start)
         )
 
         result = crew.kickoff()
