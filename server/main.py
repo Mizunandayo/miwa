@@ -74,9 +74,12 @@ app.add_middleware(
 
 # Separate semaphores so translations are never blocked by a suggestion queue.
 # Translations are the critical path (user sees the card in ~1-2s).
-# Suggestions run concurrently and can tolerate more parallelism.
 _translate_semaphore = asyncio.Semaphore(2)  # fast path — never queued behind suggestions
-_suggest_semaphore   = asyncio.Semaphore(4)  # up to 4 speakers' suggestions concurrently
+
+# Per-speaker non-blocking lock for suggestions.
+# If a suggestion is already running for a speaker, the new one is DROPPED (not queued).
+# This prevents the queue from growing when CrewAI is slow (90s+ per call).
+_suggest_locks: dict[str, asyncio.Lock] = {}
 
 # ─── TTS pre-synthesis cache ───────────────────────────────────────────────────
 # When suggestions are built the 3 JP texts are synthesised in the background.
@@ -386,7 +389,13 @@ async def _process_translation(
                     )
 
             async def _do_suggest():
-                async with _suggest_semaphore:
+                # Non-blocking: if a suggestion is already running for this speaker, skip.
+                # Prevents unbounded queue buildup when CrewAI is slow.
+                lock = _suggest_locks.setdefault(user_id, asyncio.Lock())
+                if lock.locked():
+                    log.info(f"[{user_id}] suggestion already in flight — skipping")
+                    return None
+                async with lock:
                     return await loop.run_in_executor(
                         None,
                         lambda: get_suggestions(
