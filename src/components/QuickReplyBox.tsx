@@ -4,6 +4,9 @@
  * Live debounced EN→JP translation as user types.
  * Debounce: 500ms after last keystroke → sends to server → shows JP + romaji.
  * Re-translates automatically when style mode changes (if input has text).
+ *
+ * NOTE: Input is UNCONTROLLED (no value={} prop) so WebView2 can handle
+ * Ctrl+C/X/V natively. React controlled inputs break native clipboard in WebView2.
  */
 
 import { useRef, useEffect, useState } from "react";
@@ -23,58 +26,47 @@ const DEBOUNCE_MS = 500;
 export default function QuickReplyBox({ sendCommand }: QuickReplyBoxProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const styleModeRef = useRef<string>("casual");
 
   const [result, setResult] = useAtom(quickReplyResultAtom);
   const [loading, setLoading] = useAtom(quickReplyLoadingAtom);
   const [styleMode] = useAtom(styleModeAtom);
-  const [inputValue, setInputValue] = useState("");
+  const [hasText, setHasText] = useState(false);
 
-  // Fire translation request
+  // Keep ref in sync so debounce callback always sees latest style
+  useEffect(() => { styleModeRef.current = styleMode; }, [styleMode]);
+
   const triggerTranslate = (text: string, style: string) => {
-    if (!text.trim()) {
-      setResult(null);
-      setLoading(false);
-      return;
-    }
+    if (!text.trim()) { setResult(null); setLoading(false); return; }
     setLoading(true);
     setResult(null);
     sendCommand({ action: "quickReply", text: text.trim(), style });
   };
 
-  // Debounce on input change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    setInputValue(val);
-
+    setHasText(val.length > 0);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-
-    if (!val.trim()) {
-      setResult(null);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true); // show spinner immediately while waiting
+    if (!val.trim()) { setResult(null); setLoading(false); return; }
+    setLoading(true);
     debounceRef.current = setTimeout(() => {
-      triggerTranslate(val, styleMode);
+      triggerTranslate(val, styleModeRef.current);
     }, DEBOUNCE_MS);
   };
 
-  // Re-translate when style changes (if there's existing text)
+  // Re-translate when style changes (if there's existing text in the input)
   useEffect(() => {
-    if (!inputValue.trim()) return;
+    const currentVal = inputRef.current?.value ?? "";
+    if (!currentVal.trim()) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      triggerTranslate(inputValue, styleMode);
+      triggerTranslate(currentVal, styleMode);
     }, DEBOUNCE_MS);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [styleMode]);
 
-  // Cleanup on unmount
   useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, []);
 
   const handleSend = () => {
@@ -88,10 +80,11 @@ export default function QuickReplyBox({ sendCommand }: QuickReplyBoxProps) {
   };
 
   const handleClear = () => {
+    if (inputRef.current) inputRef.current.value = "";
+    setHasText(false);
     setResult(null);
-    setInputValue("");
-    if (debounceRef.current) clearTimeout(debounceRef.current);
     setLoading(false);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     inputRef.current?.focus();
   };
 
@@ -99,12 +92,6 @@ export default function QuickReplyBox({ sendCommand }: QuickReplyBoxProps) {
     if (e.key === "Enter" && result) handleSend();
     if (e.key === "Escape") handleClear();
   };
-
-  // stopPropagation prevents Tauri's drag region from swallowing clipboard events.
-  // Do NOT preventDefault — let the browser/WebView2 handle the actual clipboard read/write natively.
-  const handleCut = (e: React.ClipboardEvent<HTMLInputElement>) => { e.stopPropagation(); };
-  const handleCopy = (e: React.ClipboardEvent<HTMLInputElement>) => { e.stopPropagation(); };
-  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => { e.stopPropagation(); };
 
   const styleLabelMap: Record<string, string> = {
     formal: "Formal",
@@ -121,15 +108,11 @@ export default function QuickReplyBox({ sendCommand }: QuickReplyBoxProps) {
           type="text"
           className="quick-reply-input"
           placeholder={`Type English — translates as ${styleLabelMap[styleMode] ?? styleMode}…`}
-          value={inputValue}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          onCut={handleCut}
-          onCopy={handleCopy}
-          onPaste={handlePaste}
           maxLength={300}
         />
-        {inputValue && (
+        {hasText && (
           <button className="quick-reply-clear" onClick={handleClear} title="Clear">✕</button>
         )}
         {loading && <span className="quick-reply-spinner">⟳</span>}
