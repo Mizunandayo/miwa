@@ -1362,7 +1362,7 @@
           <div class="pipe-node"><span class="pipe-node-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></span></div>
           <div class="pipe-num">05</div>
           <div class="pipe-sname">CrewAI<br>Agents</div>
-          <div class="pipe-stime">~300ms*</div>
+          <div class="pipe-stime">~8&ndash;15s†</div>
         </div>
 
         <div class="pipe-cseg"><div></div></div>
@@ -1425,8 +1425,8 @@
         <div class="pfl-item"><span class="pfl-dot pfl-dot-1"></span>01 Capture (&lt;5ms)</div>
         <div class="pfl-item"><span class="pfl-dot pfl-dot-2"></span>02 Transcription (~200ms)</div>
         <div class="pfl-item"><span class="pfl-dot pfl-dot-3"></span>03 Fast Translation (&lt;100ms)</div>
-        <div class="pfl-item"><span class="pfl-dot pfl-dot-4"></span>04&ndash;05 LLM + Agents (~475ms)</div>
-        <div class="pfl-item"><span class="pfl-dot pfl-dot-5"></span>06 Delivery (&lt;20ms)</div>
+        <div class="pfl-item"><span class="pfl-dot pfl-dot-4"></span>04 LLM refinement (~500ms)</div>
+        <div class="pfl-item"><span class="pfl-dot pfl-dot-5"></span>05 Overlay (&lt;20ms) &mdash; 06 Suggestions deferred (~8&ndash;15s, agentic pipeline)</div>
       </div>
     </div>
 
@@ -1899,9 +1899,9 @@
 
             <div class="arch-step">
               <div class="arch-step-num">AGENTS</div>
-              <div class="arch-step-name">CrewAI + Qdrant</div>
-              <div class="arch-step-detail">3 reply suggestions &middot; vector memory per speaker user ID &middot; context-aware</div>
-              <span class="arch-step-time">&lt;300ms</span>
+              <div class="arch-step-name">vLLM + CrewAI + Qdrant</div>
+              <div class="arch-step-detail">3 reply suggestions &middot; 3-agent pipeline (Analyst &rarr; Strategist &rarr; Writer) &middot; vector memory per speaker &middot; deferred (does not block translation display)</div>
+              <span class="arch-step-time">~8&ndash;15s (deferred)</span>
             </div>
 
           </div>
@@ -2022,7 +2022,7 @@
     },
     {
       name: '05 — CrewAI + Qdrant',
-      badge: '~300ms*', fast: false,
+      badge: '~8–15s†', fast: false,
       pkt: '提案×3',
       inText: 'refined EN + speaker vector memory (Qdrant)',
       outText: '私もすごく楽しかった！  →  I had so much fun too!\nまた明日やろう！        →  Let\'s play again tomorrow!\n本当に上手だったね！    →  You were seriously amazing!',

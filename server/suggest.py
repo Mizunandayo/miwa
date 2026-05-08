@@ -67,7 +67,7 @@ _STYLE_DESCRIPTIONS = {
     "formal":  "very polite, keigo (敬語), professional",
     "neutral": "natural, standard Japanese, neither too formal nor too casual",
     "casual":  "casual, friendly, like talking to a close friend",
-    "gaming":  "gaming slang, fast-paced, uses katakana loanwords and gaming terms",
+    "gaming":  "casual gamer tone — keep the meaning 100% accurate, only adjust phrasing to sound natural in a gaming chat (e.g. 'gg', 'noice', 'lol') where it fits naturally. Do NOT invent gaming content that isn't in the original.",
 }
 
 
@@ -201,13 +201,23 @@ def _call_crewai(
     try:
         from crewai import Agent, Task, Crew, LLM
 
-        llm = LLM(
-            model=f"openai/{VLLM_MODEL}",
-            base_url=VLLM_URL,
-            api_key="not-required",  # vLLM doesn't require a real key
-            temperature=0.7,
-            max_tokens=600,
-        )
+        # Per-agent LLMs with tight token budgets:
+        # Analyst + Strategist only need brief outputs (50-80 tokens).
+        # Writer produces the JSON (250 tokens).
+        # This cuts total generation from ~1800 tokens (3×600) to ~380 tokens — ~4x faster.
+        def _make_llm(max_tokens: int):
+            return LLM(
+                model=f"openai/{VLLM_MODEL}",
+                base_url=VLLM_URL,
+                api_key="not-required",
+                temperature=0.6,
+                max_tokens=max_tokens,
+                timeout=20,
+            )
+
+        analyst_llm    = _make_llm(60)
+        strategist_llm = _make_llm(80)
+        writer_llm     = _make_llm(250)
 
         style_desc = _STYLE_DESCRIPTIONS.get(style, _STYLE_DESCRIPTIONS["casual"])
         
@@ -224,7 +234,7 @@ def _call_crewai(
                 "You are fluent in Japanese and English. "
                 "You understand Discord gaming culture and casual Japanese speech patterns."
             ),
-            llm=llm,
+            llm=analyst_llm,
             verbose=False,
             allow_delegation=False,
         )
@@ -237,7 +247,7 @@ def _call_crewai(
                 "You craft conversation strategies for language learners. "
                 "You pick diverse intents: one reaction, one question, one continuation."
             ),
-            llm=llm,
+            llm=strategist_llm,
             verbose=False,
             allow_delegation=False,
         )
@@ -250,7 +260,7 @@ def _call_crewai(
                 "You are a native Japanese speaker who writes natural, "
                 "conversational Japanese appropriate for the given style and context."
             ),
-            llm=llm,
+            llm=writer_llm,
             verbose=False,
             allow_delegation=False,
         )
@@ -334,10 +344,11 @@ def translate_with_style(jp_text: str, en_fast: str, style: str) -> str | None:
     """
     style_desc = _STYLE_DESCRIPTIONS.get(style, _STYLE_DESCRIPTIONS["casual"])
     prompt = (
-        f"Translate this Japanese text to English with a {style} tone ({style_desc}).\n"
-        f"Japanese: {jp_text}\n"
-        f"Literal meaning: {en_fast}\n"
-        f"Output ONLY the English translation. No explanations, no quotes, no labels."
+        f"Rewrite this English translation with a {style} tone ({style_desc}).\n"
+        f"Original Japanese: {jp_text}\n"
+        f"Accurate literal translation: {en_fast}\n"
+        f"Rules: Keep the EXACT meaning of the literal translation. Only adjust wording/tone, never change what is being said.\n"
+        f"Output ONLY the rewritten English. No explanations, no quotes, no labels."
     )
     try:
         session = _get_session()
@@ -349,7 +360,7 @@ def translate_with_style(jp_text: str, en_fast: str, style: str) -> str | None:
             json={
                 "model": VLLM_MODEL,
                 "messages": [
-                    {"role": "system", "content": "You are a translator. Reply with ONLY the translated text, nothing else."},
+                    {"role": "system", "content": "You are a tone adjuster. You receive an accurate translation and rewrite it to match a requested tone without changing the meaning. Never add information that is not in the original."},
                     {"role": "user", "content": prompt},
                 ],
                 "max_tokens": 80,
@@ -456,7 +467,7 @@ def get_suggestions(
     memories = memories or []
 
     # Try CrewAI (full multi-agent) — disabled when USE_CREWAI=false
-    _crewai_enabled = os.getenv("USE_CREWAI", "false").lower() not in ("false", "0", "no")
+    _crewai_enabled = os.getenv("USE_CREWAI", "true").lower() not in ("false", "0", "no")
     if use_agents and _crewai_enabled:
         result = _call_crewai(jp_text, en_text, style, memories)
         if result and len(result) == 3:
