@@ -894,7 +894,7 @@
 
     <!-- Subtitle -->
     <p class="hero-sub">
-      Per-speaker Discord voice translation with romaji, AI reply suggestions, and style-matched LLM refinement &mdash; all in under 800ms.
+      Per-speaker Discord voice translation with romaji, AI reply suggestions, and style-matched LLM refinement &mdash; targeting under 800ms end-to-end.
     </p>
 
     <!-- Author + hackathon -->
@@ -1195,7 +1195,7 @@
 <section id="pipeline">
   <div class="wrap">
     <div class="s-label r">Pipeline</div>
-    <h2 class="s-h2 r" data-d="1">Voice to translation <em>in under 800ms</em></h2>
+    <h2 class="s-h2 r" data-d="1">Voice to translation <em>targeting under 800ms</em></h2>
 
     <div class="pipe-viz r" id="pipe-viz" data-d="2">
 
@@ -1242,7 +1242,7 @@
           <div class="pipe-node"><span class="pipe-node-ico">🤖</span></div>
           <div class="pipe-num">05</div>
           <div class="pipe-sname">CrewAI<br>Agents</div>
-          <div class="pipe-stime">~300ms</div>
+          <div class="pipe-stime">~300ms*</div>
         </div>
 
         <div class="pipe-cseg"><div></div></div>
@@ -1289,7 +1289,7 @@
     <div class="pfl r" data-d="2">
       <div class="pfl-head">
         <span class="pfl-htitle">Latency breakdown</span>
-        <span class="pfl-htotal">&lt;800ms end-to-end</span>
+        <span class="pfl-htotal">target &lt;800ms end-to-end</span>
       </div>
       <div class="pfl-track">
         <div class="pfl-s1"></div>
@@ -1401,13 +1401,13 @@
       </div>
       <div class="amd-adv">
         <div class="amd-adv-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-        <div class="amd-adv-title">Latency under 800ms</div>
+        <div class="amd-adv-title">Latency target &lt;800ms</div>
         <div class="amd-adv-desc">High memory bandwidth means tokens fly through the model fast. Combined with vLLM's continuous batching, the LLM step stays under 500ms even during live calls.</div>
       </div>
       <div class="amd-adv">
         <div class="amd-adv-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="15" x2="4" y2="15"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="15" x2="23" y2="15"/></svg></div>
         <div class="amd-adv-title">ROCm open ecosystem</div>
-        <div class="amd-adv-desc">WhisperX, vLLM 0.17.1, PyTorch 2.6.0, and XTTS v2 all run natively on ROCm 7.2 — the same code that runs on CUDA runs here with a single env flag.</div>
+        <div class="amd-adv-desc">WhisperX, vLLM 0.17.1, PyTorch 2.6.0, and XTTS v2 all run on ROCm 7.2 — the same code that runs on CUDA runs here with a single env flag.</div>
       </div>
       <div class="amd-adv">
         <div class="amd-adv-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
@@ -1667,7 +1667,7 @@
             <div class="arch-conn-arrow">&rarr;</div>
           </div>
           <span class="arch-conn-badge cb-ssh">SSH tunnel</span>
-          <div class="arch-conn-lbl">WebSocket<br>port 22</div>
+          <div class="arch-conn-lbl">WebSocket<br>8765 via SSH</div>
         </div>
 
         <!-- Node 2: AMD MI300X FastAPI -->
@@ -1893,7 +1893,7 @@
     },
     {
       name: '05 — CrewAI + Qdrant',
-      badge: '~300ms', fast: false,
+      badge: '~300ms*', fast: false,
       pkt: '提案×3',
       inText: 'refined EN + speaker vector memory (Qdrant)',
       outText: '私もすごく楽しかった！  →  I had so much fun too!\nまた明日やろう！        →  Let\'s play again tomorrow!\n本当に上手だったね！    →  You were seriously amazing!',
