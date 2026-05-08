@@ -455,8 +455,9 @@ def get_suggestions(
         style = "casual"
     memories = memories or []
 
-    # Try CrewAI (full multi-agent)
-    if use_agents:
+    # Try CrewAI (full multi-agent) — disabled when USE_CREWAI=false
+    _crewai_enabled = os.getenv("USE_CREWAI", "false").lower() not in ("false", "0", "no")
+    if use_agents and _crewai_enabled:
         result = _call_crewai(jp_text, en_text, style, memories)
         if result and len(result) == 3:
             log.info("Suggestions from CrewAI ✓")
