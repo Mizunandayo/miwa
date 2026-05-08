@@ -204,10 +204,17 @@ def transcribe(pcm_bytes: bytes) -> dict:
             # Extract full text from valid (high-confidence) segments only
             full_text = " ".join(seg.get("text", "") for seg in valid_segments).strip()
 
-            # Reject if utterance is mostly ASCII letters — English speaker in VC
-            ascii_alpha = sum(1 for c in full_text if c.isascii() and c.isalpha())
-            if full_text and len(full_text) > 3 and ascii_alpha / len(full_text) > 0.55:
-                log.info(f"Non-Japanese utterance filtered (mostly ASCII): {full_text!r}")
+            # Require at least one Japanese character (hiragana, katakana, or kanji).
+            # Rejects: pure numbers ("1 2 3"), pure ASCII ("gg"), pure romaji ("hai"),
+            # and any other non-Japanese output Whisper produces despite language="ja".
+            has_japanese = any(
+                '\u3040' <= c <= '\u30FF'  # hiragana + katakana
+                or '\u4E00' <= c <= '\u9FFF'  # CJK unified ideographs (kanji)
+                or '\uF900' <= c <= '\uFAFF'  # CJK compatibility ideographs
+                for c in full_text
+            )
+            if not has_japanese:
+                log.info(f"Non-Japanese utterance filtered (no CJK/kana): {full_text!r}")
                 return {"text": "", "words": []}
 
             # Reject character-level repetition hallucinations (e.g. うっうっうっうっ... 200 chars)
