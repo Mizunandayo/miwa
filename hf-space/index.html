@@ -987,8 +987,7 @@
 
     <!-- Subtitle -->
     <p class="hero-sub">
-      Language barriers cost gaming communities millions of shared moments every day. Miwa eliminates the gap &mdash; per-speaker Discord voice translation with romaji, AI reply suggestions, and style-matched LLM refinement targeting under 800ms on AMD MI300X.
-    </p>
+      Language barriers cost gaming communities millions of shared moments every day. Miwa eliminates the gap &mdash; per-speaker Discord voice translation with romaji, a three-agent CrewAI suggestion pipeline, and style-matched LLM refinement, targeting under 800ms on AMD MI300X.
 
     <!-- Author + hackathon -->
     <div class="hero-author">
@@ -1076,7 +1075,7 @@
             <div class="demo-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
             <div class="demo-feat-body">
               <div class="demo-feat-title">Two-pass translation</div>
-              <div class="demo-feat-desc">Google Translate appears in ~100ms. Llama 3.3 70B refines it to your chosen style in ~700ms — the card updates in place.</div>
+              <div class="demo-feat-desc">Google Translate appears in ~100ms. Llama 3.3 70B refines it to your chosen style in ~500ms &mdash; the card updates in place with no flicker.</div>
             </div>
           </div>
           <div class="demo-feat">
@@ -1084,6 +1083,13 @@
             <div class="demo-feat-body">
               <div class="demo-feat-title">Reply with one key</div>
               <div class="demo-feat-desc">Press <strong>1</strong>, <strong>2</strong>, or <strong>3</strong> to instantly send that suggestion to Discord chat. Each card also has individual buttons &mdash; Bot Speaks in VC, Bot Sends in text, or I&rsquo;ll Speak (opens fullscreen romaji).</div>
+            </div>
+          </div>
+          <div class="demo-feat">
+            <div class="demo-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
+            <div class="demo-feat-body">
+              <div class="demo-feat-title">AI agents generate each suggestion <span style="font-size:10px;font-family:var(--mono);font-weight:600;padding:2px 6px;border-radius:4px;background:rgba(59,158,255,.15);border:1px solid rgba(59,158,255,.3);color:#3b9eff;margin-left:6px;vertical-align:middle">Track 1</span></div>
+              <div class="demo-feat-desc">Three CrewAI agents &mdash; Analyst &rarr; Strategist &rarr; Writer &mdash; run on AMD MI300X to produce context-aware Japanese replies. Per-speaker Qdrant vector memory means suggestions improve as the conversation continues.</div>
             </div>
           </div>
         </div>
@@ -1299,7 +1305,7 @@
           <div style="display:flex;align-items:center;gap:8px;padding:1px 3px">
 
             <span style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.2)">·</span>
-            <span style="font-size:11px;font-family:var(--mono);color:#f59e0b;font-weight:600">LLM ~400ms</span>
+            <span style="font-size:11px;font-family:var(--mono);color:#f59e0b;font-weight:600">LLM ~500ms</span>
             <span style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.2)">·</span>
             <span style="font-size:11px;font-family:var(--mono);color:rgba(255,255,255,.3)">WS</span>
             <span style="font-size:11px;font-family:var(--mono);color:#22c55e;font-weight:600">open</span>
@@ -1424,7 +1430,7 @@
       </div>
       <div class="pfl-legend">
         <div class="pfl-item"><span class="pfl-dot pfl-dot-1"></span>01 Capture (&lt;5ms)</div>
-        <div class="pfl-item"><span class="pfl-dot pfl-dot-2"></span>02 Transcription (~200ms)</div>
+        <div class="pfl-item"><span class="pfl-dot pfl-dot-2"></span>02 Transcription (~150ms)</div>
         <div class="pfl-item"><span class="pfl-dot pfl-dot-3"></span>03 Fast Translation (&lt;100ms)</div>
         <div class="pfl-item"><span class="pfl-dot pfl-dot-4"></span>04 LLM refinement (~500ms)</div>
         <div class="pfl-item"><span class="pfl-dot pfl-dot-5"></span>05 Overlay (&lt;20ms) &mdash; 06 Suggestions deferred (~8&ndash;15s, agentic pipeline)</div>
@@ -1603,15 +1609,15 @@
       </div>
       <div class="bc bc-e r" data-d="3">
         <div class="bc-lbl">Quick Reactions</div>
-        <div class="bc-title">6 quick reactions, always in reach</div>
-        <div class="bc-desc" style="margin-bottom:12px">草 えー マジ? gg もう一回 待って &mdash; the 6 most-used responses shown as one-click buttons. Style-adaptive across Casual, Gaming, Formal, and Neutral modes. Send instantly via Bot Sends or Bot Speaks.</div>
+        <div class="bc-title">Mode-adaptive reactions library</div>
+        <div class="bc-desc" style="margin-bottom:12px">80 pre-written reactions (20 per mode) that automatically swap when you change style — Casual, Gaming, Formal, Neutral. Live search filters by JP text, romaji, or English. One click sends via Bot Sends (chat) or Bot Speaks (TTS in voice channel).</div>
         <div class="rx-chips">
-          <span class="rx-chip">草</span>
-          <span class="rx-chip">えー</span>
-          <span class="rx-chip">マジ?</span>
-          <span class="rx-chip">gg</span>
-          <span class="rx-chip">もう一回</span>
-          <span class="rx-chip">待って</span>
+          <span class="rx-chip">草ｗ</span>
+          <span class="rx-chip">えー！</span>
+          <span class="rx-chip">マジで？</span>
+          <span class="rx-chip">やばい！</span>
+          <span class="rx-chip">いいね！</span>
+          <span class="rx-chip" style="opacity:0.45">+75</span>
         </div>
       </div>
       <div class="bc bc-f r" data-d="1">
@@ -1928,7 +1934,7 @@
       <div class="eng-dec">
         <div class="eng-dec-num">01</div>
         <div class="eng-dec-title">Two-pass translation</div>
-        <div class="eng-dec-body">Google Translate result shows in &lt;100ms as a <em style="font-style:normal;color:var(--text)">fast</em> packet. vLLM-refined translation arrives as a <em style="font-style:normal;color:var(--text)">refined</em> packet at ~700ms, updating in-place. Perceived latency is under 100ms even though LLM inference takes 700ms.</div>
+        <div class="eng-dec-body">Google Translate result shows in &lt;100ms as a <em style="font-style:normal;color:var(--text)">fast</em> packet. vLLM-refined translation arrives as a <em style="font-style:normal;color:var(--text)">refined</em> packet at ~500ms, updating in-place. Perceived latency is under 100ms even though LLM inference takes 500ms.</div>
       </div>
 
       <div class="eng-dec">
