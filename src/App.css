@@ -1148,11 +1148,71 @@ kbd {
   padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0;
   flex-shrink: 0;
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.03),
     0 4px 20px rgba(0, 0, 0, 0.45);
+}
+
+/* ── Shared panel header (Quick Reply + Reactions) ─────────────────────── */
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 0 2px 0 0;
+  user-select: none;
+  min-height: 20px;
+}
+
+.panel-header-label {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  flex: 1;
+}
+
+.panel-header-hint {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.panel-toggle {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 1px 2px;
+  border-radius: 3px;
+  transition: color 0.12s ease, background 0.12s ease;
+  flex-shrink: 0;
+}
+
+.panel-toggle:hover {
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+/* Inner wrapper adds top gap only when open */
+.quick-reply-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 6px;
+}
+
+.reactions-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 6px;
 }
 
 .quick-reply-input-row {
@@ -1538,7 +1598,7 @@ kbd {
   padding: 7px 8px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0;
   flex-shrink: 0;
   min-width: 0;
   box-shadow:

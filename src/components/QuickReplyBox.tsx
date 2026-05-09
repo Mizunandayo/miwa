@@ -11,6 +11,7 @@
 
 import { useRef, useEffect, useState } from "react";
 import { useAtom } from "jotai";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   quickReplyResultAtom,
   quickReplyLoadingAtom,
@@ -32,6 +33,7 @@ export default function QuickReplyBox({ sendCommand }: QuickReplyBoxProps) {
   const [loading, setLoading] = useAtom(quickReplyLoadingAtom);
   const [styleMode] = useAtom(styleModeAtom);
   const [hasText, setHasText] = useState(false);
+  const [open, setOpen] = useState(true);
 
   // Keep ref in sync so debounce callback always sees latest style
   useEffect(() => { styleModeRef.current = styleMode; }, [styleMode]);
@@ -102,36 +104,64 @@ export default function QuickReplyBox({ sendCommand }: QuickReplyBoxProps) {
 
   return (
     <div className="quick-reply-box">
-      <div className="quick-reply-input-row">
-        <input
-          ref={inputRef}
-          type="text"
-          className="quick-reply-input"
-          placeholder={`Type English — translates as ${styleLabelMap[styleMode] ?? styleMode}…`}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          maxLength={300}
-        />
-        {hasText && (
-          <button className="quick-reply-clear" onClick={handleClear} title="Clear">✕</button>
-        )}
-        {loading && <span className="quick-reply-spinner">⟳</span>}
+      {/* ── Collapse header ─────────────────────────────────────────── */}
+      <div className="panel-header" onClick={() => setOpen((v) => !v)}>
+        <span className="panel-header-label">Quick Reply</span>
+        {!open && loading && <span className="quick-reply-spinner" style={{ marginLeft: 4 }}>⟳</span>}
+        <button
+          className="panel-toggle"
+          title={open ? "Collapse" : "Expand"}
+          onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
+        >
+          {open ? "▾" : "▸"}
+        </button>
       </div>
 
-      {result && (
-        <div className="quick-reply-preview">
-          <div className="quick-reply-preview-text">
-            <div className="quick-reply-jp">{result.jp}</div>
-            <div className="quick-reply-romaji">{result.romaji}</div>
-          </div>
-          <button className="quick-reply-speaks" onClick={handleBotSpeaks} title="Bot speaks in VC">
-            🔊
-          </button>
-          <button className="quick-reply-send" onClick={handleSend} title="Enter">
-            Send
-          </button>
-        </div>
-      )}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="qr-body"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.16, ease: "easeInOut" }}
+            style={{ overflow: "hidden" }}
+          >
+            <div className="quick-reply-inner">
+              <div className="quick-reply-input-row">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  className="quick-reply-input"
+                  placeholder={`Type English — translates as ${styleLabelMap[styleMode] ?? styleMode}…`}
+                  onChange={handleChange}
+                  onKeyDown={handleKeyDown}
+                  maxLength={300}
+                />
+                {hasText && (
+                  <button className="quick-reply-clear" onClick={handleClear} title="Clear">✕</button>
+                )}
+                {loading && <span className="quick-reply-spinner">⟳</span>}
+              </div>
+
+              {result && (
+                <div className="quick-reply-preview">
+                  <div className="quick-reply-preview-text">
+                    <div className="quick-reply-jp">{result.jp}</div>
+                    <div className="quick-reply-romaji">{result.romaji}</div>
+                  </div>
+                  <button className="quick-reply-speaks" onClick={handleBotSpeaks} title="Bot speaks in VC">
+                    🔊
+                  </button>
+                  <button className="quick-reply-send" onClick={handleSend} title="Enter">
+                    Send
+                  </button>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

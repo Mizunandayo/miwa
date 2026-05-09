@@ -13,6 +13,7 @@
 
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useAtom } from "jotai";
+import { motion, AnimatePresence } from "framer-motion";
 import { styleModeAtom, type StyleMode } from "../store/atoms";
 
 interface QuickReactionsProps {
@@ -130,6 +131,7 @@ export default function QuickReactions({ sendCommand }: QuickReactionsProps) {
   const [flashing, setFlashing] = useState<FlashKey | null>(null);
   const [query, setQuery] = useState("");
   const [dragging, setDragging] = useState(false);
+  const [open, setOpen] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const dragStartXRef = useRef(0);
@@ -195,71 +197,101 @@ export default function QuickReactions({ sendCommand }: QuickReactionsProps) {
   );
 
   return (
-    <div className="quick-reactions" onWheel={onWheel}>
-      {/* Search + style label row */}
-      <div className="reaction-search-wrap">
-        <input
-          ref={inputRef}
-          className="reaction-search"
-          placeholder={`Search ${styleMode}…`}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          spellCheck={false}
-        />
-        {query && (
-          <button
-            className="reaction-search__clear"
-            onClick={() => { setQuery(""); inputRef.current?.focus(); }}
-            tabIndex={-1}
-          >
-            ×
-          </button>
+    <div className="quick-reactions">
+      {/* ── Collapse header ───────────────────────────────────────── */}
+      <div className="panel-header" onClick={() => setOpen((v) => !v)}>
+        <span className="panel-header-label">Reactions</span>
+        {!open && query && (
+          <span className="panel-header-hint">{filtered.length} match{filtered.length !== 1 ? "es" : ""}</span>
         )}
+        <button
+          className="panel-toggle"
+          title={open ? "Collapse" : "Expand"}
+          onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
+        >
+          {open ? "▾" : "▸"}
+        </button>
       </div>
 
-      {/* Cards — horizontal scroll, also scrollable by mouse wheel */}
-      <div
-        className={`reaction-cards${dragging ? " dragging" : ""}`}
-        ref={scrollRef}
-        onMouseDown={onMouseDown}
-        onMouseMove={onMouseMove}
-        onMouseUp={onMouseUpOrLeave}
-        onMouseLeave={onMouseUpOrLeave}
-      >
-        {filtered.length === 0 ? (
-          <span className="reaction-no-results">No matches</span>
-        ) : (
-          filtered.map((r, i) => (
-            <div key={`${styleMode}-${r.jp}`} className="reaction-card">
-              <div className="reaction-card__text">
-                <span className="reaction-card__en">{r.en}</span>
-                <span className="reaction-card__romaji">{r.romaji}</span>
-                <span className="reaction-card__jp">{r.jp}</span>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="reactions-body"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.16, ease: "easeInOut" }}
+            style={{ overflow: "hidden" }}
+          >
+            <div className="reactions-inner" onWheel={onWheel}>
+              {/* Search + style label row */}
+              <div className="reaction-search-wrap">
+                <input
+                  ref={inputRef}
+                  className="reaction-search"
+                  placeholder={`Search ${styleMode}…`}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  spellCheck={false}
+                />
+                {query && (
+                  <button
+                    className="reaction-search__clear"
+                    onClick={() => { setQuery(""); inputRef.current?.focus(); }}
+                    tabIndex={-1}
+                  >
+                    ×
+                  </button>
+                )}
               </div>
-              <div className="reaction-card__actions">
-                <button
-                  className={`reaction-card__btn reaction-card__btn--send${
-                    flashing === `${i}-send` ? " flash-send" : ""
-                  }`}
-                  title="Send to chat"
-                  onClick={(e) => fire(e, `${i}-send`, "botSends", r.jp)}
-                >
-                  💬
-                </button>
-                <button
-                  className={`reaction-card__btn reaction-card__btn--speak${
-                    flashing === `${i}-speak` ? " flash-speak" : ""
-                  }`}
-                  title="Bot speaks in VC"
-                  onClick={(e) => fire(e, `${i}-speak`, "botSpeaks", r.jp)}
-                >
-                  🔊
-                </button>
+
+              {/* Cards — horizontal scroll, also scrollable by mouse wheel */}
+              <div
+                className={`reaction-cards${dragging ? " dragging" : ""}`}
+                ref={scrollRef}
+                onMouseDown={onMouseDown}
+                onMouseMove={onMouseMove}
+                onMouseUp={onMouseUpOrLeave}
+                onMouseLeave={onMouseUpOrLeave}
+              >
+                {filtered.length === 0 ? (
+                  <span className="reaction-no-results">No matches</span>
+                ) : (
+                  filtered.map((r, i) => (
+                    <div key={`${styleMode}-${r.jp}`} className="reaction-card">
+                      <div className="reaction-card__text">
+                        <span className="reaction-card__en">{r.en}</span>
+                        <span className="reaction-card__romaji">{r.romaji}</span>
+                        <span className="reaction-card__jp">{r.jp}</span>
+                      </div>
+                      <div className="reaction-card__actions">
+                        <button
+                          className={`reaction-card__btn reaction-card__btn--send${
+                            flashing === `${i}-send` ? " flash-send" : ""
+                          }`}
+                          title="Send to chat"
+                          onClick={(e) => fire(e, `${i}-send`, "botSends", r.jp)}
+                        >
+                          💬
+                        </button>
+                        <button
+                          className={`reaction-card__btn reaction-card__btn--speak${
+                            flashing === `${i}-speak` ? " flash-speak" : ""
+                          }`}
+                          title="Bot speaks in VC"
+                          onClick={(e) => fire(e, `${i}-speak`, "botSpeaks", r.jp)}
+                        >
+                          🔊
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
-          ))
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
     </div>
   );
 }
