@@ -983,10 +983,34 @@ kbd {
   border-top: 1px solid var(--border);
 }
 
+.call-info-members-hint {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  padding: 2px 0 4px;
+  letter-spacing: 0.04em;
+  opacity: 0.6;
+}
+
 .call-info-member {
   display: flex;
   align-items: center;
   gap: 8px;
+  transition: opacity 0.15s ease;
+}
+
+/* Dim the whole row when muted from pipeline */
+.call-info-member.is-disabled {
+  opacity: 0.45;
+}
+
+.call-info-member.is-disabled .call-info-avatar {
+  filter: grayscale(1);
+}
+
+.call-info-member.is-disabled .call-info-username {
+  text-decoration: line-through;
+  color: var(--text-muted);
 }
 
 .call-info-avatar {
@@ -995,6 +1019,7 @@ kbd {
   border-radius: 50%;
   flex-shrink: 0;
   object-fit: cover;
+  transition: filter 0.15s ease;
 }
 
 .call-info-avatar-placeholder {
@@ -1013,6 +1038,70 @@ kbd {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+  transition: color 0.15s ease, text-decoration 0.15s ease;
+}
+
+/* ── Per-member pipeline toggle button ─────────────────────────────── */
+.call-info-member-toggle {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  line-height: 1;
+  color: var(--text-muted);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  margin-left: auto;
+}
+
+.call-info-member-toggle:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-focus);
+}
+
+/* Active (enabled) — green checkmark */
+.call-info-member-toggle.is-active {
+  background: rgba(74, 222, 128, 0.1);
+  border-color: rgba(74, 222, 128, 0.5);
+  color: #4ade80;
+}
+
+.call-info-member-toggle.is-active:hover {
+  background: rgba(74, 222, 128, 0.2);
+  border-color: #4ade80;
+}
+
+/* Muted (disabled from pipeline) — red ✕ */
+.call-info-member-toggle.is-muted {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: rgba(239, 68, 68, 0.8);
+}
+
+.call-info-member-toggle.is-muted:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.7);
+  color: #ef4444;
+}
+
+/* Muted-count badge in the collapsed bar */
+.call-info-muted-badge {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  color: rgba(239, 68, 68, 0.7);
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 3px;
+  padding: 1px 5px;
+  flex-shrink: 0;
 }
 
 /* ─── Empty State ────────────────────────────────────────────────────────── */

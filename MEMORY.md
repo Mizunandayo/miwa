@@ -1458,3 +1458,62 @@ After: "Language barriers cost gaming communities millions of shared moments eve
 - Deadline: May 11, 3:00 AM PHT (~2 days from now)
 - Cloud IP: DESTROYED -- recreate when ready for E2E test
 - SSH key: miwa_amd (still exists locally)
+
+---
+
+## SESSION 16 — May 9, 2026 (Day 6 — Per-Member Pipeline Toggle + UI Polish)
+
+### Features Implemented
+
+#### 1. Per-Member Pipeline Toggle
+- Goal: Prevent non-Japanese speakers (e.g., Vietnamese friend in VC) from flooding pipeline with hallucinations
+- **bot/index.js** changes:
+  - `const disabledUsers = new Set();` — server-side ground truth
+  - Audio filter: `if (disabledUsers.has(userId)) return;` at top of `speaking.on("start")`
+  - Text filter: same check before Japanese regex in `messageCreate`
+  - `toggleUser` command handler: adds/removes from Set, broadcasts `user_toggled` echo to all UI clients
+- **atoms.ts**: `export const disabledUsersAtom = atom<Set<string>>(new Set<string>());`
+- **App.tsx**: imports `disabledUsersAtom`, handles `user_toggled` packet (immutable Set update), passes `sendCommand` to both `<CallInfoStrip>` usages
+- **CallInfoStrip.tsx**: `Props { sendCommand }`, per-member toggle button (✓ green / ✕ red), muted-badge in collapsed bar, optimistic atom update
+- **App.css**: `.call-info-member-toggle`, `.is-active` (green), `.is-muted` (red), `.call-info-muted-badge`, `.call-info-member.is-disabled` (opacity + grayscale + strikethrough)
+
+#### 2. Real-Time VC Join/Leave Detection
+- `voiceStateUpdate` event in `bot/index.js` watches `currentVoiceChannelId`
+- On leave: calls `broadcastCallInfo()` + clears disabled state (auto-cleanup) + broadcasts `user_toggled` disabled:false
+- On join: calls `broadcastCallInfo()`
+- Fires only on channelId change (not mute/deafen events) — avoids unnecessary call_info broadcasts
+- `GatewayIntentBits.GuildVoiceStates` already included from Day 2
+
+#### 3. cursor:pointer on Landing Page CTAs
+- `hf-space/index.html` and `docs/index.html` both updated
+- Added `cursor: pointer` to: `.btn-primary`, `.btn-ghost`, `.nav-link`
+- All CTAs are `<a>` tags (get it by default from browsers) but now explicitly set for robustness
+
+#### 4. App.css call-info Section Rewrite
+- Full expansion of call-info member styles (from ~8 lines to ~80 lines)
+- Added hint text, toggle button variants, muted badge, disabled state animations
+
+### Design Decision
+- **Bot-side Set as ground truth**: Prevents even one audio packet from slipping through to AMD cloud. UI atom is optimistic for instant feedback. Echo packet syncs any other UI clients.
+- **Auto-clear on VC leave**: Prevents stale disabled state if user rejoins later. The `user_toggled { disabled: false }` echo also clears UI atom.
+
+### Files Modified This Session
+| File | Change |
+|---|---|
+| bot/index.js | disabledUsers Set + audio/text filters + toggleUser handler + voiceStateUpdate |
+| src/store/atoms.ts | disabledUsersAtom |
+| src/App.tsx | disabledUsersAtom + user_toggled handler + sendCommand prop |
+| src/components/CallInfoStrip.tsx | Full rewrite with toggle buttons |
+| src/App.css | Expanded call-info styles |
+| hf-space/index.html | cursor:pointer on CTAs |
+| docs/index.html | cursor:pointer on CTAs (kept in sync) |
+| CLAUDE.md | Updated build status + KEY DECISIONS |
+
+### Remaining Before Submission (Day 7 — May 10)
+- Record demo video -> replace video placeholder with YouTube/Loom embed
+- Publish hf-space/ to HuggingFace Space (org: lablab-ai-amd-developer-hackathon)
+- GitHub Pages live (repo Settings -> Pages -> /docs branch=main)
+- AMD cloud E2E test (openai-whisper + Qdrant + CrewAI + edge-tts)
+- 2 social posts tagging @AIatAMD + @lablab
+- Git commit + push all Session 16 changes
+- Submit on lablab.ai before May 11, 3:00 AM PHT

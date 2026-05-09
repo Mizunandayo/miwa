@@ -14,7 +14,7 @@
 | 3 | May 6 | LLM + Agents + Memory (cloud) | UI polish — QuickReplyBox, SuggestionCard (delivery buttons), RomajiPopup, QuickReactions, Phrasebook (Ctrl+1-9), StatsPanel, CallInfoStrip, resize handle, bug fix: google_translate source hardcode |
 | 4 | May 7 | Suggestions + Quick Reply + Full UX | ✅ Complete — README.md, 1/2/3 shortcuts, Framer Motion spring, snap-to-corner, bot/tts.js stub, hf-space/ (README + animated index.html), git push |
 | 5 | May 8 | Polish + .exe build | ✅ Complete — AMD cloud recreated (IP: 129.212.188.94), full pipeline tested E2E. Bug fixes: hallucination filter, style translation, Bot Speaks TTS wired, quick reply two-pass latency, card timeout, dark UI (quick-reply + reactions), refined packet split (translation immediate, suggestions deferred). Window controls (macOS traffic-light). Latency optimizations (avatar non-blocking, persistent TCP session, max_tokens 400→250, separate semaphores). hf-space overlay iterative resize (3 commits: -30% height+widen, +40% wide/-20% height, -30% width → final 504px max-width grid 1fr 1fr). Latest commit: 8496a85 |
-| 6 | May 9 | GitHub + HF Space + Demo Video | ✅ In Progress — TTS latency reduced: pre-synthesis cache (server) + StreamingResponse + Readable.fromWeb streaming (bot). Suggestions now take ~0ms (cache hit) vs 2-3s. Cache misses stream first byte in ~300ms. hf-space accuracy patches, docs/ GitHub Pages, mobile CSS. HF Space polish: accuracy audit (WhisperX→openai-whisper, XTTS v2→edge-tts), SVG icons replacing emojis in pipeline + arch nodes, 3-step journey architecture section, 5 content improvements: hero business value tagline, impact strip (200M+ / <800ms / $0), video placeholder section, HF likes CTA button, Qwen2.5 72B in stack, "6 quick reactions" fix. Both hf-space/ and docs/ kept in sync. |
+| 6 | May 9 | GitHub + HF Space + Demo Video | ✅ In Progress — TTS latency reduced: pre-synthesis cache (server) + StreamingResponse + Readable.fromWeb streaming (bot). Suggestions now take ~0ms (cache hit) vs 2-3s. Cache misses stream first byte in ~300ms. hf-space accuracy patches, docs/ GitHub Pages, mobile CSS. HF Space polish: accuracy audit (WhisperX→openai-whisper, XTTS v2→edge-tts), SVG icons replacing emojis in pipeline + arch nodes, 3-step journey architecture section, 5 content improvements: hero business value tagline, impact strip (200M+ / <800ms / $0), video placeholder section, HF likes CTA button, Qwen2.5 72B in stack, "6 quick reactions" fix. Both hf-space/ and docs/ kept in sync. Member pipeline toggle feature: per-member enable/disable in CallInfoStrip, voiceStateUpdate real-time join/leave, disabledUsersAtom, toggleUser command, user_toggled echo. cursor:pointer added to all CTAs in landing page. |
 | 7 | May 10 | Final Review + SUBMIT | ⬜ Planned |
 
 **Note:** Cloud (MI300X) was destroyed after Day 1 to stop billing (~$83 remaining). All Day 2–3 work done locally with stub server. Cloud will be recreated Day 5 (May 8).
@@ -350,7 +350,7 @@ miwa/
 | src/components/KaraokeText.tsx | ✅ DONE |
 | src/components/RomajiLine.tsx | ✅ DONE |
 | src/components/QuickReplyBox.tsx | ✅ DONE — 500ms debounce, style-aware, EN→JP live |
-| src/components/CallInfoStrip.tsx | ✅ DONE — guild icon, member avatars, collapsible |
+| src/components/CallInfoStrip.tsx | ✅ DONE — guild icon, member avatars, collapsible, per-member pipeline toggle (enable/disable), muted-badge in collapsed bar |
 | Tauri window config | ✅ DONE — minHeight 260, shadow:false, x:20, y:100 |
 | Tauri capabilities | ✅ DONE — core:window:allow-set-size added |
 | Vertical resize handle | ✅ DONE — drag bottom edge, LogicalSize API |
@@ -402,6 +402,8 @@ miwa/
 | hf-space quick reactions fix | ✅ DONE — "80 reactions" → "6 quick reactions, always in reach" with accurate description |
 | hf-space hero subtitle | ✅ DONE — business value opening sentence added ("Language barriers cost gaming communities...") |
 | docs/ sync | ✅ DONE — docs/index.html kept identical to hf-space/index.html for all changes |
+| hf-space/docs cursor:pointer | ✅ DONE — cursor:pointer added explicitly to .btn-primary, .btn-ghost, .nav-link |
+| Member pipeline toggle | ✅ DONE — disabledUsersAtom + toggleUser command + voiceStateUpdate real-time join/leave + per-member toggle button in CallInfoStrip (green ✓ / red ✕), muted-badge in collapsed bar, auto-clear on leave |
 
 ---
 
@@ -438,6 +440,7 @@ miwa/
 - **Separate vLLM semaphores** — `_translate_semaphore(2)` + `_suggest_semaphore(4)` so translations are never queued behind another speaker's suggestions
 - **Persistent requests.Session** — one TCP connection reused for all vLLM calls; avoids per-call TCP handshake (~20-50ms saved per call)
 - **Window controls: macOS traffic-light style** — amber=minimize, green=maximize, red=close; icon only visible on hover (non-distracting overlay)
+- **Per-member pipeline disable** — UI toggle sends `{ action: "toggleUser", userId, disabled }` command to bot; bot's `disabledUsers` Set filters audio+text before entering pipeline; `voiceStateUpdate` auto-clears disabled state when user leaves VC; `user_toggled` echo packet keeps all UI clients in sync
 
 ---
 

@@ -48,7 +48,7 @@
     .nav-left { display: flex; align-items: center; gap: 36px; }
     .nav-brand { font-size: 14px; font-weight: 700; letter-spacing: -.025em; }
     .nav-links { display: flex; gap: 2px; }
-    .nav-link { font-size: 13px; color: var(--muted); text-decoration: none; padding: 5px 10px; border-radius: 5px; transition: color 140ms, background 140ms; }
+    .nav-link { font-size: 13px; color: var(--muted); text-decoration: none; padding: 5px 10px; border-radius: 5px; transition: color 140ms, background 140ms; cursor: pointer; }
     .nav-link:hover { color: var(--text); background: var(--surface2); }
     .nav-cta {
       font-size: 13px; font-weight: 600; color: #000; background: #fff;
@@ -151,7 +151,7 @@
       display: inline-flex; align-items: center; gap: 8px;
       font-size: 13px; font-weight: 600; color: #000; background: #fff;
       padding: 11px 24px; border-radius: 999px; text-decoration: none;
-      transition: opacity 150ms, transform 150ms;
+      transition: opacity 150ms, transform 150ms; cursor: pointer;
     }
     .btn-primary:hover { opacity: .84; transform: translateY(-1px); }
     .btn-primary:active { transform: scale(.97); }
@@ -160,7 +160,7 @@
       font-size: 13px; font-weight: 500; color: var(--muted);
       background: transparent; border: 1px solid var(--border2);
       padding: 11px 24px; border-radius: 999px; text-decoration: none;
-      transition: color 150ms, border-color 150ms, transform 150ms;
+      transition: color 150ms, border-color 150ms, transform 150ms; cursor: pointer;
     }
     .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,.3); transform: translateY(-1px); }
 

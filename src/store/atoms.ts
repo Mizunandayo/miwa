@@ -157,3 +157,11 @@ export const phrasebookOpenAtom = atom<boolean>(false);
 
 /** Dark card mode — solid black background on speaker cards */
 export const darkCardsAtom = atom<boolean>(true);
+
+/**
+ * Set of userIds explicitly disabled by the user in the CallInfoStrip.
+ * Disabled users' audio and text are silently dropped by the bot before
+ * entering the translation pipeline.
+ * Cleared automatically when a user leaves the voice channel.
+ */
+export const disabledUsersAtom = atom<Set<string>>(new Set<string>());

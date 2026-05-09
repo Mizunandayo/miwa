@@ -88,6 +88,11 @@ const speakerCache = new Map();
 // user when speaking.on("start") fires multiple times for one utterance.
 const activeRecording = new Set();
 
+// Tracks users explicitly muted by the UI — their audio and text messages are
+// dropped before entering the translation pipeline. Cleared when the user
+// leaves the voice channel so disabled state doesn't persist across sessions.
+const disabledUsers = new Set();
+
 // --- Init DB ---
 initDb();
 
@@ -367,6 +372,8 @@ function attachVoiceReceiver(connection) {
   const receiver = connection.receiver;
 
   receiver.speaking.on("start", async (userId) => {
+    // Drop audio for users the UI has explicitly disabled.
+    if (disabledUsers.has(userId)) return;
     // Prevent duplicate streams: activeRecording is managed by our own logic,
     // unlike receiver.subscriptions which has a race condition window.
     if (activeRecording.has(userId)) return;
@@ -473,6 +480,9 @@ client.on("messageCreate", async (message) => {
   if (message.channelId !== currentVoiceChannelId) return;
   // Don't process bot commands
   if (message.content.startsWith("!")) return;
+
+  // Drop messages from users the UI has explicitly disabled.
+  if (disabledUsers.has(message.author.id)) return;
 
   // Only translate messages containing Japanese characters
   const hasJapanese = /[\u3000-\u9fff\uff00-\uffef]/.test(message.content);
@@ -622,6 +632,19 @@ function handleUiCommand(msg) {
       console.error("[bot] deletePhrase failed:", err.message);
     }
   }
+
+  if (msg.action === "toggleUser" && msg.userId) {
+    const userId = String(msg.userId);
+    const shouldDisable = Boolean(msg.disabled);
+    if (shouldDisable) {
+      disabledUsers.add(userId);
+    } else {
+      disabledUsers.delete(userId);
+    }
+    console.log(`[bot] User ${userId} ${shouldDisable ? "disabled" : "enabled"} in pipeline`);
+    // Echo back so all UI clients stay in sync
+    broadcastToUI({ type: "user_toggled", userId, disabled: shouldDisable });
+  }
 }
 
 
@@ -643,6 +666,39 @@ function handleUiCommand(msg) {
 
 
 
+
+// ─── Real-time voice state changes (join / leave / move) ─────────────────
+// Fires whenever ANY user's voice state changes in any guild the bot is in.
+// We only care about our currently watched voice channel.
+client.on("voiceStateUpdate", (oldState, newState) => {
+  // Only care about the guild we're currently in
+  if (!currentGuildId) return;
+  if (oldState.guild.id !== currentGuildId && newState.guild.id !== currentGuildId) return;
+  // Ignore bots
+  if (newState.member?.user?.bot || oldState.member?.user?.bot) return;
+
+  const userId = newState.id || oldState.id;
+  const leftOurChannel =
+    oldState.channelId === currentVoiceChannelId &&
+    newState.channelId !== currentVoiceChannelId;
+  const joinedOurChannel =
+    newState.channelId === currentVoiceChannelId &&
+    oldState.channelId !== currentVoiceChannelId;
+
+  if (leftOurChannel) {
+    // Clear the user's disabled state so they start fresh if they rejoin
+    if (disabledUsers.has(userId)) {
+      disabledUsers.delete(userId);
+      // Tell UI to un-disable this user
+      broadcastToUI({ type: "user_toggled", userId, disabled: false });
+    }
+    broadcastCallInfo();
+    console.log(`[bot] Voice state: ${oldState.member?.displayName ?? userId} left ${currentVoiceChannelId}`);
+  } else if (joinedOurChannel) {
+    broadcastCallInfo();
+    console.log(`[bot] Voice state: ${newState.member?.displayName ?? userId} joined ${currentVoiceChannelId}`);
+  }
+});
 
 // ─── !join / !leave commands ───────────────────────────────────────────────
 client.on("messageCreate", async (message) => {

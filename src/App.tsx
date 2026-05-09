@@ -27,6 +27,7 @@ import {
   quickReplyLoadingAtom,
   phrasebookAtom,
   darkCardsAtom,
+  disabledUsersAtom,
   type PhrasebookEntry,
   type SpeakerState,
   type CallInfo,
@@ -63,6 +64,7 @@ export default function App() {
   const setQuickReplyLoading = useSetAtom(quickReplyLoadingAtom);
   const setPhrasebook = useSetAtom(phrasebookAtom);
   const [darkCards] = useAtom(darkCardsAtom);
+  const setDisabledUsers = useSetAtom(disabledUsersAtom);
 
   // ── Fullscreen / maximized detection ──────────────────────────────────
   const [isMaximized, setIsMaximized] = useState(false);
@@ -158,6 +160,24 @@ export default function App() {
       // Phrasebook sync from bot (on save / delete / connect)
       if (type === "phrasebook") {
         setPhrasebook((packet.phrases as PhrasebookEntry[]) ?? []);
+        return;
+      }
+
+      // User toggle echo from bot — keeps all UI clients in sync,
+      // and auto-clears disabled state when a user leaves the VC.
+      if (type === "user_toggled") {
+        const userId = packet.userId as string;
+        const disabled = packet.disabled as boolean;
+        if (!userId) return;
+        setDisabledUsers((prev) => {
+          const next = new Set(prev);
+          if (disabled) {
+            next.add(userId);
+          } else {
+            next.delete(userId);
+          }
+          return next;
+        });
         return;
       }
 
@@ -295,6 +315,7 @@ export default function App() {
       setQuickReplyResult,
       setQuickReplyLoading,
       setPhrasebook,
+      setDisabledUsers,
     ]
   );
 
@@ -465,7 +486,7 @@ export default function App() {
               <>
                 {/* Main: call info strip + speaker cards */}
                 <div className="fs-main">
-                  <CallInfoStrip />
+                  <CallInfoStrip sendCommand={sendCommand} />
                   {speakerListJSX}
                 </div>
 
@@ -499,7 +520,7 @@ export default function App() {
     <div className="overlay-root">
       <Header sendCommand={sendCommand} />
       <QuickReplyBox sendCommand={sendCommand} />
-      <CallInfoStrip />
+      <CallInfoStrip sendCommand={sendCommand} />
       <QuickReactions sendCommand={sendCommand} />
       {speakerListJSX}
       <Phrasebook sendCommand={sendCommand} />
