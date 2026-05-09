@@ -1037,7 +1037,7 @@
       <div class="r" data-d="1">
         <div class="impact-num">200M+</div>
         <div class="impact-label">Monthly Discord users</div>
-        <div class="impact-sub">Millions in cross-language gaming servers with no real-time translation &mdash; an untapped opportunity for the right tool</div>
+        <div class="impact-sub">Discord has no native real-time translation. Miwa is a transparent overlay that requires nothing from the other person.</div>
       </div>
       <div class="r" data-d="2">
         <div class="impact-num">&lt;800ms</div>
@@ -1075,7 +1075,7 @@
             <div class="demo-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
             <div class="demo-feat-body">
               <div class="demo-feat-title">Two-pass translation</div>
-              <div class="demo-feat-desc">Google Translate appears in ~100ms. Llama 3.3 70B refines it to your chosen style in ~500ms &mdash; the card updates in place with no flicker.</div>
+              <div class="demo-feat-desc">A fast translation appears the moment speech ends. The LLM then refines it to your chosen style &mdash; the card updates in place with no flicker.</div>
             </div>
           </div>
           <div class="demo-feat">
@@ -1445,7 +1445,7 @@
   <div class="wrap">
     <div class="s-label r">Video</div>
     <h2 class="s-h2 r" data-d="1">Watch it <em>in a live call</em></h2>
-    <p class="r" data-d="2" style="color:var(--muted);font-size:15px;line-height:1.75;max-width:580px;margin:0 auto 32px;text-align:center">Real Japanese speech &rarr; karaoke highlight &rarr; LLM reply suggestions &rarr; one-key delivery to Discord, all under 800ms on AMD MI300X.</p>
+    <p class="r" data-d="2" style="color:var(--muted);font-size:15px;line-height:1.75;max-width:580px;margin:0 auto 32px;text-align:center">Full end-to-end walkthrough recorded live on AMD MI300X hardware.</p>
     <div class="video-wrap r" data-d="3">
       <div class="video-placeholder">
         <div class="video-placeholder-inner">
@@ -1485,10 +1485,6 @@
         <div class="amd-hs">
           <div class="amd-hs-num">FP16</div>
           <div class="amd-hs-lbl">Full precision</div>
-        </div>
-        <div class="amd-hs">
-          <div class="amd-hs-num">&lt;800<em>ms</em></div>
-          <div class="amd-hs-lbl">E2E latency</div>
         </div>
       </div>
     </div>
@@ -1548,8 +1544,8 @@
       </div>
       <div class="amd-adv">
         <div class="amd-adv-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-        <div class="amd-adv-title">Latency target &lt;800ms</div>
-        <div class="amd-adv-desc">High memory bandwidth means tokens fly through the model fast. Combined with vLLM's continuous batching, the LLM step stays under 500ms even during live calls.</div>
+        <div class="amd-adv-title">5.3 TB/s memory bandwidth</div>
+        <div class="amd-adv-desc">Token generation is memory-bound, not compute-bound. The MI300X moves model weights to compute units 5&times; faster than an RTX 4090 &mdash; every transformer layer stays fed without stalling, which is why full FP16 inference completes under 500ms.</div>
       </div>
       <div class="amd-adv">
         <div class="amd-adv-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="15" x2="4" y2="15"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="15" x2="23" y2="15"/></svg></div>
@@ -1577,7 +1573,7 @@
         <div class="bc-desc">Google Translate fires in under 100ms so you read immediately. Llama 3.3 70B follows with a style-aware refinement — Formal, Neutral, Casual, or Gaming — updating the card in place.</div>
         <div class="tp-list">
           <div class="tp-row"><span class="tp-lbl">Google</span><div class="tp-track"><div class="tp-bar gt"></div></div><span class="tp-t">&lt;100ms</span></div>
-          <div class="tp-row"><span class="tp-lbl">LLM</span><div class="tp-track"><div class="tp-bar llm"></div></div><span class="tp-t">~700ms</span></div>
+          <div class="tp-row"><span class="tp-lbl">LLM</span><div class="tp-track"><div class="tp-bar llm"></div></div><span class="tp-t">~500ms</span></div>
         </div>
       </div>
       <div class="bc bc-b r" data-d="2">
@@ -1586,10 +1582,9 @@
         <div class="bc-desc">Transparent, frameless, always-on-top Tauri window sits over your game or browser. Drag the header to reposition. Double-click to snap to corners. Resize vertically from the bottom edge.</div>
       </div>
       <div class="bc bc-c r" data-d="1">
-        <div class="bc-lbl">Latency</div>
-        <div class="bc-title">End-to-end target</div>
-        <div class="lb-wrap"><span class="lb-num">&lt;800</span><span class="lb-unit">ms</span></div>
-        <div class="lb-sub">GPU: AMD MI300X 192GB VRAM</div>
+        <div class="bc-lbl">Quick Reply</div>
+        <div class="bc-title">Type English, see Japanese live</div>
+        <div class="bc-desc">Debounced auto-translation as you type. Preview your message in Japanese and romaji before sending &mdash; the bot delivers it in your chosen style.</div>
       </div>
       <div class="bc bc-d r" data-d="2">
         <div class="bc-lbl">Shortcuts</div>
@@ -1922,7 +1917,7 @@
         <div class="arch-leg-item"><span class="arch-leg-dot" style="background:#3572A5"></span>Python &mdash; AI server</div>
         <div class="arch-leg-item"><span class="arch-leg-dot" style="background:#dea584"></span>Rust &mdash; Tauri backend</div>
         <div class="arch-leg-item"><span class="arch-leg-dot" style="background:#3178c6"></span>TypeScript &mdash; React UI</div>
-        <div class="arch-leg-item"><span class="arch-leg-dot" style="background:#4ade80"></span>AMD MI300X &mdash; 192 GB HBM3</div>
+        <div class="arch-leg-item"><span class="arch-leg-dot" style="background:#4ade80"></span>Python &mdash; FastAPI AI server (AMD MI300X)</div>
       </div>
 
     </div>
