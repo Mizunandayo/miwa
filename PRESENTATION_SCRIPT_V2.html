@@ -362,7 +362,7 @@
   <div class="toc-title">Running order</div>
   <div class="toc-row"><span>1. Problem — the specific failure mode</span><span>~20s</span></div>
   <div class="toc-row"><span>2. Live demo — show it working</span><span>~90s</span></div>
-  <div class="toc-row"><span>3. Pipeline — latency budget breakdown</span><span>~30s</span></div>
+  <div class="toc-row"><span>3. Pipeline + agent architecture</span><span>~50s</span></div>
   <div class="toc-row"><span>4. AMD MI300X — why the hardware matters</span><span>~25s</span></div>
   <div class="toc-row"><span>5. Architecture — systems thinking</span><span>~55s</span></div>
   <div class="toc-row"><span>6. Engineering decisions — the tradeoffs</span><span>~35s</span></div>
@@ -466,7 +466,7 @@
 <!-- ─── SECTION 3 ─── -->
 <div class="section-block page-break">
   <h2>Section 3</h2>
-  <h3>Pipeline — latency budget breakdown <span class="time-badge">~30s</span></h3>
+  <h3>Pipeline — latency budget + agent architecture <span class="time-badge">~50s</span></h3>
 
   <span class="cue">🖥 Screen: landing page — Pipeline section, let animation play</span>
 
@@ -475,12 +475,25 @@
   </blockquote>
 
   <blockquote>
-    "The CrewAI suggestion agents — Analyst, Strategist, Writer — run deferred after the translation is already displayed. There are separate semaphores for translations and suggestions — so a slow suggestion run on speaker A can never queue-block a translation packet from speaker B."
+    "The suggestion pipeline runs deferred — it never blocks translation from appearing. And it's not a single LLM call returning three results. It's three agents with distinct responsibilities."
+  </blockquote>
+
+  <blockquote>
+    "The <strong>Analyst</strong> queries Qdrant — per-speaker vector memory — and retrieves the most relevant past utterances from this conversation. It assesses the emotional register and context: is this a celebration, a frustration, a question? It passes a structured brief to the <strong>Strategist</strong>, which decides what <em class='tech'>type</em> of reply fits — agreement, question, reaction, game callout. The Strategist's output goes to the <strong>Writer</strong>, which generates three style-matched Japanese suggestions. Each is immediately pre-synthesized through edge-tts so 'Bot Speaks' has zero additional delay."
+  </blockquote>
+
+  <blockquote>
+    "Separate semaphores handle translations and suggestions independently — a slow agent run for speaker A can never queue-block a translation packet from speaker B."
   </blockquote>
 
   <div class="tradeoff-box">
     <span class="label">Why not stream the LLM output token-by-token?</span>
     Translation and romaji are complete units — streaming a partial Japanese sentence creates more confusion than the 200ms wait. Streaming is used for TTS synthesis: the audio starts playing before the full MP3 is generated, cutting perceived TTS latency by roughly half.
+  </div>
+
+  <div class="tradeoff-box">
+    <span class="label">Why three agents instead of one prompt?</span>
+    The Qdrant memory retrieval, the reply-type decision, and the Japanese generation are three different reasoning tasks with different inputs. Splitting them produces better output than a single mega-prompt — the Strategist's structured brief forces the Writer to stay on topic rather than free-associating from the raw transcript.
   </div>
 </div>
 
@@ -617,12 +630,12 @@
   <tbody>
     <tr><td>1</td><td>Problem — specific failure mode</td><td>Landing hero</td><td>~20s</td></tr>
     <tr><td>2</td><td>Live demo</td><td>Tauri overlay + Discord</td><td>~90s</td></tr>
-    <tr><td>3</td><td>Pipeline latency budget</td><td>Landing — Pipeline</td><td>~30s</td></tr>
+    <tr><td>3</td><td>Pipeline + agent architecture</td><td>Landing — Pipeline</td><td>~50s</td></tr>
     <tr><td>4</td><td>AMD MI300X</td><td>Landing — AMD section</td><td>~25s</td></tr>
     <tr><td>5</td><td>Architecture — 3 layers</td><td>Landing — Engineering</td><td>~55s</td></tr>
     <tr><td>6</td><td>6 engineering decisions</td><td>Landing — Decision cards</td><td>~35s</td></tr>
     <tr><td>7</td><td>Close</td><td>Hero or overlay</td><td>~10s</td></tr>
-    <tr class="total-row"><td></td><td>Total</td><td></td><td>~4m 05s</td></tr>
+    <tr class="total-row"><td></td><td>Total</td><td></td><td>~4m 25s</td></tr>
   </tbody>
 </table>
 

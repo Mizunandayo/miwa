@@ -1618,7 +1618,7 @@
       <div class="bc bc-f r" data-d="1">
         <div class="bc-lbl">Memory</div>
         <div class="bc-title">Per-speaker Qdrant vector store</div>
-        <div class="bc-desc">Each Discord user ID maps to a vector memory. Suggestions become more contextual as the conversation progresses.</div>
+        <div class="bc-desc">Each utterance is embedded and stored against the speaker&rsquo;s Discord user ID. When the CrewAI Analyst agent runs, it retrieves the most relevant past exchanges via vector similarity &mdash; giving the suggestion pipeline actual conversation context, not just the last sentence. Suggestions get more accurate as the call progresses.</div>
       </div>
       <div class="bc bc-g r" data-d="2">
         <div class="bc-lbl">Romaji</div>
@@ -1901,9 +1901,13 @@
             <div class="arch-pipe-arr">&rarr;</div>
 
             <div class="arch-step">
-              <div class="arch-step-num">AGENTS</div>
-              <div class="arch-step-name">vLLM + CrewAI + Qdrant</div>
-              <div class="arch-step-detail">3 reply suggestions &middot; 3-agent pipeline (Analyst &rarr; Strategist &rarr; Writer) &middot; vector memory per speaker &middot; deferred (does not block translation display)</div>
+              <div class="arch-step-num">AGENTS &mdash; deferred, does not block translation</div>
+              <div class="arch-step-name">CrewAI 3-agent pipeline &middot; vLLM + Qdrant</div>
+              <div class="arch-step-detail">
+                <strong style="color:#fff;font-style:normal">Analyst</strong> &mdash; retrieves top-K past utterances from Qdrant (per-speaker vector memory), assesses conversation context and emotional register<br>
+                <strong style="color:#fff;font-style:normal">Strategist</strong> &mdash; receives Analyst brief, decides reply type (agreement / question / reaction / game callout), produces structured handoff<br>
+                <strong style="color:#fff;font-style:normal">Writer</strong> &mdash; generates 3 style-matched Japanese reply suggestions from Strategist&rsquo;s brief &middot; each suggestion pre-synthesized via edge-tts
+              </div>
               <span class="arch-step-time">~8&ndash;15s (deferred)</span>
             </div>
 
