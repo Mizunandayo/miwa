@@ -1,103 +1,96 @@
-# Miwa 美話 — Real-Time Discord Voice Translation Overlay
+# Miwa 美話 — Real-Time Japanese Discord Voice Translation Overlay
 
-> **Beautiful Conversation** — Break the language barrier in Discord voice calls, live.
+> Beautiful Conversation — break language barriers in Discord voice calls, live.
 
-Miwa is a transparent always-on-top desktop overlay that listens to your Discord voice channel, transcribes each speaker's Japanese audio separately, and shows you the translation + romaji + AI-generated reply suggestions — all within 800ms.
+Miwa is a transparent, always-on-top desktop overlay that captures per-speaker Discord voice, transcribes Japanese speech, shows instant translation + romaji, and generates contextual AI replies for live conversations.
 
-Built for the **AMD Developer Hackathon 2026** (lablab.ai) — Track 1: AI Agents & Agentic Workflows.  
-Powered by **AMD MI300X** · **Llama 3.3 70B** · **WhisperX** · **CrewAI** · **XTTS v2**
+Built for the **AMD Developer Hackathon 2026** (lablab.ai), **Track 1: AI Agents & Agentic Workflows**.
 
----
+## Live Links
 
-## What It Does
+- Demo video: https://youtu.be/jZzCQzYThZE
+- Web walkthrough: https://mizunandayo.github.io/miwa/
+- Repository: https://github.com/Mizunandayo/miwa
 
-When your Japanese-speaking friends talk in a Discord voice channel:
+## Current Project State
 
-1. **Captures** per-speaker Opus audio (not the mixed stream)
-2. **Transcribes** with WhisperX on AMD MI300X — word-level timestamps
-3. **Shows** Google Translate result instantly (~100ms) — karaoke word highlight
-4. **Refines** with Llama 3.3 70B to your chosen style (Formal / Neutral / Casual / Gaming)
-5. **Generates** romaji pronunciation below every line
-6. **Suggests** 3 contextual AI reply options via CrewAI multi-agent pipeline
-7. **Delivers** replies 3 ways:
-   - 🔊 **Bot Speaks** — XTTS v2 synthesises your reply into the voice channel
-   - 💬 **Bot Sends** — bot types it in the text sidechat
-   - 🎤 **I'll Speak** — fullscreen romaji popup so you can say it yourself
+- End-to-end pipeline is running in real Discord calls
+- Two-pass translation is active:
+     1. Fast packet first (Google Translate)
+     2. Refined packet second (vLLM + Llama 3.3 70B)
+- Suggestions are deferred so translation appears first
+- TTS pre-synthesis cache is enabled (low perceived delay on Bot Speaks)
+- Per-member pipeline toggle is enabled (exclude non-target speakers)
+- UI includes quick reactions, phrasebook shortcuts, romaji popup, stats panel, and call member strip
 
-Also captures **typed messages** in the voice channel's text sidechat — same card layout, 💬 icon vs 🎙️ mic.
+## What Miwa Does
 
----
+When someone speaks Japanese in a Discord voice channel, Miwa:
 
-## Demo
+1. Captures per-speaker Opus audio (not mixed audio)
+2. Transcribes with **openai-whisper** (word-level timestamps)
+3. Sends fast translation immediately via Google Translate
+4. Sends refined style-aware translation via **Llama 3.3 70B** on vLLM
+5. Generates romaji for pronunciation support
+6. Generates 3 contextual replies via multi-agent flow
+7. Delivers replies via:
+      - Bot Speaks (edge-tts)
+      - Bot Sends (channel text chat)
+      - I'll Speak (fullscreen romaji)
 
-> Demo video coming — recorded against local stub server (cloud GPU reconnects Day 5)
-
-| Feature | Preview |
-|---|---|
-| Speaker cards with karaoke highlight | *(screenshot)* |
-| Suggestion cards with delivery buttons | *(screenshot)* |
-| Fullscreen romaji popup | *(screenshot)* |
-| Quick reply box (type EN → live JP) | *(screenshot)* |
-
----
+Also captures typed voice-channel sidechat messages into the same card workflow.
 
 ## Architecture
 
 ```
 Discord Voice Channel
-  └─ discord.js v14 (local Node.js)
-       ├─ per-user Opus → PCM (prism-media)
-       └─ SSH tunnel WebSocket → AMD Cloud FastAPI (port 8765)
-            ├─ WhisperX  ── PCM → JP text + word timestamps
-            ├─ Google Translate API  ── fast first-pass EN (shown immediately)
-            ├─ vLLM / Llama 3.3 70B  ── style-refined translation
-            ├─ pykakasi  ── romaji generation
-            ├─ Qdrant  ── vector memory per speaker (Discord user ID)
-            ├─ CrewAI  ── multi-agent suggestion pipeline (Track 1)
-            └─ XTTS v2  ── TTS audio for Bot Speaks
-                 └─ JSON packets → WebSocket → Tauri Rust backend
-                      └─ React 19 overlay (always-on-top, transparent)
+     -> discord.js (@discordjs/voice + prism-media)
+     -> per-speaker Opus/PCM streams
+     -> WebSocket to FastAPI server (port 8765)
+           -> openai-whisper transcription
+           -> Google Translate fast pass
+           -> vLLM (Llama 3.3 70B) refine + suggestions
+           -> pykakasi romaji
+           -> Qdrant speaker memory
+           -> edge-tts synthesis
+     -> JSON packets to Tauri/React overlay
 ```
 
-### Two-Pass Translation
-1. Google Translate result sent as `type: "fast"` — shown in ~100ms  
-2. vLLM refined result sent as `type: "refined"` — updates card in ~700ms  
+### Latency Strategy (Two-Pass)
 
-Users see a translation immediately; it upgrades silently to the LLM version.
-
----
+- `fast` packet appears first for immediate readability
+- `refined` packet upgrades text quality/style after
+- Result: low perceived latency while preserving LLM quality
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Desktop overlay | Tauri v2 + React 19 + Vite |
-| State | Jotai atoms |
-| Animation | Framer Motion |
-| Styling | Tailwind CSS v4 |
-| Discord audio | discord.js v14 + @discordjs/voice + prism-media |
-| Local DB | better-sqlite3 (WAL, avatar cache, phrasebook) |
-| GPU server | FastAPI WebSocket (Python) |
-| Transcription | WhisperX |
-| LLM inference | vLLM 0.17.1 — Llama 3.3 70B Instruct |
-| GPU | AMD MI300X — 192GB VRAM, ROCm 7.2 |
-| Agent pipeline | CrewAI |
-| Vector memory | Qdrant |
-| TTS | XTTS v2 |
+| Core Languages | TypeScript, JavaScript, Python, HTML, CSS |
+| Desktop App | Tauri v2, React 19, Vite |
+| State / UI | Jotai, Framer Motion |
+| Discord | discord.js v14, @discordjs/voice, prism-media |
+| Local Storage | better-sqlite3 (WAL) |
+| Server | FastAPI (WebSocket) |
+| Transcription | openai-whisper |
+| Translation | Google Cloud Translation API + vLLM refinement |
+| LLM | Llama 3.3 70B Instruct (vLLM 0.17.x) |
+| Agentic Suggestions | CrewAI-style Analyst -> Strategist -> Writer flow |
+| Memory | Qdrant + sentence-transformers |
+| TTS | edge-tts |
 | Romaji | pykakasi |
-| Translation | Google Cloud Translation API |
+| Infra | AMD MI300X (ROCm), Docker, SSH tunnel |
 
----
-
-## Quick Start
+## Quick Start (Local)
 
 ### Prerequisites
+
 - Node.js 18+
 - Python 3.11+
-- Rust 1.70+ (for Tauri)
-- Discord bot token with `bot` + `applications.commands` scopes, and **Voice** permissions
+- Rust (for Tauri)
+- Discord bot token with voice permissions
 
-### 1 — Clone & install
+### 1) Install dependencies
 
 ```bash
 git clone https://github.com/Mizunandayo/miwa.git
@@ -105,132 +98,98 @@ cd miwa
 npm install
 ```
 
-### 2 — Environment
+### 2) Configure environment
 
-Copy `.env.example` to `.env` and fill in your keys:
+Create `.env` in project root:
 
 ```env
-DISCORD_TOKEN=your_bot_token
-DISCORD_CLIENT_ID=your_client_id
-GOOGLE_TRANSLATE_API_KEY=your_key
-HF_TOKEN=your_huggingface_token
+DISCORD_TOKEN=
+DISCORD_CLIENT_ID=
+GOOGLE_TRANSLATE_API_KEY=
+HF_TOKEN=
 AMD_SERVER_WS_URL=ws://localhost:8765
 UI_WS_PORT=8766
 SERVER_WS_PORT=8765
 DEFAULT_STYLE=casual
 ```
 
-### 3 — Python server (local stub)
+### 3) Start Python server
 
 ```bash
 cd server
 python -m venv .venv
-.venv\Scripts\activate        # Windows
+.venv\Scripts\activate
 pip install -r requirements.txt
 python main.py
-# → ws://127.0.0.1:8765
 ```
 
-### 4 — Discord bot
+### 4) Start Discord bot
 
 ```bash
+cd ..
 node bot/index.js
-# → UI WS server on ws://127.0.0.1:8766
 ```
 
-### 5 — Overlay
+### 5) Start overlay
 
 ```bash
 npm run tauri dev
 ```
 
-Type `!join` in any Discord text channel to have the bot join your voice channel.
+## Production Notes (AMD Cloud)
 
----
+Inside `rocm` container, vLLM should run with VRAM headroom for Whisper:
+
+```bash
+nohup vllm serve /app/models/llama3.3-70b \
+     --host 0.0.0.0 \
+     --port 8000 \
+     --max-model-len 8192 \
+     --gpu-memory-utilization 0.80 \
+     > /app/vllm.log 2>&1 &
+```
+
+Local tunnel example:
+
+```bash
+ssh -i "$HOME/.ssh/miwa_amd" -N -L 8765:172.17.0.2:8765 root@<amd-instance-ip>
+```
 
 ## Keyboard Shortcuts
 
 | Key | Action |
 |---|---|
-| `1` / `2` / `3` | botSends suggestion 1/2/3 from most recent speaker |
-| `Ctrl+1` – `Ctrl+9` | Send saved phrasebook entry |
-| `Escape` | Close romaji popup |
-| Double-click header | Snap overlay to nearest screen corner |
-
----
-
-## AMD Cloud Setup (production)
-
-```bash
-# SSH in
-ssh -i "$HOME/.ssh/miwa_amd" root@<instance-ip>
-
-# Enter ROCm container
-docker exec -it rocm /bin/bash
-
-# Start vLLM (background)
-nohup vllm serve /app/models/llama3.3-70b \
-  --host 0.0.0.0 --port 8000 \
-  --max-model-len 8192 \
-  > /app/vllm.log 2>&1 &
-
-# SSH tunnel (local machine)
-ssh -i "$HOME/.ssh/miwa_amd" -N -L 8765:localhost:8765 root@<instance-ip>
-```
-
-Model: Llama 3.3 70B Instruct at `/app/models/llama3.3-70b/` (263 GB, FP16, full quality on MI300X 192GB VRAM).
-
----
+| `1` / `2` / `3` | Send suggestion #1 / #2 / #3 |
+| `Ctrl+1` to `Ctrl+9` | Send saved phrasebook slot |
+| `Esc` | Close romaji popup |
+| Double-click header | Snap window to nearest corner |
 
 ## Project Structure
 
 ```
 miwa/
 ├── bot/
-│   ├── index.js       # Discord voice capture, WebSocket bridge
-│   ├── db.js          # SQLite — avatar cache, phrasebook
-│   └── tts.js         # Bot Speaks / Bot Sends delivery (XTTS v2)
+│   ├── index.js
+│   ├── db.js
+│   └── tts.js
 ├── server/
-│   ├── main.py        # FastAPI WebSocket server (AMD cloud)
-│   ├── transcribe.py  # WhisperX wrapper
-│   ├── translate.py   # Google Translate + vLLM
-│   ├── suggest.py     # CrewAI suggestion pipeline
-│   ├── romaji.py      # pykakasi
-│   ├── memory.py      # Qdrant vector store
-│   └── tts.py         # XTTS v2
+│   ├── main.py
+│   ├── transcribe.py
+│   ├── suggest.py
+│   ├── memory.py
+│   ├── tts.py
+│   └── requirements.txt
 ├── src/
-│   ├── App.tsx
-│   ├── store/atoms.ts
-│   └── components/
-│       ├── SpeakerCard.tsx
-│       ├── KaraokeText.tsx
-│       ├── SuggestionCard.tsx
-│       ├── RomajiPopup.tsx
-│       ├── QuickReplyBox.tsx
-│       ├── QuickReactions.tsx
-│       ├── Phrasebook.tsx
-│       ├── StatsPanel.tsx
-│       ├── CallInfoStrip.tsx
-│       └── Header.tsx
-└── src-tauri/         # Tauri Rust backend
+├── src-tauri/
+├── hf-space/
+└── docs/
 ```
 
----
+## Hackathon Info
 
-## Hackathon
-
-- **Event:** AMD Developer Hackathon 2026 — lablab.ai
-- **Track:** Track 1 — AI Agents & Agentic Workflows
-- **Deadline:** May 11, 2026 — 3:00 AM PHT
-- **Developer:** Francis Daniel (GitHub: Mizunandayo)
-
-Prize tracks targeted:
-- Track 1: AI Agents (CrewAI multi-agent suggestion pipeline)
-- Qwen partner prize (Qwen2.5-72B alternate model path)
-- HuggingFace Space likes
-- Ship It social challenge
-
----
+- Event: AMD Developer Hackathon 2026 (lablab.ai)
+- Track: Track 1 — AI Agents & Agentic Workflows
+- Developer: Francis Daniel (GitHub: Mizunandayo)
 
 ## License
 
