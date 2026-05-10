@@ -362,9 +362,9 @@
   <div class="toc-title">Running order</div>
   <div class="toc-row"><span>1. Problem — the specific failure mode</span><span>~20s</span></div>
   <div class="toc-row"><span>2. Live demo — show it working</span><span>~90s</span></div>
-  <div class="toc-row"><span>3. Pipeline + agent architecture</span><span>~50s</span></div>
+  <div class="toc-row"><span>3. Pipeline + agent architecture</span><span>~45s</span></div>
   <div class="toc-row"><span>4. AMD MI300X — why the hardware matters</span><span>~25s</span></div>
-  <div class="toc-row"><span>5. Architecture — systems thinking</span><span>~55s</span></div>
+  <div class="toc-row"><span>5. Architecture — systems thinking</span><span>~45s</span></div>
   <div class="toc-row"><span>6. Engineering decisions — the tradeoffs</span><span>~35s</span></div>
   <div class="toc-row"><span>7. Close</span><span>~10s</span></div>
 </div>
@@ -466,34 +466,26 @@
 <!-- ─── SECTION 3 ─── -->
 <div class="section-block page-break">
   <h2>Section 3</h2>
-  <h3>Pipeline — latency budget + agent architecture <span class="time-badge">~50s</span></h3>
+  <h3>Pipeline — latency budget + agent architecture <span class="time-badge">~45s</span></h3>
 
   <span class="cue">🖥 Screen: landing page — Pipeline section, let animation play</span>
 
   <blockquote>
-    "Let me break down the latency budget. Audio capture — under 5ms. openai-whisper transcription — around 150ms on MI300X. Google Translate — under 100ms, sent immediately as the fast packet. Llama 3.3 70B style-refined translation — under 500ms. pykakasi romaji — under 5ms. Total wall time: <strong>under 800 milliseconds</strong>."
+    "Latency budget: Whisper transcription — 150ms. Google Translate fast packet — under 100ms, sent immediately. Llama 3.3 70B style refinement — under 500ms. Romaji — 5ms. Total: <strong>under 800 milliseconds</strong>. The two-pass split is why it feels instant — the user reads the translation before the LLM even finishes."
   </blockquote>
 
   <blockquote>
-    "The suggestion pipeline runs deferred — it never blocks translation from appearing. And it's not a single LLM call returning three results. It's three agents with distinct responsibilities."
+    "Suggestions run deferred — never block translation from appearing. Three agents, distinct roles: the <strong>Analyst</strong> queries Qdrant per-speaker vector memory and reads the emotional register. The <strong>Strategist</strong> decides reply type — agreement, question, reaction, game callout. The <strong>Writer</strong> generates three style-matched Japanese replies. Each one is immediately pre-synthesized via edge-tts — so 'Bot Speaks' has zero extra delay."
   </blockquote>
 
   <blockquote>
-    "The <strong>Analyst</strong> queries Qdrant — per-speaker vector memory — and retrieves the most relevant past utterances from this conversation. It assesses the emotional register and context: is this a celebration, a frustration, a question? It passes a structured brief to the <strong>Strategist</strong>, which decides what <em class='tech'>type</em> of reply fits — agreement, question, reaction, game callout. The Strategist's output goes to the <strong>Writer</strong>, which generates three style-matched Japanese suggestions. Each is immediately pre-synthesized through edge-tts so 'Bot Speaks' has zero additional delay."
-  </blockquote>
-
-  <blockquote>
-    "Separate semaphores handle translations and suggestions independently — a slow agent run for speaker A can never queue-block a translation packet from speaker B."
+    "Separate semaphores for translations and suggestions — a slow agent run for speaker A can never block a translation packet from speaker B."
   </blockquote>
 
   <div class="tradeoff-box">
-    <span class="label">Why not stream the LLM output token-by-token?</span>
-    Translation and romaji are complete units — streaming a partial Japanese sentence creates more confusion than the 200ms wait. Streaming is used for TTS synthesis: the audio starts playing before the full MP3 is generated, cutting perceived TTS latency by roughly half.
-  </div>
-
-  <div class="tradeoff-box">
-    <span class="label">Why three agents instead of one prompt?</span>
-    The Qdrant memory retrieval, the reply-type decision, and the Japanese generation are three different reasoning tasks with different inputs. Splitting them produces better output than a single mega-prompt — the Strategist's structured brief forces the Writer to stay on topic rather than free-associating from the raw transcript.
+    <span class="label">Reference only — don't speak unless asked</span>
+    Streaming LLM: translation and romaji are complete units — partial Japanese mid-sentence is more confusing than the 200ms wait. Streaming IS used for TTS: audio starts before the full MP3 is ready, cutting perceived TTS latency by ~half.<br><br>
+    3 agents vs 1 prompt: Qdrant retrieval, reply-type decision, and Japanese generation are different reasoning tasks with different inputs. The Strategist's structured brief forces the Writer on topic rather than free-associating from raw transcript.
   </div>
 </div>
 
@@ -505,13 +497,13 @@
   <span class="cue">🖥 Screen: AMD section — hero banner + comparison table</span>
 
   <blockquote>
-    "Llama 3.3 70B at full FP16 is 140 gigabytes of weights. An RTX 5090 &mdash; NVIDIA's latest &mdash; has 32 gigabytes. An H100 has 80. The MI300X has <strong>192 gigabytes of HBM3</strong> — the entire model fits on a single GPU, no quantization, no sharding."
+    "Llama 3.3 70B at full FP16 is 140 gigabytes. An H100 has 80. The MI300X has <strong>192 gigabytes of HBM3</strong> — the entire model fits on one GPU, no quantization, no sharding."
   </blockquote>
 
   <span class="pause">— pause —</span>
 
   <blockquote>
-    "This matters specifically for Japanese. Honorifics, verb conjugation endings, register shifts — they're encoded in the tail of the probability distribution. INT4 quantization truncates that tail. You lose the nuance that makes the translation actually useful. Full FP16 is not just a performance choice — it's a quality requirement for this language."
+    "That matters for Japanese. Honorifics, register shifts — they live in the tail of the probability distribution. INT4 quantization truncates that tail. Full FP16 is a quality requirement, not a hardware luxury."
   </blockquote>
 
   <div class="note">⚠ Say "quality requirement" not "nice to have." Show you made a deliberate engineering tradeoff, not that you got lucky with hardware.</div>
@@ -520,33 +512,29 @@
 <!-- ─── SECTION 5 ─── -->
 <div class="section-block">
   <h2>Section 5</h2>
-  <h3>Architecture — systems thinking <span class="time-badge">~55s</span></h3>
+  <h3>Architecture — systems thinking <span class="time-badge">~45s</span></h3>
 
   <span class="cue">🖥 Screen: Engineering section — solo build banner</span>
 
   <blockquote>
-    "Built solo in 7 days. Five runtimes in production: TypeScript for the React overlay, Python for the FastAPI inference server, Rust for the Tauri native backend, JavaScript for the Discord bot, and GLSL shaders for the WebGL animation on this page."
+    "Five runtimes in production: TypeScript overlay, Python FastAPI server, Rust Tauri backend, JavaScript Discord bot, GLSL shaders on this page. Built solo, 7 days."
   </blockquote>
 
   <span class="cue">👆 Scroll to 3-step architecture diagram</span>
 
   <blockquote>
-    "The architecture in three layers. Layer one — the Node.js Discord bot captures each speaker as a <strong>separate Opus stream</strong>. Critical: you cannot mix the audio before transcription or you lose speaker identity and the model can't assign words to people. Each stream is forwarded over an <strong>encrypted SSH tunnel</strong> — zero public ports, no TLS certificates to manage, same path in dev and production."
+    "Layer one — Node.js captures each speaker as a <strong>separate Opus stream</strong>. Mix the audio before transcription and you lose speaker identity entirely. Each stream forwards over an <strong>SSH tunnel</strong> — zero public ports, identical behavior in dev and production."
   </blockquote>
 
   <blockquote>
-    "Layer two — AMD MI300X. Whisper transcribes with word-level timestamps. Then the two-pass split fires: Google Translate result over WebSocket immediately, vLLM inference starts concurrently. pykakasi generates romaji in parallel. vLLM connects over a <strong>persistent TCP session</strong> — one connection reused for all calls, avoiding 20-50ms per-call TCP handshake overhead."
+    "Layer two — AMD MI300X: Whisper transcribes with word-level timestamps, two-pass fires immediately. vLLM calls go through a <strong>persistent TCP session</strong> — one reused connection, avoids 20-50ms handshake overhead on every call."
   </blockquote>
 
   <blockquote>
-    "Layer three — the Tauri overlay renders the JSON packet. Transparent window, always-on-top, native Rust window manager. The card updates in-place when the refined packet arrives — no re-render flash, just a smooth text swap."
+    "Layer three — Tauri renders the JSON packet. Transparent, always-on-top, native Rust window. Card updates in-place on the refined packet — no re-render flash."
   </blockquote>
 
   <span class="cue">👆 Point to Step 02 detail panel (arch-zoom)</span>
-
-  <blockquote>
-    "The key insight in step two: the user's brain processes the translation result before the LLM finishes. You've already read 'Today's game was fun' from Google Translate. The LLM refinement arrives as a quiet update, not a jarring replacement."
-  </blockquote>
 </div>
 
 <!-- ─── SECTION 6 ─── -->
@@ -630,12 +618,12 @@
   <tbody>
     <tr><td>1</td><td>Problem — specific failure mode</td><td>Landing hero</td><td>~20s</td></tr>
     <tr><td>2</td><td>Live demo</td><td>Tauri overlay + Discord</td><td>~90s</td></tr>
-    <tr><td>3</td><td>Pipeline + agent architecture</td><td>Landing — Pipeline</td><td>~50s</td></tr>
+    <tr><td>3</td><td>Pipeline + agent architecture</td><td>Landing — Pipeline</td><td>~45s</td></tr>
     <tr><td>4</td><td>AMD MI300X</td><td>Landing — AMD section</td><td>~25s</td></tr>
-    <tr><td>5</td><td>Architecture — 3 layers</td><td>Landing — Engineering</td><td>~55s</td></tr>
+    <tr><td>5</td><td>Architecture — 3 layers</td><td>Landing — Engineering</td><td>~45s</td></tr>
     <tr><td>6</td><td>6 engineering decisions</td><td>Landing — Decision cards</td><td>~35s</td></tr>
     <tr><td>7</td><td>Close</td><td>Hero or overlay</td><td>~10s</td></tr>
-    <tr class="total-row"><td></td><td>Total</td><td></td><td>~4m 25s</td></tr>
+    <tr class="total-row"><td></td><td>Total</td><td></td><td>~4m 05s</td></tr>
   </tbody>
 </table>
 
