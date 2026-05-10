@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Miwa — Presentation Script V2 (Engineer Voice)</title>
+<style>
+  @page {
+    margin: 0;
+    background: #111;
+  }
+
+  @media print {
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+    }
+    html { background: #111 !important; }
+    body { font-size: 12pt; background: #111 !important; color: #e8e8e8 !important; padding: 40px 48px 60px; }
+    .page-break { page-break-before: always; }
+    .no-print { display: none; }
+    .note { display: none; }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 14px;
+    line-height: 1.75;
+    color: #e8e8e8;
+    background: #111;
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 40px 32px 80px;
+  }
+
+  .cover {
+    text-align: center;
+    padding: 56px 0 44px;
+    border-bottom: 2px solid #333;
+    margin-bottom: 40px;
+  }
+
+  .cover-title {
+    font-size: 34px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+    color: #fff;
+  }
+
+  .cover-sub {
+    font-size: 15px;
+    color: #777;
+    margin-bottom: 3px;
+  }
+
+  .cover-meta {
+    font-size: 12px;
+    color: #444;
+    font-family: 'Courier New', monospace;
+    margin-top: 16px;
+  }
+
+  .version-badge {
+    display: inline-block;
+    background: #1e3a1e;
+    color: #5dba5d;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    margin-top: 10px;
+    border: 1px solid #2d5a2d;
+  }
+
+  .philosophy {
+    background: #161616;
+    border-left: 3px solid #3a5a3a;
+    padding: 14px 18px;
+    margin-bottom: 32px;
+    font-size: 13px;
+    color: #999;
+    font-style: italic;
+    line-height: 1.7;
+  }
+
+  .philosophy strong {
+    color: #ccc;
+    font-style: normal;
+  }
+
+  .toc {
+    background: #1a1a1a;
+    border-left: 3px solid #333;
+    padding: 16px 20px;
+    margin-bottom: 40px;
+    font-size: 13px;
+  }
+
+  .toc-title {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 11px;
+    margin-bottom: 10px;
+    color: #555;
+  }
+
+  .toc-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    color: #aaa;
+  }
+
+  .toc-row span:last-child {
+    color: #555;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+  }
+
+  h2 {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 11px;
+    color: #444;
+    margin: 44px 0 4px;
+    font-family: 'Courier New', monospace;
+  }
+
+  h3 {
+    font-size: 17px;
+    font-weight: 700;
+    margin: 4px 0 16px;
+    color: #e8e8e8;
+    border-bottom: 1px solid #222;
+    padding-bottom: 7px;
+  }
+
+  .cue {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    color: #777;
+    background: #191919;
+    padding: 5px 10px;
+    border-radius: 3px;
+    margin: 12px 0 8px;
+    display: block;
+    border-left: 2px solid #333;
+  }
+
+  blockquote {
+    border-left: 3px solid #333;
+    padding: 3px 0 3px 16px;
+    margin: 10px 0 14px;
+    font-style: italic;
+    color: #ddd;
+    font-size: 15px;
+    line-height: 1.8;
+  }
+
+  blockquote strong {
+    font-style: normal;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  blockquote em.tech {
+    font-style: normal;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    color: #5dba5d;
+    background: #0d1f0d;
+    padding: 1px 5px;
+    border-radius: 2px;
+  }
+
+  .pause {
+    display: block;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: #333;
+    margin: 4px 0 2px;
+    letter-spacing: 0.2em;
+  }
+
+  .section-block {
+    margin-bottom: 40px;
+  }
+
+  .time-badge {
+    display: inline-block;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    background: #222;
+    color: #888;
+    padding: 2px 8px;
+    border-radius: 2px;
+    margin-left: 8px;
+    vertical-align: middle;
+    font-style: normal;
+  }
+
+  .jp {
+    font-family: 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 16px;
+    color: #fff;
+  }
+
+  .jp-line {
+    background: #161616;
+    border: 1px solid #252525;
+    border-radius: 4px;
+    padding: 10px 16px;
+    margin: 10px 0;
+  }
+
+  .jp-line .jp { display: block; margin-bottom: 2px; }
+  .jp-line .romaji { font-family: 'Courier New', monospace; font-size: 12px; color: #666; display: block; }
+  .jp-line .en { font-size: 13px; color: #999; font-style: italic; display: block; margin-top: 2px; }
+
+  .tradeoff-box {
+    background: #0f1a2a;
+    border: 1px solid #1e3350;
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin: 12px 0;
+    font-size: 13px;
+    color: #8ab4d4;
+    font-family: 'Courier New', monospace;
+    line-height: 1.6;
+  }
+
+  .tradeoff-box .label {
+    color: #4a7fa8;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 4px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .decision-card {
+    background: #161616;
+    border: 1px solid #242424;
+    border-radius: 4px;
+    padding: 12px 16px;
+    margin: 10px 0;
+  }
+
+  .decision-card .num {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: #444;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .decision-card .title {
+    font-weight: 700;
+    color: #e8e8e8;
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .decision-card .body {
+    font-size: 13px;
+    color: #999;
+    line-height: 1.6;
+    font-style: italic;
+  }
+
+  .note {
+    background: #1a150a;
+    border-left: 3px solid #5a3a0a;
+    padding: 8px 12px;
+    margin: 8px 0;
+    font-size: 12px;
+    color: #a07840;
+    font-family: 'Courier New', monospace;
+    border-radius: 0 3px 3px 0;
+  }
+
+  .summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 40px;
+    font-size: 13px;
+  }
+
+  .summary-table th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #444;
+    border-bottom: 2px solid #2a2a2a;
+    padding: 6px 8px;
+    font-family: 'Courier New', monospace;
+  }
+
+  .summary-table td {
+    padding: 7px 8px;
+    border-bottom: 1px solid #1e1e1e;
+    vertical-align: top;
+    color: #bbb;
+  }
+
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table td:first-child { font-weight: 600; color: #e0e0e0; font-family: 'Courier New', monospace; font-size: 12px; }
+  .summary-table td:last-child { font-family: 'Courier New', monospace; font-size: 12px; color: #666; text-align: right; }
+
+  .total-row td { font-weight: 700; border-top: 2px solid #333; color: #fff !important; }
+
+  .print-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #1a1a1a;
+    color: #999;
+    border: 1px solid #333;
+    padding: 10px 20px;
+    font-size: 13px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+  }
+
+  .print-btn:hover { background: #222; color: #e8e8e8; }
+
+  hr.divider {
+    border: none;
+    border-top: 1px solid #1e1e1e;
+    margin: 28px 0;
+  }
+</style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">Save as PDF</button>
+
+<div class="cover">
+  <div class="cover-title">Miwa 美話</div>
+  <div class="cover-sub">Presentation Script — AMD Developer Hackathon 2026</div>
+  <div class="cover-sub" style="margin-top:3px">Real-time Japanese Discord voice translation overlay</div>
+  <div class="cover-meta">Francis Daniel (Mizu) &nbsp;·&nbsp; May 2026 &nbsp;·&nbsp; ~4 min</div>
+  <div class="version-badge">V2 — Engineer Voice</div>
+</div>
+
+<div class="philosophy">
+  <strong>Delivery note for V2:</strong> Speak at engineer pace — slower than you think, no filler words. Every number you say should sound like you measured it, not estimated it. Let silences exist after key statements. Judges who build things will hear the difference.
+</div>
+
+<div class="toc">
+  <div class="toc-title">Running order</div>
+  <div class="toc-row"><span>1. Problem — the specific failure mode</span><span>~20s</span></div>
+  <div class="toc-row"><span>2. Live demo — show it working</span><span>~90s</span></div>
+  <div class="toc-row"><span>3. Pipeline — latency budget breakdown</span><span>~30s</span></div>
+  <div class="toc-row"><span>4. AMD MI300X — why the hardware matters</span><span>~25s</span></div>
+  <div class="toc-row"><span>5. Architecture — systems thinking</span><span>~55s</span></div>
+  <div class="toc-row"><span>6. Engineering decisions — the tradeoffs</span><span>~35s</span></div>
+  <div class="toc-row"><span>7. Close</span><span>~10s</span></div>
+</div>
+
+<!-- ─── SECTION 1 ─── -->
+<div class="section-block">
+  <h2>Section 1</h2>
+  <h3>Problem — the specific failure mode <span class="time-badge">~20s</span></h3>
+
+  <span class="cue">🖥 Screen: landing page hero, hyperspeed animation</span>
+
+  <blockquote>
+    "Two hundred million Discord users. A massive portion of serious gaming communities are Japanese-speaking. The current solution — alt-tab, paste, translate — breaks in a competitive context. You're dead before you finish reading."
+  </blockquote>
+
+  <span class="pause">— pause —</span>
+
+  <blockquote>
+    "Miwa solves this. It's a transparent always-on-top overlay that translates Japanese Discord voice calls in real time — per speaker, with AI reply suggestions — targeting <strong>under 800 milliseconds</strong> end-to-end on AMD MI300X. You never leave the game."
+  </blockquote>
+
+  <div class="note">⚠ Do NOT say "I built a translation app." Say the specific failure mode it fixes. Judges remember the problem, not the feature list.</div>
+</div>
+
+<!-- ─── SECTION 2 ─── -->
+<div class="section-block">
+  <h2>Section 2</h2>
+  <h3>Live demo — show it working <span class="time-badge">~90s</span></h3>
+
+  <span class="cue">🖥 Screen: Tauri overlay running, Discord voice call active</span>
+
+  <blockquote>
+    "Here's the real system. I'm in a Discord voice call with a Japanese speaker."
+  </blockquote>
+
+  <span class="cue">🎤 Speak / play audio — sentence 1:</span>
+
+  <div class="jp-line">
+    <span class="jp">今日のゲームめっちゃ楽しかったね！</span>
+    <span class="romaji">Kyou no geemu meccha tanoshikatta ne!</span>
+    <span class="en">Today's game was so much fun, right!</span>
+  </div>
+
+  <blockquote>
+    "The card appears in under 100 milliseconds — that's Google Translate, the fast packet. A moment later the card updates — Llama 3.3 70B on MI300X refines it to match the current style mode. This is the <strong>two-pass split</strong>: perceived latency under 100ms, quality translation under 700ms. The user sees a result before they consciously process the delay."
+  </blockquote>
+
+  <blockquote>
+    "The Japanese words light up in sequence — karaoke highlighting, driven by <strong>word-level timestamps</strong> coming out of openai-whisper. Not token offsets — actual word-boundary timestamps."
+  </blockquote>
+
+  <span class="cue">🎤 Sentence 2:</span>
+
+  <div class="jp-line">
+    <span class="jp">あのボス戦ほんとやばかった…</span>
+    <span class="romaji">Ano bosu-sen honto yabakatta…</span>
+    <span class="en">That boss fight was seriously insane…</span>
+  </div>
+
+  <span class="cue">👆 Point to the 3 suggestion cards</span>
+
+  <blockquote>
+    "Three context-aware reply suggestions — generated by a CrewAI agent pipeline, deferred so they never block translation from appearing. Press <strong>1</strong>, <strong>2</strong>, or <strong>3</strong> — the Discord bot delivers it to the channel. Or 'I'll Speak' — fullscreen romaji popup, read it yourself."
+  </blockquote>
+
+  <span class="cue">👆 Point to the reactions strip — demo search box</span>
+
+  <blockquote>
+    "There's a reactions strip — 20 pre-written responses that switch per style mode. Type 'wait' in the search box — it filters in real time. Gaming mode: <em class="tech">gg</em>, <em class="tech">行くぞ！</em>, <em class="tech">了解！</em>. Casual: <em class="tech">草生えた</em>, <em class="tech">マジで？</em>, <em class="tech">やばい！</em>. Each card delivers two ways — bot sends to chat, or bot speaks aloud in the voice channel through edge-tts."
+  </blockquote>
+
+  <span class="cue">👆 Type something in Quick Reply box</span>
+
+  <blockquote>
+    "Type in English — it translates live on 500ms debounce, adapted to whichever style mode is active."
+  </blockquote>
+
+  <span class="cue">👆 Expand CallInfoStrip — click a member's toggle</span>
+
+  <blockquote>
+    "This is a decision I'm particularly proud of. If a non-Japanese speaker is in the channel, I can exclude them from the pipeline with one click. Their audio never reaches the AMD server. Without this, Whisper sees English audio and hallucinates Japanese text — garbage in, garbage out. The toggle auto-clears when they leave the call, handled by <em class="tech">voiceStateUpdate</em> on the Discord gateway."
+  </blockquote>
+
+  <span class="cue">👆 Pin a suggestion — show phrasebook</span>
+
+  <blockquote>
+    "Saved phrases go into the phrasebook. <em class="tech">Ctrl+1</em> through <em class="tech">9</em> fires them instantly — no mouse, no interruption."
+  </blockquote>
+
+  <span class="cue">🎤 Sentence 3:</span>
+
+  <div class="jp-line">
+    <span class="jp">また明日も集まろうか？</span>
+    <span class="romaji">Mata ashita mo atsumarou ka?</span>
+    <span class="en">Should we meet up again tomorrow?</span>
+  </div>
+</div>
+
+<!-- ─── SECTION 3 ─── -->
+<div class="section-block page-break">
+  <h2>Section 3</h2>
+  <h3>Pipeline — latency budget breakdown <span class="time-badge">~30s</span></h3>
+
+  <span class="cue">🖥 Screen: landing page — Pipeline section, let animation play</span>
+
+  <blockquote>
+    "Let me break down the latency budget. Audio capture — under 5ms. openai-whisper transcription — around 150ms on MI300X. Google Translate — under 100ms, sent immediately as the fast packet. Llama 3.3 70B style-refined translation — under 500ms. pykakasi romaji — under 5ms. Total wall time: <strong>under 800 milliseconds</strong>."
+  </blockquote>
+
+  <blockquote>
+    "The CrewAI suggestion agents — Analyst, Strategist, Writer — run deferred after the translation is already displayed. There are separate semaphores for translations and suggestions — so a slow suggestion run on speaker A can never queue-block a translation packet from speaker B."
+  </blockquote>
+
+  <div class="tradeoff-box">
+    <span class="label">Why not stream the LLM output token-by-token?</span>
+    Translation and romaji are complete units — streaming a partial Japanese sentence creates more confusion than the 200ms wait. Streaming is used for TTS synthesis: the audio starts playing before the full MP3 is generated, cutting perceived TTS latency by roughly half.
+  </div>
+</div>
+
+<!-- ─── SECTION 4 ─── -->
+<div class="section-block">
+  <h2>Section 4</h2>
+  <h3>AMD MI300X — why the hardware matters <span class="time-badge">~25s</span></h3>
+
+  <span class="cue">🖥 Screen: AMD section — hero banner + comparison table</span>
+
+  <blockquote>
+    "Llama 3.3 70B at full FP16 is 140 gigabytes of weights. An RTX 4090 has 24 gigabytes. An A100 has 80. The MI300X has <strong>192 gigabytes of HBM3</strong> — the entire model fits on a single GPU, no quantization, no sharding."
+  </blockquote>
+
+  <span class="pause">— pause —</span>
+
+  <blockquote>
+    "This matters specifically for Japanese. Honorifics, verb conjugation endings, register shifts — they're encoded in the tail of the probability distribution. INT4 quantization truncates that tail. You lose the nuance that makes the translation actually useful. Full FP16 is not just a performance choice — it's a quality requirement for this language."
+  </blockquote>
+
+  <div class="note">⚠ Say "quality requirement" not "nice to have." Show you made a deliberate engineering tradeoff, not that you got lucky with hardware.</div>
+</div>
+
+<!-- ─── SECTION 5 ─── -->
+<div class="section-block">
+  <h2>Section 5</h2>
+  <h3>Architecture — systems thinking <span class="time-badge">~55s</span></h3>
+
+  <span class="cue">🖥 Screen: Engineering section — solo build banner</span>
+
+  <blockquote>
+    "Built solo in 7 days. Five runtimes in production: TypeScript for the React overlay, Python for the FastAPI inference server, Rust for the Tauri native backend, JavaScript for the Discord bot, and GLSL shaders for the WebGL animation on this page."
+  </blockquote>
+
+  <span class="cue">👆 Scroll to 3-step architecture diagram</span>
+
+  <blockquote>
+    "The architecture in three layers. Layer one — the Node.js Discord bot captures each speaker as a <strong>separate Opus stream</strong>. Critical: you cannot mix the audio before transcription or you lose speaker identity and the model can't assign words to people. Each stream is forwarded over an <strong>encrypted SSH tunnel</strong> — zero public ports, no TLS certificates to manage, same path in dev and production."
+  </blockquote>
+
+  <blockquote>
+    "Layer two — AMD MI300X. Whisper transcribes with word-level timestamps. Then the two-pass split fires: Google Translate result over WebSocket immediately, vLLM inference starts concurrently. pykakasi generates romaji in parallel. vLLM connects over a <strong>persistent TCP session</strong> — one connection reused for all calls, avoiding 20-50ms per-call TCP handshake overhead."
+  </blockquote>
+
+  <blockquote>
+    "Layer three — the Tauri overlay renders the JSON packet. Transparent window, always-on-top, native Rust window manager. The card updates in-place when the refined packet arrives — no re-render flash, just a smooth text swap."
+  </blockquote>
+
+  <span class="cue">👆 Point to Step 02 detail panel (arch-zoom)</span>
+
+  <blockquote>
+    "The key insight in step two: the user's brain processes the translation result before the LLM finishes. You've already read 'Today's game was fun' from Google Translate. The LLM refinement arrives as a quiet update, not a jarring replacement."
+  </blockquote>
+</div>
+
+<!-- ─── SECTION 6 ─── -->
+<div class="section-block">
+  <h2>Section 6</h2>
+  <h3>Engineering decisions — the tradeoffs <span class="time-badge">~35s</span></h3>
+
+  <span class="cue">🖥 Screen: Engineering decision cards (6 cards)</span>
+
+  <blockquote>
+    "Six decisions where the tradeoff was non-obvious:"
+  </blockquote>
+
+  <div class="decision-card">
+    <span class="num">01</span>
+    <span class="title">openai-whisper, not WhisperX</span>
+    <span class="body">WhisperX uses CTranslate2 for acceleration — CTranslate2 has no ROCm backend. PyTorch-native openai-whisper runs directly on MI300X with full GPU utilization. WhisperX would have fallen back to CPU on this hardware, which is 10-20× slower.</span>
+  </div>
+
+  <div class="decision-card">
+    <span class="num">02</span>
+    <span class="title">Tauri, not Electron</span>
+    <span class="body">50 megabyte binary vs 200 megabyte. Native always-on-top with no flicker. Rust memory safety as the process boundary. For an overlay that runs during competitive gaming, frame-time impact matters.</span>
+  </div>
+
+  <div class="decision-card">
+    <span class="num">03</span>
+    <span class="title">SSH tunnel, not a public WebSocket endpoint</span>
+    <span class="body">No ingress rules, no TLS certificates, no token rotation. The AMD cloud instance has zero open ports. Identical behavior in local development and production — one flag change.</span>
+  </div>
+
+  <div class="decision-card">
+    <span class="num">04</span>
+    <span class="title">Per-speaker Opus streams, not mixed audio</span>
+    <span class="body">Discord's native API gives per-user PCM. Mixing destroys speaker identity before transcription. Separate streams let the UI attribute words to faces. It also allows per-member pipeline gating — exclude non-Japanese speakers before audio ever hits the GPU.</span>
+  </div>
+
+  <div class="decision-card">
+    <span class="num">05</span>
+    <span class="title">vLLM GPU util cap at 80%</span>
+    <span class="body">Default 100% leaves zero VRAM for Whisper. 80% reserves ~38GB — enough to run the full Whisper model without OOM. This is a single flag: <em class="tech">--gpu-memory-utilization 0.80</em>. The default would silently fail at runtime.</span>
+  </div>
+
+  <div class="decision-card">
+    <span class="num">06</span>
+    <span class="title">pykakasi, not MeCab</span>
+    <span class="body">MeCab requires a native shared library compiled against the OS and dictionary version. In a Docker container on ROCm with non-standard Python, that's an hour of dependency hell. pykakasi is pure Python — pip install, done. The romaji quality difference is negligible for pronunciation guidance.</span>
+  </div>
+
+  <div class="note">⚠ For each card: read the title, pause briefly, then deliver the reasoning in one clean sentence. Don't rush through them.</div>
+</div>
+
+<!-- ─── SECTION 7 ─── -->
+<div class="section-block">
+  <h2>Section 7</h2>
+  <h3>Close <span class="time-badge">~10s</span></h3>
+
+  <span class="cue">🖥 Screen: return to hero or live overlay</span>
+
+  <blockquote>
+    "Miwa. Real-time Japanese voice translation for Discord, under 800 milliseconds, on AMD MI300X. Built in 7 days."
+  </blockquote>
+
+  <span class="pause">— stop. let it land. —</span>
+
+  <div class="note">⚠ Do NOT add anything after "7 days." The silence is part of the close. Judges who build things will feel the weight of it.</div>
+</div>
+
+<hr class="divider">
+
+<!-- ─── TIMING SUMMARY ─── -->
+<table class="summary-table">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Section</th>
+      <th>Screen</th>
+      <th>Time</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>1</td><td>Problem — specific failure mode</td><td>Landing hero</td><td>~20s</td></tr>
+    <tr><td>2</td><td>Live demo</td><td>Tauri overlay + Discord</td><td>~90s</td></tr>
+    <tr><td>3</td><td>Pipeline latency budget</td><td>Landing — Pipeline</td><td>~30s</td></tr>
+    <tr><td>4</td><td>AMD MI300X</td><td>Landing — AMD section</td><td>~25s</td></tr>
+    <tr><td>5</td><td>Architecture — 3 layers</td><td>Landing — Engineering</td><td>~55s</td></tr>
+    <tr><td>6</td><td>6 engineering decisions</td><td>Landing — Decision cards</td><td>~35s</td></tr>
+    <tr><td>7</td><td>Close</td><td>Hero or overlay</td><td>~10s</td></tr>
+    <tr class="total-row"><td></td><td>Total</td><td></td><td>~4m 05s</td></tr>
+  </tbody>
+</table>
+
+<div style="margin-top: 32px; padding: 16px; background: #0f1a0f; border: 1px solid #1e3a1e; border-radius: 4px; font-size: 13px; color: #5a8a5a; font-family: 'Courier New', monospace; line-height: 1.7;">
+  <strong style="color: #5dba5d; display: block; margin-bottom: 8px;">WHAT SEPARATES V2 FROM V1</strong>
+  V1 describes features. V2 explains <em>why</em> each decision was made and what the alternative cost was.<br>
+  Judges who are engineers will not be impressed by a feature list — they will be impressed by evidence that you thought through the tradeoffs.<br><br>
+  The openai-whisper vs WhisperX decision (ROCm incompatibility) shows you actually ran into a real problem and solved it.<br>
+  The 80% GPU util cap shows you understand memory allocation.<br>
+  "Tail of the probability distribution" shows you understand why quantization affects quality specifically for Japanese.<br><br>
+  <em>That is the difference between someone who built a demo and someone who built a system.</em>
+</div>
+
+</body>
+</html>

@@ -1927,8 +1927,8 @@
 
       <div class="eng-dec">
         <div class="eng-dec-num">01</div>
-        <div class="eng-dec-title">Two-pass translation</div>
-        <div class="eng-dec-body">Google Translate result shows in &lt;100ms as a <em style="font-style:normal;color:var(--text)">fast</em> packet. vLLM-refined translation arrives as a <em style="font-style:normal;color:var(--text)">refined</em> packet at ~500ms, updating in-place. Perceived latency is under 100ms even though LLM inference takes 500ms.</div>
+        <div class="eng-dec-title">openai-whisper, not WhisperX</div>
+        <div class="eng-dec-body">WhisperX uses CTranslate2 for inference acceleration &mdash; CTranslate2 has no ROCm backend. Running WhisperX on AMD MI300X silently falls back to CPU: 10&ndash;20&times; slower. openai-whisper runs natively on PyTorch + ROCm with full GPU utilization. Not a preference &mdash; the alternative would have broken the latency target entirely.</div>
       </div>
 
       <div class="eng-dec">
@@ -1951,14 +1951,14 @@
 
       <div class="eng-dec">
         <div class="eng-dec-num">05</div>
-        <div class="eng-dec-title">FP16, not quantized</div>
-        <div class="eng-dec-body">192 GB HBM3 fits Llama 3.3 70B in full FP16 &mdash; no INT4/INT8. Japanese is precision-sensitive: honorifics, formal vs casual register, and verb conjugation endings degrade measurably at lower precision. Full precision is the correct engineering choice.</div>
+        <div class="eng-dec-title">FP16 + 80% VRAM cap</div>
+        <div class="eng-dec-body">192 GB HBM3 fits Llama 3.3 70B in full FP16 &mdash; no INT4/INT8. Japanese honorifics, register, and verb endings encode in the tail of the probability distribution; INT4 truncates that tail. vLLM is capped at <code style="font-size:12px;background:rgba(255,255,255,.07);padding:1px 6px;border-radius:3px">--gpu-memory-utilization 0.80</code>, reserving ~38 GB for Whisper. The default 100% leaves zero VRAM for STT and fails silently at runtime.</div>
       </div>
 
       <div class="eng-dec">
         <div class="eng-dec-num">06</div>
-        <div class="eng-dec-title">WebSocket streaming, not polling</div>
-        <div class="eng-dec-body">Karaoke word-by-word highlight needs word timestamps from openai-whisper to stream in real-time. HTTP polling adds 100&ndash;500ms latency per word and cannot achieve sub-frame accuracy. WebSocket is the only correct architecture for this feature.</div>
+        <div class="eng-dec-title">pykakasi, not MeCab</div>
+        <div class="eng-dec-body">MeCab requires a native shared library compiled against a specific OS and dictionary version &mdash; inside a ROCm Docker container with non-standard Python, that is a multi-hour dependency tangle. pykakasi is pure Python: one pip install, zero native deps, zero build step. The romaji quality difference is negligible for pronunciation guidance.</div>
       </div>
 
     </div>
