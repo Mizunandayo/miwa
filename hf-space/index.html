@@ -1495,28 +1495,28 @@
         <thead>
           <tr>
             <th class="col-feat"></th>
-            <th>RTX 4090 &mdash; Consumer</th>
-            <th>NVIDIA A100 &mdash; Data center</th>
+            <th>RTX 5090 &mdash; Consumer</th>
+            <th>NVIDIA H100 &mdash; Data center</th>
             <th class="col-mi col-mi-head">AMD MI300X <span class="amd-mi-badge">✓ Miwa</span></th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td class="col-feat">VRAM</td>
-            <td class="val-bad">24 GB GDDR6X</td>
+            <td class="val-bad">32 GB GDDR7X</td>
             <td class="val-bad">80 GB HBM2e</td>
             <td class="col-mi val-good">192 GB HBM3</td>
           </tr>
           <tr>
             <td class="col-feat">Llama 3.3 70B</td>
             <td class="val-bad">INT4 only &mdash; quality loss</td>
-            <td class="val-bad">INT8, sharded across GPUs</td>
+            <td class="val-bad">FP8/INT8 &mdash; barely fits</td>
             <td class="col-mi val-good">Full FP16, single GPU</td>
           </tr>
           <tr>
             <td class="col-feat">Bandwidth</td>
-            <td class="val-bad">1.0 TB/s</td>
-            <td class="val-bad">2.0 TB/s</td>
+            <td class="val-bad">1.79 TB/s</td>
+            <td class="val-bad">3.35 TB/s</td>
             <td class="col-mi val-good">5.3 TB/s</td>
           </tr>
           <tr>
@@ -1545,7 +1545,7 @@
       <div class="amd-adv">
         <div class="amd-adv-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
         <div class="amd-adv-title">5.3 TB/s memory bandwidth</div>
-        <div class="amd-adv-desc">Token generation is memory-bound, not compute-bound. The MI300X moves model weights to compute units 5&times; faster than an RTX 4090 &mdash; every transformer layer stays fed without stalling, which is why full FP16 inference completes under 500ms.</div>
+        <div class="amd-adv-desc">Token generation is memory-bound, not compute-bound. The MI300X moves model weights to compute units 3&times; faster than an RTX 5090 &mdash; every transformer layer stays fed without stalling, which is why full FP16 inference completes under 500ms.</div>
       </div>
       <div class="amd-adv">
         <div class="amd-adv-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="15" x2="4" y2="15"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="15" x2="23" y2="15"/></svg></div>
